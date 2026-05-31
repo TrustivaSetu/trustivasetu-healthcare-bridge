@@ -1,11 +1,12 @@
 import { PrismaClient, UserRole } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 
 const db = new PrismaClient()
 
-/** Minimal bootstrap only — hospitals, leads, users come from LOS sync APIs */
+/** Minimal bootstrap — reference data + super admin account via env variable */
 async function main() {
-  console.log('Seeding Trustiva LMS (reference data + admin login only)...')
+  console.log('Seeding Trustiva LMS (reference data only)...')
 
   await Promise.all([
     db.region.upsert({ where: { code: 'NORTH' }, update: {}, create: { name: 'North Region', code: 'NORTH' } }),
@@ -23,28 +24,44 @@ async function main() {
     db.lender.upsert({ where: { code: 'KOTAK' }, update: {}, create: { name: 'Kotak Mahindra', code: 'KOTAK' } }),
   ])
 
-  const pwd = await bcrypt.hash('Admin@123', 12)
+  // Super Admin — only create if account does not yet exist.
+  // Password is read from SUPER_ADMIN_PASSWORD env variable.
+  // If env var is not set, a random secure password is generated and printed ONCE.
+  // The update block intentionally never changes the password — use the Change Password
+  // feature in the portal or the forgot-password flow to update credentials.
+  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL ?? 'admin@trustivasetu.com'
+  const existing = await db.user.findUnique({ where: { email: superAdminEmail } })
 
-await db.user.upsert({
-  where: { email: 'admin@trustivasetu.com' },
+  if (!existing) {
+    const rawPassword = process.env.SUPER_ADMIN_PASSWORD ?? crypto.randomBytes(12).toString('base64url')
+    const hashed = await bcrypt.hash(rawPassword, 12)
 
-  update: {
-    password: pwd,
-    isActive: true,
-  },
+    await db.user.create({
+      data: {
+        email: superAdminEmail,
+        password: hashed,
+        name: 'Super Admin',
+        role: UserRole.SUPER_ADMIN,
+        isActive: true,
+      },
+    })
 
-  create: {
-    email: 'admin@trustivasetu.com',
-    password: pwd,
-    name: 'Super Admin',
-    role: UserRole.SUPER_ADMIN,
-    isActive: true,
-  },
-})
+    if (!process.env.SUPER_ADMIN_PASSWORD) {
+      console.log('═══════════════════════════════════════════════')
+      console.log('  Super Admin account created for first time')
+      console.log(`  Email   : ${superAdminEmail}`)
+      console.log(`  Password: ${rawPassword}`)
+      console.log('  SAVE THIS PASSWORD — it will not be shown again.')
+      console.log('  Use the portal Change Password feature to update.')
+      console.log('═══════════════════════════════════════════════')
+    } else {
+      console.log(`Super Admin account created: ${superAdminEmail}`)
+    }
+  } else {
+    console.log(`Super Admin account already exists (${superAdminEmail}) — password unchanged.`)
+  }
 
-  console.log('Seed complete (no demo hospitals/leads).')
-  console.log('LMS login (until LOS users sync): admin@trustivasetu.com / Admin@123')
-  console.log('Add hospitals, users, enquiries from LOS via sync APIs — see docs/LOS_INTEGRATION.md')
+  console.log('Seed complete.')
 }
 
 main()

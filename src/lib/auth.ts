@@ -19,30 +19,22 @@ export const authOptions: NextAuthOptions = {
         let user
         try {
           user = await db.user.findUnique({
-          where: { email: credentials.email.toLowerCase() },
-          include: {
-            regionAssignments: true,
-            clinicAssignments: true,
-          },
+            where: { email: credentials.email.toLowerCase() },
+            include: {
+              regionAssignments: true,
+              clinicAssignments: true,
+            },
           })
-          console.log('LOGIN EMAIL:', credentials.email)
-
-console.log('FOUND USER:', user)
-
-console.log('DB PASSWORD:', user?.password)
-
-console.log('INPUT PASSWORD:', credentials.password)
         } catch (e) {
           console.error('Database error on login:', e)
           throw new Error('Login failed')
         }
 
         if (!user) return null
-if (!user.isActive) throw new Error('Account deactivated')
+        if (!user.isActive) throw new Error('Account deactivated')
 
-const valid = await bcrypt.compare(credentials.password, user.password)
-console.log('PASSWORD VALID:', valid)
-if (!valid) return null
+        const valid = await bcrypt.compare(credentials.password, user.password)
+        if (!valid) return null
 
         await db.auditLog.create({
           data: {
@@ -86,7 +78,7 @@ if (!valid) return null
   },
   pages: { signIn: '/lms/login', error: '/lms/login' },
   session: { strategy: 'jwt', maxAge: 8 * 60 * 60 },
-  // Session cookie — no maxAge so it clears when the browser closes
+  // Session cookie — httpOnly, no maxAge so it clears when the browser closes
   cookies: {
     sessionToken: {
       name: process.env.NODE_ENV === 'production'
@@ -97,7 +89,6 @@ if (!valid) return null
         sameSite: 'lax' as const,
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        // No maxAge → session cookie, cleared when browser closes
       },
     },
   },

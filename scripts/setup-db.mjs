@@ -74,5 +74,6 @@ execSync('npx prisma migrate deploy', { stdio: 'inherit', env: { ...process.env,
 console.log('Seeding demo data...')
 execSync('npm run db:seed', { stdio: 'inherit', env: { ...process.env, DATABASE_URL } })
 
-console.log('\nDone. Login: admin@trustivasetu.com / Admin@123')
+console.log('\nDone. Database is ready.')
+console.log('Super Admin credentials are managed via SUPER_ADMIN_PASSWORD env variable (see prisma/seed.ts).')
 console.log('Run: npm run dev')

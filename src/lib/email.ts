@@ -41,13 +41,14 @@ function layout(title: string, body: string) {
 </body></html>`
 }
 
-export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
+export async function sendEmail({ to, subject, html }: { to: string | string[]; subject: string; html: string }) {
   const transporter = createTransport()
+  const toList = Array.isArray(to) ? to.join(', ') : to
   if (!transporter) {
-    console.log(`[EMAIL - no SMTP configured] To: ${to} | Subject: ${subject}`)
+    console.log(`[EMAIL - no SMTP configured] To: ${toList} | Subject: ${subject}`)
     return { success: true, dev: true }
   }
-  await transporter.sendMail({ from: FROM, to, subject, html })
+  await transporter.sendMail({ from: FROM, to: toList, subject, html })
   return { success: true }
 }
 

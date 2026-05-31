@@ -11,10 +11,9 @@ import {
   type RolePermissionMatrix,
 } from '@/types/permissions'
 
-// Process-level cache (invalidated on save)
 let cache: RolePermissionMatrix | null = null
 let cacheAt = 0
-const TTL = 30_000 // 30 s
+const TTL = 30_000
 
 export function invalidatePermissionCache() {
   cache = null
@@ -30,7 +29,7 @@ function buildDefault(): RolePermissionMatrix {
       for (const action of ACTION_KEYS) {
         const applicable = (MODULE_ACTIONS[mod] as readonly ActionKey[]).includes(action)
         m[role][mod][action] = applicable
-          ? DEFAULT_PERMISSIONS[role][mod].includes(action)
+          ? (DEFAULT_PERMISSIONS[role][mod] as ActionKey[]).includes(action)
           : false
       }
     }
@@ -51,14 +50,14 @@ export async function getPermissionMatrix(): Promise<RolePermissionMatrix> {
       const action = row.action as ActionKey
       if (
         MANAGED_ROLES.includes(role) &&
-        MODULE_KEYS.includes(mod) &&
-        ACTION_KEYS.includes(action)
+        (MODULE_KEYS as readonly string[]).includes(mod) &&
+        (ACTION_KEYS as readonly string[]).includes(action)
       ) {
         matrix[role][mod][action] = row.granted
       }
     }
   } catch {
-    // DB unavailable – return defaults
+    // DB unavailable — use defaults
   }
 
   cache = matrix
@@ -66,41 +65,40 @@ export async function getPermissionMatrix(): Promise<RolePermissionMatrix> {
   return matrix
 }
 
+/**
+ * SUPER_ADMIN always returns true.
+ * All other roles — including ADMIN — are checked against the DB matrix.
+ */
 export async function checkRolePermission(
   role: string,
   mod: ModuleKey,
   action: ActionKey
 ): Promise<boolean> {
-  if (role === 'SUPER_ADMIN' || role === 'ADMIN') return true
+  if (role === 'SUPER_ADMIN') return true
   if (!MANAGED_ROLES.includes(role as ManagedRole)) return false
   const matrix = await getPermissionMatrix()
   return matrix[role as ManagedRole]?.[mod]?.[action] ?? false
 }
 
-/** Flat map of "MODULE_ACTION" → boolean for a given role (used by client API) */
-export async function getRolePermissionFlat(
-  role: string
-): Promise<Record<string, boolean>> {
-  const fullAccess = role === 'SUPER_ADMIN' || role === 'ADMIN'
+/** Flat map MODULE_ACTION → boolean for client-side use */
+export async function getRolePermissionFlat(role: string): Promise<Record<string, boolean>> {
   const result: Record<string, boolean> = {}
+  const allTrue = role === 'SUPER_ADMIN'
+
   for (const mod of MODULE_KEYS) {
     for (const action of ACTION_KEYS) {
-      result[`${mod}_${action}`] = fullAccess
-        ? true
-        : !MANAGED_ROLES.includes(role as ManagedRole)
-        ? false
-        : false // filled below
+      result[`${mod}_${action}`] = allTrue
     }
   }
-  if (fullAccess) return result
+  if (allTrue) return result
+
+  if (!MANAGED_ROLES.includes(role as ManagedRole)) return result
 
   const matrix = await getPermissionMatrix()
   const r = role as ManagedRole
-  if (MANAGED_ROLES.includes(r)) {
-    for (const mod of MODULE_KEYS) {
-      for (const action of ACTION_KEYS) {
-        result[`${mod}_${action}`] = matrix[r][mod][action]
-      }
+  for (const mod of MODULE_KEYS) {
+    for (const action of ACTION_KEYS) {
+      result[`${mod}_${action}`] = matrix[r][mod][action] ?? false
     }
   }
   return result
