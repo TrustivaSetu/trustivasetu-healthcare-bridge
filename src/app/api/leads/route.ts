@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { buildClinicFilter, hasPermission } from '@/lib/permissions'
+import { checkRolePermission } from '@/lib/role-permissions'
 import { z } from 'zod'
 
 const createSchema = z.object({
@@ -15,11 +16,20 @@ const createSchema = z.object({
   applicationDate: z.string().optional(),
   remarks: z.string().optional(),
   externalId: z.string().optional(),
+  motherName: z.string().optional(),
+  treatmentName: z.string().optional(),
+  status: z.string().optional(),
+  approvedAmount: z.number().optional(),
+  disbursedAmount: z.number().optional(),
+  metadata: z.record(z.unknown()).optional(),
 })
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!await checkRolePermission(session.user.role as string, 'LEADS', 'VIEW')) {
+    return NextResponse.json({ error: 'Permission denied' }, { status: 403 })
+  }
 
   const { searchParams } = new URL(req.url)
   const clinicId = searchParams.get('clinicId')
@@ -73,6 +83,9 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!hasPermission(session.user.role, 'LEAD_CREATE')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!await checkRolePermission(session.user.role as string, 'LEADS', 'CREATE')) {
+    return NextResponse.json({ error: 'Permission denied' }, { status: 403 })
+  }
 
   const body = await req.json()
   const parsed = createSchema.safeParse(body)
@@ -91,6 +104,8 @@ export async function POST(req: NextRequest) {
       remarks: d.remarks,
       externalId: d.externalId,
       createdById: session.user.id,
+      treatmentName: d.treatmentName,
+      motherName: d.motherName || null,
     },
     include: { clinic: { select: { id: true, name: true } }, lender: { select: { id: true, name: true } } },
   })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -10,6 +10,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sessionExpired, setSessionExpired] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('expired') === 'true') setSessionExpired(true)
+    }
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -56,7 +64,7 @@ export default function LoginPage() {
             Healthcare Partner Console
           </p>
           <p className="mt-4 text-trustiva-muted text-sm sm:text-base leading-relaxed max-w-md mx-auto lg:mx-0">
-            Lead management, clinic onboarding, lender approvals — ek hi dashboard par.
+            Lead management, clinic onboarding, lender approvals — all in one dashboard.
           </p>
 
           <ul className="hidden sm:flex flex-col gap-3 mt-8 text-sm text-slate-300">
@@ -89,6 +97,16 @@ export default function LoginPage() {
             <p className="hidden lg:block text-trustiva-muted text-sm mb-6">
               Use your Trustiva Setu official email
             </p>
+
+            {sessionExpired && (
+              <div className="mb-4 p-3 bg-amber-500/15 border border-amber-400/40 rounded-lg text-sm text-amber-200 flex items-center gap-2">
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.07 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                Session expired due to inactivity. Please sign in again.
+              </div>
+            )}
 
             {error && (
               <div className="mb-4 p-3 bg-red-500/15 border border-red-400/40 rounded-lg text-sm text-red-200">
@@ -144,6 +162,12 @@ export default function LoginPage() {
                   'Sign In'
                 )}
               </button>
+              <div className="text-center pt-1">
+                <a href="/lms/forgot-password"
+                  className="text-sm text-trustiva-muted hover:text-trustiva-lime transition">
+                  Forgot Password?
+                </a>
+              </div>
             </form>
 <p className="text-xs text-trustiva-muted text-center mt-6">
   Secure access for authorized Trustiva Setu users only.

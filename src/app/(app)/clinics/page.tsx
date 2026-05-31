@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 
 import { ClinicTable } from '@/components/clinics/ClinicTable'
 import { ClinicForm } from '@/components/clinics/ClinicForm'
+import { ClinicBulkUpload } from '@/components/clinics/ClinicBulkUpload'
 import { hasPermission } from '@/lib/permissions'
 
 export default function ClinicsPage() {
@@ -15,10 +16,16 @@ export default function ClinicsPage() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [regionId, setRegionId] = useState('')
+  const [regions, setRegions] = useState<{ id: string; name: string }[]>([])
   const [showForm, setShowForm] = useState(false)
+  const [showBulk, setShowBulk] = useState(false)
   const [editClinic, setEditClinic] = useState<unknown>(null)
 
   const canCreate = session?.user && hasPermission(session.user.role, 'CLINIC_CREATE')
+
+  useEffect(() => {
+    fetch('/api/regions').then(r => r.json()).then(d => setRegions(d.data ?? []))
+  }, [])
 
   const fetchClinics = useCallback(async () => {
     setLoading(true)
@@ -50,8 +57,6 @@ export default function ClinicsPage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      
-
       <div className="flex-1 p-6 space-y-4">
         {/* Toolbar */}
         <div className="flex flex-wrap gap-3 items-center">
@@ -60,29 +65,50 @@ export default function ClinicsPage() {
             value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
             className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 w-64"
           />
+          <select value={regionId} onChange={e => { setRegionId(e.target.value); setPage(1) }}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 bg-white">
+            <option value="">All Regions</option>
+            {regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+          </select>
 
-          {canCreate && (
-            <button
-              onClick={() => { setEditClinic(null); setShowForm(true) }}
-              className="ml-auto px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition flex items-center gap-2"
-            >
+          <div className="ml-auto flex gap-2">
+            {canCreate && (
+              <>
+                {/* Bulk Upload Button */}
+                <button
+                  onClick={() => { setShowBulk(true) }}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  Bulk Upload (5+ Clinics)
+                </button>
+
+                {/* Single Add Button */}
+                <button
+                  onClick={() => { setEditClinic(null); setShowForm(true) }}
+                  className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Clinic
+                </button>
+              </>
+            )}
+
+            <button onClick={handleExport}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              Add Clinic
+              Export
             </button>
-          )}
-
-          <button onClick={handleExport}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Export
-          </button>
+          </div>
         </div>
 
-        {/* Modal */}
+        {/* Single Clinic Modal */}
         {showForm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 overflow-y-auto max-h-[90vh]">
@@ -100,6 +126,29 @@ export default function ClinicsPage() {
                 initial={editClinic as Parameters<typeof ClinicForm>[0]['initial']}
                 onSuccess={() => { setShowForm(false); fetchClinics() }}
                 onCancel={() => setShowForm(false)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Upload Modal */}
+        {showBulk && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 overflow-y-auto max-h-[90vh]">
+              <div className="flex justify-between items-center mb-5">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-800">Bulk Clinic Upload</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">Onboard Legal Entity's branches in bulk</p>
+                </div>
+                <button onClick={() => setShowBulk(false)} className="text-gray-400 hover:text-gray-600">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <ClinicBulkUpload
+                onSuccess={() => { setShowBulk(false); fetchClinics() }}
+                onCancel={() => setShowBulk(false)}
               />
             </div>
           </div>

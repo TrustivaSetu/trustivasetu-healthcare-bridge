@@ -9,11 +9,13 @@ import { z } from 'zod'
 const updateSchema = z.object({
   name: z.string().min(2).optional(),
   phone: z.string().optional(),
-  role: z.enum(['ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER']).optional(),
+  role: z.enum(['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER']).optional(),
   isActive: z.boolean().optional(),
   password: z.string().min(8).optional(),
+  designation: z.string().nullable().optional(),
   regionIds: z.array(z.string()).optional(),
   clinicIds: z.array(z.string()).optional(),
+  reportingManagerId: z.string().nullable().optional(),
 })
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
@@ -26,13 +28,38 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     where: { id: params.id },
     select: {
       id: true, email: true, name: true, role: true, isActive: true, phone: true, createdAt: true,
+      reportingManagerId: true,
+      employeeProfile: { select: { designation: true } },
+      reportingManager: {
+        select: {
+          id: true, name: true, role: true,
+          employeeProfile: { select: { designation: true } },
+          reportingManager: {
+            select: {
+              id: true, name: true, role: true,
+              employeeProfile: { select: { designation: true } },
+              reportingManager: {
+                select: {
+                  id: true, name: true, role: true,
+                  employeeProfile: { select: { designation: true } },
+                },
+              },
+            },
+          },
+        },
+      },
       regionAssignments: { include: { region: true } },
       clinicAssignments: { include: { clinic: { select: { id: true, name: true } } } },
     },
   })
   if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  return NextResponse.json({ data: user })
+  return NextResponse.json({
+    data: {
+      ...user,
+      designation: user.employeeProfile?.designation ?? null,
+    },
+  })
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -44,31 +71,46 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const parsed = updateSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: 'Validation failed' }, { status: 400 })
 
-  const { regionIds, clinicIds, password, ...rest } = parsed.data
+  if (parsed.data.role === 'SUPER_ADMIN' && session.user.role !== 'SUPER_ADMIN')
+    return NextResponse.json({ error: 'Only Super Admin can assign Super Admin role' }, { status: 403 })
+
+  const { regionIds, clinicIds, password, reportingManagerId, designation, ...rest } = parsed.data
   const updateData: Record<string, unknown> = { ...rest }
   if (password) updateData.password = await bcrypt.hash(password, 12)
+  if (reportingManagerId !== undefined) updateData.reportingManagerId = reportingManagerId ?? null
 
   if (regionIds !== undefined) {
     await db.userRegion.deleteMany({ where: { userId: params.id } })
-    if (regionIds.length) {
+    if (regionIds.length)
       await db.userRegion.createMany({ data: regionIds.map(rid => ({ userId: params.id, regionId: rid })) })
-    }
   }
   if (clinicIds !== undefined) {
     await db.userClinic.deleteMany({ where: { userId: params.id } })
-    if (clinicIds.length) {
+    if (clinicIds.length)
       await db.userClinic.createMany({ data: clinicIds.map(cid => ({ userId: params.id, clinicId: cid })) })
-    }
   }
 
-  const user = await db.user.update({
+  await db.user.update({ where: { id: params.id }, data: updateData })
+
+  // Upsert designation into EmployeeProfile
+  if (designation !== undefined) {
+    await db.employeeProfile.upsert({
+      where: { userId: params.id },
+      create: { userId: params.id, designation: designation ?? null },
+      update: { designation: designation ?? null },
+    })
+  }
+
+  const user = await db.user.findUnique({
     where: { id: params.id },
-    data: updateData,
-    select: { id: true, email: true, name: true, role: true, isActive: true },
+    select: {
+      id: true, email: true, name: true, role: true, isActive: true,
+      employeeProfile: { select: { designation: true } },
+    },
   })
 
   await db.auditLog.create({ data: { userId: session.user.id, action: 'UPDATE', entity: 'User', entityId: params.id } })
-  return NextResponse.json({ data: user })
+  return NextResponse.json({ data: { ...user, designation: user?.employeeProfile?.designation ?? null } })
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {

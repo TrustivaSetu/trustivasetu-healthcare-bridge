@@ -1,0 +1,13 @@
+-- AlterTable
+ALTER TABLE "Clinic" ADD COLUMN IF NOT EXISTS "hospitalType" TEXT;
+ALTER TABLE "Clinic" ADD COLUMN IF NOT EXISTS "metadata" JSONB;
+
+-- AlterTable
+ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "metadata" JSONB;
+ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "losEnquiryId" TEXT;
+ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "enquiryType" TEXT;
+ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "motherName" TEXT;
+ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "treatmentName" TEXT;
+
+-- CreateIndex
+CREATE UNIQUE INDEX IF NOT EXISTS "Lead_losEnquiryId_key" ON "Lead"("losEnquiryId");

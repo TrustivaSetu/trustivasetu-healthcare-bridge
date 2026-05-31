@@ -1,0 +1,265 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String         @id @default(cuid())
+  email             String         @unique
+  password          String
+  name              String
+  role              UserRole       @default(TEAM_MEMBER)
+  isActive          Boolean        @default(true)
+  phone             String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  createdById       String?
+  auditLogs         AuditLog[]
+  managedClinics    Clinic[]       @relation("ClinicRM")
+  createdLeads      Lead[]         @relation("LeadCreatedBy")
+  notifications     Notification[]
+  targets           Target[]
+  uploads           Upload[]
+  createdBy         User?          @relation("UserCreatedBy", fields: [createdById], references: [id])
+  createdUsers      User[]         @relation("UserCreatedBy")
+  clinicAssignments UserClinic[]
+  regionAssignments UserRegion[]
+}
+
+model Region {
+  id              String       @id @default(cuid())
+  name            String       @unique
+  code            String       @unique
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  clinics         Clinic[]
+  targets         Target[]
+  userAssignments UserRegion[]
+}
+
+model UserRegion {
+  userId   String
+  regionId String
+  region   Region @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, regionId])
+}
+
+model UserClinic {
+  userId   String
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, clinicId])
+}
+
+model Clinic {
+  id                String       @id @default(cuid())
+  externalId        String?      @unique
+  name              String
+  address           String
+  accountNumber     String?
+  contactPerson     String
+  contactNumber     String
+  email             String?
+  businessPotential Float?
+  hospitalType      String?
+  metadata          Json?
+  isActive          Boolean      @default(true)
+  onboardedAt       DateTime     @default(now())
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  regionId          String
+  assignedRMId      String?
+  assignedRM        User?        @relation("ClinicRM", fields: [assignedRMId], references: [id])
+  region            Region       @relation(fields: [regionId], references: [id])
+  leads             Lead[]
+  targets           Target[]
+  uploads           Upload[]
+  userAssignments   UserClinic[]
+  
+
+  @@index([regionId])
+  @@index([assignedRMId])
+}
+
+model Lender {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  code      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  leads     Lead[]
+}
+
+model Lead {
+  id              String     @id @default(cuid())
+  externalId      String?    @unique
+  applicantName   String
+  phone           String?
+  email           String?
+  amount          Float
+  status          LeadStatus @default(PENDING)
+  approvedAmount  Float?
+  disbursedAmount Float?
+  applicationDate DateTime   @default(now())
+  approvalDate    DateTime?
+  disbursalDate   DateTime?
+  remarks         String?
+  metadata        Json?
+  losEnquiryId    String?    @unique
+  enquiryType     String?
+  motherName      String?
+  treatmentName   String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  clinicId        String
+  lenderId        String?
+  createdById     String?
+  clinic          Clinic     @relation(fields: [clinicId], references: [id])
+  createdBy       User?      @relation("LeadCreatedBy", fields: [createdById], references: [id])
+  lender          Lender?    @relation(fields: [lenderId], references: [id])
+
+  @@index([clinicId])
+  @@index([lenderId])
+  @@index([status])
+  @@index([applicationDate])
+}
+
+model Target {
+  id              String   @id @default(cuid())
+  year            Int
+  month           Int
+  leadsTarget     Int      @default(0)
+  disbursalTarget Float    @default(0)
+  userId          String?
+  regionId        String?
+  clinicId        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  clinic          Clinic?  @relation(fields: [clinicId], references: [id])
+  region          Region?  @relation(fields: [regionId], references: [id])
+  user            User?    @relation(fields: [userId], references: [id])
+
+  @@unique([year, month, regionId, userId, clinicId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  isRead    Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model WebhookEvent {
+  id          String        @id @default(cuid())
+  source      String        @default("external")
+  event       String
+  entity      WebhookEntity
+  status      WebhookStatus @default(RECEIVED)
+  payload     Json
+  response    String?
+  error       String?
+  createdAt   DateTime      @default(now())
+  processedAt DateTime?
+
+  @@index([event])
+  @@index([entity])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Upload {
+  id           String     @id @default(cuid())
+  title        String
+  description  String?
+  fileUrl      String
+  mimeType     String?
+  uploadType   UploadType
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  uploadedById String
+  clinicId     String?
+  clinic       Clinic?    @relation(fields: [clinicId], references: [id])
+  uploadedBy   User       @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([uploadedById])
+  @@index([clinicId])
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  REGIONAL_MANAGER
+  TEAM_MEMBER
+  HOSPITAL_LOGIN
+  EMPLOYEE
+}
+
+enum LeadStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DISBURSED
+  CANCELLED
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  SUCCESS
+  ERROR
+}
+
+enum WebhookEntity {
+  LEAD
+  CLINIC
+  USER
+}
+
+enum WebhookStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
+}
+
+enum UploadType {
+  HOSPITAL
+  COMMERCIAL
+  DOCUMENT
+  VIDEO
+  IMAGE
+}

@@ -85,6 +85,21 @@ if (!valid) return null
     },
   },
   pages: { signIn: '/lms/login', error: '/lms/login' },
-  session: { strategy: 'jwt', maxAge: 24 * 60 * 60 },
+  session: { strategy: 'jwt', maxAge: 8 * 60 * 60 },
+  // Session cookie — no maxAge so it clears when the browser closes
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === 'production'
+        ? '__Secure-next-auth.session-token'
+        : 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax' as const,
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        // No maxAge → session cookie, cleared when browser closes
+      },
+    },
+  },
   secret: process.env.NEXTAUTH_SECRET,
 }

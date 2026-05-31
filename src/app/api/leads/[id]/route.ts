@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { hasPermission } from '@/lib/permissions'
+import { checkRolePermission } from '@/lib/role-permissions'
 import { notifyClinicRM, createNotification } from '@/lib/notify'
 import { z } from 'zod'
 
@@ -40,6 +41,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!hasPermission(session.user.role, 'LEAD_UPDATE')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  // Dynamic permission: check EDIT or APPROVE based on payload
+  const bodyPeek = await req.clone().json().catch(() => ({})) as Record<string, unknown>
+  const isStatusChange = !!bodyPeek.status
+  const permAction = isStatusChange ? 'APPROVE' : 'EDIT'
+  if (!await checkRolePermission(session.user.role as string, 'LEADS', permAction)) {
+    return NextResponse.json({ error: 'Permission denied' }, { status: 403 })
+  }
 
   const body = await req.json()
   const parsed = updateSchema.safeParse(body)

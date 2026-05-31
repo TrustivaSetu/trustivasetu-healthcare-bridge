@@ -25,8 +25,11 @@ export function NotificationBell() {
     setLoading(true)
     try {
       const res = await fetch('/api/notifications')
+      if (!res.ok) return
       const json = await res.json()
       setItems(json.data ?? [])
+    } catch {
+      // silently ignore network errors
     } finally {
       setLoading(false)
     }

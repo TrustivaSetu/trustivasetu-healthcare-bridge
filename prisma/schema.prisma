@@ -8,26 +8,34 @@ datasource db {
 }
 
 model User {
-  id                String         @id @default(cuid())
-  email             String         @unique
-  password          String
-  name              String
-  role              UserRole       @default(TEAM_MEMBER)
-  isActive          Boolean        @default(true)
-  phone             String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  createdById       String?
-  auditLogs         AuditLog[]
-  managedClinics    Clinic[]       @relation("ClinicRM")
-  createdLeads      Lead[]         @relation("LeadCreatedBy")
-  notifications     Notification[]
-  targets           Target[]
-  uploads           Upload[]
-  createdBy         User?          @relation("UserCreatedBy", fields: [createdById], references: [id])
-  createdUsers      User[]         @relation("UserCreatedBy")
-  clinicAssignments UserClinic[]
-  regionAssignments UserRegion[]
+  id                  String           @id @default(cuid())
+  email               String           @unique
+  password            String
+  name                String
+  role                UserRole         @default(TEAM_MEMBER)
+  isActive            Boolean          @default(true)
+  metadata            Json?
+  phone               String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  createdById         String?
+  reportingManagerId  String?
+  auditLogs           AuditLog[]
+  managedClinics      Clinic[]         @relation("ClinicRM")
+  createdLeads        Lead[]           @relation("LeadCreatedBy")
+  notifications       Notification[]
+  targets             Target[]
+  createdBy           User?            @relation("UserCreatedBy", fields: [createdById], references: [id])
+  createdUsers        User[]           @relation("UserCreatedBy")
+  reportingManager    User?            @relation("UserReporting", fields: [reportingManagerId], references: [id])
+  reportingTeam       User[]           @relation("UserReporting")
+  clinicAssignments   UserClinic[]
+  regionAssignments   UserRegion[]
+  employeeProfile     EmployeeProfile?
+  salaryStructure     SalaryStructure?
+  attendances         Attendance[]
+  approvedAttendances Attendance[]     @relation("AttendanceApprovals")
+  createdHolidays     Holiday[]
 }
 
 model Region {
@@ -70,20 +78,20 @@ model Clinic {
   contactNumber     String
   email             String?
   businessPotential Float?
-  hospitalType      String?
-  metadata          Json?
   isActive          Boolean      @default(true)
   onboardedAt       DateTime     @default(now())
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
   regionId          String
   assignedRMId      String?
+  hospitalType      String?
+  metadata          Json?
   assignedRM        User?        @relation("ClinicRM", fields: [assignedRMId], references: [id])
   region            Region       @relation(fields: [regionId], references: [id])
   leads             Lead[]
   targets           Target[]
-  uploads           Upload[]
   userAssignments   UserClinic[]
+  schemes           ClinicScheme[]
 
   @@index([regionId])
   @@index([assignedRMId])
@@ -94,6 +102,7 @@ model Lender {
   name      String   @unique
   code      String   @unique
   isActive  Boolean  @default(true)
+  metadata  Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   leads     Lead[]
@@ -113,16 +122,16 @@ model Lead {
   approvalDate    DateTime?
   disbursalDate   DateTime?
   remarks         String?
-  metadata        Json?
-  losEnquiryId    String?    @unique
-  enquiryType     String?
-  motherName      String?
-  treatmentName   String?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
   clinicId        String
   lenderId        String?
   createdById     String?
+  metadata        Json?
+  losEnquiryId    String?    @unique
+  enquiryType     String?
+  motherName      String?
+  treatmentName   String?
   clinic          Clinic     @relation(fields: [clinicId], references: [id])
   createdBy       User?      @relation("LeadCreatedBy", fields: [createdById], references: [id])
   lender          Lender?    @relation(fields: [lenderId], references: [id])
@@ -201,31 +210,11 @@ model WebhookEvent {
   @@index([createdAt])
 }
 
-model Upload {
-  id           String     @id @default(cuid())
-  title        String
-  description  String?
-  fileUrl      String
-  mimeType     String?
-  uploadType   UploadType
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  uploadedById String
-  clinicId     String?
-  clinic       Clinic?    @relation(fields: [clinicId], references: [id])
-  uploadedBy   User       @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
-
-  @@index([uploadedById])
-  @@index([clinicId])
-}
-
 enum UserRole {
   SUPER_ADMIN
   ADMIN
   REGIONAL_MANAGER
   TEAM_MEMBER
-  HOSPITAL_LOGIN
-  EMPLOYEE
 }
 
 enum LeadStatus {
@@ -255,10 +244,152 @@ enum WebhookStatus {
   FAILED
 }
 
-enum UploadType {
-  HOSPITAL
-  COMMERCIAL
-  DOCUMENT
-  VIDEO
-  IMAGE
+enum AttendanceType {
+  PRESENT
+  LEAVE
+  OUTSTATION
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LeaveType {
+  PL
+  CL
+  MEDICAL
+  UNPLANNED
+}
+
+enum WorkingType {
+  FULL_DAY
+  HALF_DAY
+}
+
+model EmployeeProfile {
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateOfBirth         DateTime? @db.Date
+  dateOfJoining       DateTime? @db.Date
+  marriageAnniversary DateTime? @db.Date
+  designation         String?
+  department          String?
+  probationEndDate    DateTime? @db.Date
+  exitDate            DateTime? @db.Date
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model SalaryStructure {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grossSalary   Float
+  tds           Float    @default(0)
+  effectiveFrom DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Attendance {
+  id              String         @id @default(cuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date            DateTime       @db.Date
+  attendanceType  AttendanceType
+  leaveType       LeaveType?
+  workingType     WorkingType    @default(FULL_DAY)
+  outstationCity  String?
+  timeIn          String?
+  latitude        Float?
+  longitude       Float?
+  locationName    String?
+  notes           String?
+  approvalStatus  ApprovalStatus @default(PENDING)
+  approvedById    String?
+  approvedAt      DateTime?
+  rejectionReason String?
+  approvalToken   String?        @unique
+  approvedBy      User?          @relation("AttendanceApprovals", fields: [approvedById], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+}
+
+model OtpToken {
+  id           String    @id @default(cuid())
+  email        String
+  emailOtp     String
+  purpose      String    @default("PASSWORD_RESET")
+  attempts     Int       @default(0)
+  blockedUntil DateTime?
+  expiresAt    DateTime
+  verified     Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  @@index([email])
+}
+
+model Holiday {
+  id          String   @id @default(cuid())
+  name        String
+  date        DateTime @db.Date
+  createdAt   DateTime @default(now())
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  @@index([date])
+}
+model SchemeTemplate {
+  id            String         @id @default(cuid())
+  name          String         @unique
+  tenure        Int
+  advanceEmi    Int
+  balanceEmi    Int
+  isActive      Boolean        @default(true)
+  isCustom      Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  clinicSchemes ClinicScheme[]
+}
+
+model RolePermission {
+  id        String   @id @default(cuid())
+  role      String
+  module    String
+  action    String
+  granted   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([role, module, action])
+  @@index([role])
+}
+
+model ClinicScheme {
+  id                   String         @id @default(cuid())
+  clinicId             String
+  schemeTemplateId     String
+  hospitalSubventionPct Float
+  gstOnSubvention      Float          @default(18)
+  subventionGstType    String         @default("EXCLUDED")
+  totalSubventionPct   Float
+  processingFeePct     Float          @default(0)
+  processingFeeGstType String         @default("EXCLUDED")
+  gstOnPF              Float          @default(18)
+  isActive             Boolean        @default(true)
+  agreedAt             DateTime       @default(now())
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  clinic               Clinic         @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  schemeTemplate       SchemeTemplate @relation(fields: [schemeTemplateId], references: [id])
+
+  @@unique([clinicId, schemeTemplateId])
+  @@index([clinicId])
 }
