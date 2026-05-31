@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSession } from 'next-auth/react'
+import { useTabSession } from '@/contexts/TabSessionContext'
 import { formatDate, cn } from '@/lib/utils'
 import { format, isSameMonth } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -9,14 +9,14 @@ import toast from 'react-hot-toast'
 interface Holiday { id: string; name: string; date: string }
 
 export default function HolidaysPage() {
-  const { data: session } = useSession()
+  const { user: session } = useTabSession()
   const [holidays, setHolidays] = useState<Holiday[]>([])
   const [year, setYear] = useState(new Date().getFullYear())
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', date: '' })
   const [saving, setSaving] = useState(false)
 
-  const isAdmin = session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'ADMIN'
+  const isAdmin = session?.role === 'SUPER_ADMIN' || session?.role === 'ADMIN'
 
   const fetchHolidays = useCallback(async () => {
     const res = await fetch(`/api/hr/holidays?year=${year}`)

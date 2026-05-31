@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useSession } from 'next-auth/react'
+import { useTabSession } from '@/contexts/TabSessionContext'
 import { formatDate, cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { ChangePasswordModal } from '@/components/users/ChangePasswordModal'
@@ -50,7 +50,7 @@ function formatManagerLabel(u: MinimalUser) {
 // ── Main page ──────────────────────────────────────────────────────────────────
 
 export default function UsersPage() {
-  const { data: session } = useSession()
+  const { user: session } = useTabSession()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -61,8 +61,8 @@ export default function UsersPage() {
   const [newRole, setNewRole] = useState('')
   const [roleChanging, setRoleChanging] = useState(false)
 
-  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN'
-  const canChangePasswords = session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'ADMIN'
+  const isSuperAdmin = session?.role === 'SUPER_ADMIN'
+  const canChangePasswords = session?.role === 'SUPER_ADMIN' || session?.role === 'ADMIN'
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)

@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getRequestSession } from '@/lib/api-auth'
 
 // Mock OTP store (use Redis in production)
 const OTP_STORE = new Map<string, { otp: string; expires: number }>()
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { phone } = await req.json()

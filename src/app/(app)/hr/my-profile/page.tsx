@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
-import { formatDate, getRoleLabel } from '@/lib/utils'
+import { useTabSession } from '@/contexts/TabSessionContext'
+import Link from 'next/link'
+import { formatDate, getRoleLabel, cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 
 interface ReportingManager { id: string; name: string; role: string; reportingManager?: { id: string; name: string; role: string; reportingManager?: { id: string; name: string; role: string } } }
@@ -13,6 +14,7 @@ interface Profile {
   employeeProfile: {
     dateOfBirth: string | null; dateOfJoining: string | null; marriageAnniversary: string | null
     designation: string | null; department: string | null; probationEndDate: string | null; exitDate: string | null
+    photoUrl: string | null; policyAcknowledgedAt: string | null
   } | null
 }
 
@@ -22,7 +24,7 @@ function toInputDate(val: string | null | undefined) {
 }
 
 export default function MyProfilePage() {
-  const { data: session } = useSession()
+  const { user: session } = useTabSession()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -32,9 +34,9 @@ export default function MyProfilePage() {
     probationEndDate: '', exitDate: '',
   })
 
-  useEffect(() => {
-    if (!session?.user?.id) return
-    fetch(`/api/hr/profile/${session.user.id}`)
+  const fetchProfile = () => {
+    if (!session?.id) return
+    fetch(`/api/hr/profile/${session?.id}`)
       .then(r => r.json())
       .then(d => {
         setProfile(d.data)
@@ -51,13 +53,15 @@ export default function MyProfilePage() {
           exitDate: toInputDate(p.employeeProfile?.exitDate),
         })
       })
-  }, [session?.user?.id])
+  }
+
+  useEffect(() => { fetchProfile() }, [session?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function save() {
-    if (!session?.user?.id) return
+    if (!session?.id) return
     setSaving(true)
     try {
-      const res = await fetch(`/api/hr/profile/${session.user.id}`, {
+      const res = await fetch(`/api/hr/profile/${session?.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -104,9 +108,7 @@ export default function MyProfilePage() {
       {/* Avatar + basic */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-center gap-5 mb-6">
-          <div className="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 font-bold text-2xl">
-            {profile.name.charAt(0).toUpperCase()}
-          </div>
+          <ProfilePhoto userId={profile.id} name={profile.name} photoUrl={profile.employeeProfile?.photoUrl ?? null} onUpdate={fetchProfile} />
           <div>
             <p className="text-lg font-bold text-gray-900">{profile.name}</p>
             <p className="text-sm text-gray-500">{profile.email}</p>
@@ -163,6 +165,76 @@ export default function MyProfilePage() {
 
       {/* Leave Balance */}
       <LeaveBalance userId={profile.id} />
+
+      {/* My Documents */}
+      <MyDocuments userId={profile.id} />
+    </div>
+  )
+}
+
+function ProfilePhoto({ userId, name, photoUrl, onUpdate }: { userId: string; name: string; photoUrl: string | null; onUpdate: () => void }) {
+  const [uploading, setUploading] = useState(false)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) { toast.error('Max 2MB allowed'); return }
+    const reader = new FileReader()
+    reader.onload = () => setPreview(reader.result as string)
+    reader.readAsDataURL(file)
+    setPendingFile(file)
+  }
+
+  async function uploadPhoto() {
+    if (!pendingFile) return
+    setUploading(true)
+    const fd = new FormData()
+    fd.append('file', pendingFile)
+    fd.append('userId', userId)
+    const res = await fetch('/api/hr/photo', { method: 'POST', body: fd })
+    if (res.ok) { toast.success('Profile photo updated!'); setPreview(null); setPendingFile(null); onUpdate() }
+    else { const d = await res.json(); toast.error(d.error ?? 'Upload failed') }
+    setUploading(false)
+  }
+
+  async function removePhoto() {
+    if (!confirm('Remove your profile photo?')) return
+    const res = await fetch(`/api/hr/photo?userId=${userId}`, { method: 'DELETE' })
+    if (res.ok) { toast.success('Photo removed'); onUpdate() }
+    else toast.error('Failed to remove')
+  }
+
+  const src = preview ?? photoUrl
+
+  return (
+    <div className="relative flex-shrink-0">
+      {src ? (
+        <img src={src} alt={name} className="w-20 h-20 rounded-full object-cover border-2 border-brand-200" />
+      ) : (
+        <div className="w-20 h-20 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 font-bold text-2xl border-2 border-brand-200">
+          {name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+        </div>
+      )}
+      <label className="absolute bottom-0 right-0 w-7 h-7 bg-brand-600 hover:bg-brand-700 rounded-full flex items-center justify-center cursor-pointer shadow-md transition">
+        <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onFileChange} />
+      </label>
+      {pendingFile && (
+        <div className="absolute -bottom-10 left-0 flex gap-1">
+          <button onClick={uploadPhoto} disabled={uploading} className="text-[10px] bg-green-600 text-white px-2 py-1 rounded font-semibold disabled:opacity-60">
+            {uploading ? '...' : 'Save'}
+          </button>
+          <button onClick={() => { setPreview(null); setPendingFile(null) }} className="text-[10px] bg-gray-200 text-gray-700 px-2 py-1 rounded">Cancel</button>
+        </div>
+      )}
+      {photoUrl && !pendingFile && (
+        <button onClick={removePhoto} className="absolute -bottom-5 left-0 text-[9px] text-red-400 hover:text-red-600">Remove photo</button>
+      )}
     </div>
   )
 }
@@ -290,6 +362,51 @@ function ReportingChain({ profile }: { profile: Profile }) {
           )}
         </div>
       ))}
+    </div>
+  )
+}
+
+function MyDocuments({ userId }: { userId: string }) {
+  const [letters, setLetters] = useState<Array<{ id: string; letterNumber: string; status: string; acknowledgedAt: string | null; version: number; createdAt: string }>>([])
+
+  useEffect(() => {
+    fetch('/api/hr/appointment-letter')
+      .then(r => r.json())
+      .then(d => setLetters(d.data ?? []))
+      .catch(() => {})
+  }, [userId])
+
+  if (letters.length === 0) return null
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">My Documents</h2>
+      <div className="space-y-3">
+        {letters.map(letter => (
+          <div key={letter.id} className="flex items-center justify-between gap-3 border border-gray-100 rounded-xl p-4 hover:bg-gray-50 transition">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-brand-50 border border-brand-100 rounded-xl flex items-center justify-center text-xl">📄</div>
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Appointment Letter</p>
+                <p className="text-xs text-gray-400">{letter.letterNumber}{letter.version > 1 ? ` · v${letter.version}` : ''} · Generated {formatDate(letter.createdAt)}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className={cn('px-2 py-0.5 rounded-full text-xs font-semibold',
+                letter.status === 'ACKNOWLEDGED' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+              )}>
+                {letter.status === 'ACKNOWLEDGED'
+                  ? `Acknowledged ${letter.acknowledgedAt ? formatDate(letter.acknowledgedAt) : ''}`
+                  : 'Pending Acknowledgement'}
+              </span>
+              <Link href={`/hr/appointment-letter/${letter.id}`}
+                className="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg transition">
+                {letter.status === 'ACKNOWLEDGED' ? 'View / Download' : 'View & Acknowledge'}
+              </Link>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

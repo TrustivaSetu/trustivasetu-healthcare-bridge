@@ -8,34 +8,50 @@ datasource db {
 }
 
 model User {
-  id                  String           @id @default(cuid())
-  email               String           @unique
-  password            String
-  name                String
-  role                UserRole         @default(TEAM_MEMBER)
-  isActive            Boolean          @default(true)
-  metadata            Json?
-  phone               String?
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  createdById         String?
-  reportingManagerId  String?
-  auditLogs           AuditLog[]
-  managedClinics      Clinic[]         @relation("ClinicRM")
-  createdLeads        Lead[]           @relation("LeadCreatedBy")
-  notifications       Notification[]
-  targets             Target[]
-  createdBy           User?            @relation("UserCreatedBy", fields: [createdById], references: [id])
-  createdUsers        User[]           @relation("UserCreatedBy")
-  reportingManager    User?            @relation("UserReporting", fields: [reportingManagerId], references: [id])
-  reportingTeam       User[]           @relation("UserReporting")
-  clinicAssignments   UserClinic[]
-  regionAssignments   UserRegion[]
-  employeeProfile     EmployeeProfile?
-  salaryStructure     SalaryStructure?
-  attendances         Attendance[]
-  approvedAttendances Attendance[]     @relation("AttendanceApprovals")
-  createdHolidays     Holiday[]
+  id                   String                @id @default(cuid())
+  email                String                @unique
+  password             String
+  name                 String
+  role                 UserRole              @default(TEAM_MEMBER)
+  isActive             Boolean               @default(true)
+  metadata             Json?
+  phone                String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  createdById          String?
+  reportingManagerId   String?
+  auditLogs            AuditLog[]
+  managedClinics       Clinic[]              @relation("ClinicRM")
+  createdLeads         Lead[]                @relation("LeadCreatedBy")
+  notifications        Notification[]
+  targets              Target[]
+  createdBy            User?                 @relation("UserCreatedBy", fields: [createdById], references: [id])
+  createdUsers         User[]                @relation("UserCreatedBy")
+  reportingManager     User?                 @relation("UserReporting", fields: [reportingManagerId], references: [id])
+  reportingTeam        User[]                @relation("UserReporting")
+  clinicAssignments    UserClinic[]
+  regionAssignments    UserRegion[]
+  employeeProfile      EmployeeProfile?
+  salaryStructure      SalaryStructure?
+  attendances          Attendance[]
+  approvedAttendances  Attendance[]          @relation("AttendanceApprovals")
+  createdHolidays      Holiday[]
+  expenses             Expense[]             @relation("UserExpenses")
+  approvedExpenses     Expense[]             @relation("ExpenseApprovals")
+  appointmentLetters   AppointmentLetter[]
+  tabSessions          TabSession[]
+}
+
+model TabSession {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Region {
@@ -269,18 +285,20 @@ enum WorkingType {
 }
 
 model EmployeeProfile {
-  id                  String    @id @default(cuid())
-  userId              String    @unique
-  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  dateOfBirth         DateTime? @db.Date
-  dateOfJoining       DateTime? @db.Date
-  marriageAnniversary DateTime? @db.Date
-  designation         String?
-  department          String?
-  probationEndDate    DateTime? @db.Date
-  exitDate            DateTime? @db.Date
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateOfBirth           DateTime? @db.Date
+  dateOfJoining         DateTime? @db.Date
+  marriageAnniversary   DateTime? @db.Date
+  designation           String?
+  department            String?
+  probationEndDate      DateTime? @db.Date
+  exitDate              DateTime? @db.Date
+  photoUrl              String?
+  policyAcknowledgedAt  DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
 model SalaryStructure {
@@ -345,6 +363,92 @@ model Holiday {
   createdBy   User     @relation(fields: [createdById], references: [id])
 
   @@index([date])
+}
+
+enum ExpenseStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  PARTIALLY_APPROVED
+  REJECTED
+}
+
+model Expense {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation("UserExpenses", fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  periodType      String        @default("MONTHLY")
+  periodStart     DateTime      @db.Date
+  periodEnd       DateTime      @db.Date
+  status          ExpenseStatus @default(DRAFT)
+  totalAmount     Float         @default(0)
+  approvedAmount  Float?
+  rejectionReason String?
+  approvedById    String?
+  approvedBy      User?         @relation("ExpenseApprovals", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
+  submittedAt     DateTime?
+  notes           String?
+  items           ExpenseItem[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model ExpenseItem {
+  id           String   @id @default(cuid())
+  expenseId    String
+  expense      Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  date         DateTime @db.Date
+  category     String
+  description  String
+  fromLocation String?
+  toLocation   String?
+  distanceKm   Float?
+  amount       Float
+  billUrl      String?
+  billName     String?
+  clientName   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([expenseId])
+}
+
+enum AppointmentLetterStatus {
+  PENDING_ACKNOWLEDGEMENT
+  ACKNOWLEDGED
+}
+
+model AppointmentLetter {
+  id                          String                  @id @default(cuid())
+  userId                      String
+  user                        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  letterNumber                String                  @unique
+  version                     Int                     @default(1)
+  status                      AppointmentLetterStatus @default(PENDING_ACKNOWLEDGEMENT)
+  isArchived                  Boolean                 @default(false)
+  employeeName                String
+  designation                 String?
+  department                  String?
+  dateOfJoining               DateTime?               @db.Date
+  employmentType              String                  @default("PROBATION")
+  reportingManagerName        String?
+  reportingManagerDesignation String?
+  workLocation                String?
+  grossSalary                 Float?
+  salaryBreakdown             Json?
+  travelRatePerKm             Float?
+  monthlyExpenseCap           Float?
+  acknowledgedAt              DateTime?
+  createdAt                   DateTime                @default(now())
+  updatedAt                   DateTime                @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }
 model SchemeTemplate {
   id            String         @id @default(cuid())

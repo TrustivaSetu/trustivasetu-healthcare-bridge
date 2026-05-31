@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useTabSession } from '@/contexts/TabSessionContext'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getRoleLabel, formatDate, cn } from '@/lib/utils'
@@ -14,13 +14,13 @@ interface Employee {
 interface Holiday { id: string; name: string; date: string }
 
 export default function HRPage() {
-  const { data: session } = useSession()
+  const { user: session } = useTabSession()
   const router = useRouter()
   const [employees, setEmployees] = useState<Employee[]>([])
   const [holidays, setHolidays] = useState<Holiday[]>([])
   const [loading, setLoading] = useState(true)
 
-  const isAdmin = session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'ADMIN'
+  const isAdmin = session?.role === 'SUPER_ADMIN' || session?.role === 'ADMIN'
 
   useEffect(() => {
     if (session && !isAdmin) { router.push('/hr/my-profile'); return }

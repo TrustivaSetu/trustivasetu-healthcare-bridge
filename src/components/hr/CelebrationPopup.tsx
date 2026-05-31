@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useTabSession } from '@/contexts/TabSessionContext'
 
 interface Celebration {
   type: 'birthday' | 'work_anniversary' | 'marriage_anniversary'
@@ -16,7 +16,7 @@ const CONFIG = {
 }
 
 export function CelebrationPopup() {
-  const { data: session, status } = useSession()
+  const { user: session, status } = useTabSession()
   const [celebrations, setCelebrations] = useState<Celebration[]>([])
   const [visible, setVisible] = useState(false)
   const [idx, setIdx] = useState(0)
@@ -45,7 +45,7 @@ export function CelebrationPopup() {
 
   const current = celebrations[idx]
   const cfg = CONFIG[current.type]
-  const isMe = session?.user?.id === current.userId
+  const isMe = session?.id === current.userId
   const total = celebrations.length
 
   function next() {

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { hasPermission } from '@/lib/permissions'
 import bcrypt from 'bcryptjs'
@@ -11,7 +10,7 @@ const schema = z.object({
 })
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!hasPermission(session.user.role, 'USER_UPDATE'))
     return NextResponse.json({ error: 'You do not have permission to change passwords' }, { status: 403 })

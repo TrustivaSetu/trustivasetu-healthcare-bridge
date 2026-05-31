@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { signIn } from 'next-auth/react'
+import { storeTabToken } from '@/contexts/TabSessionContext'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
@@ -24,20 +24,20 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      const result = await signIn('credentials', {
-    email,
-    password,
-    redirect: false,
-  })
-      if (result?.error) {
-  setError(
-    result.error === 'CredentialsSignin'
-      ? 'Invalid email or password'
-      : result.error
-  )
-} else {
-  window.location.href = '/dashboard'
-}
+      const res = await fetch('/api/auth/tab-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error ?? 'Invalid email or password')
+      } else {
+        storeTabToken(data.token)
+        // Dispatch event so TabSessionProvider refreshes immediately
+        window.dispatchEvent(new Event('trustiva-session-change'))
+        router.push('/dashboard')
+      }
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
@@ -70,11 +70,11 @@ export default function LoginPage() {
           <ul className="hidden sm:flex flex-col gap-3 mt-8 text-sm text-slate-300">
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-trustiva-lime" />
-              Region-wise data & RM panels
+              Region-wise data &amp; RM panels
             </li>
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-trustiva-lime" />
-              Real-time leads & analytics
+              Real-time leads &amp; analytics
             </li>
             <li className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-trustiva-lime" />
@@ -169,10 +169,9 @@ export default function LoginPage() {
                 </a>
               </div>
             </form>
-<p className="text-xs text-trustiva-muted text-center mt-6">
-  Secure access for authorized Trustiva Setu users only.
-</p>
-            
+            <p className="text-xs text-trustiva-muted text-center mt-6">
+              Secure access for authorized Trustiva Setu users only.
+            </p>
           </div>
 
           <p className="text-center text-[11px] text-slate-500 mt-6">

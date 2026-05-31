@@ -1,26 +1,30 @@
-// src/app/(app)/dashboard/page.tsx
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import SuperAdminDashboard from "./SuperAdminDashboard";
-import ManagerDashboard from "./ManagerDashboard";
-import RMDashboard from "./RMDashboard";
+'use client'
 
-export default async function DashboardPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+import { useTabSession } from '@/contexts/TabSessionContext'
+import SuperAdminDashboard from './SuperAdminDashboard'
+import ManagerDashboard from './ManagerDashboard'
+import RMDashboard from './RMDashboard'
 
-  const role = session.user.role;
+export default function DashboardPage() {
+  const { user, status } = useTabSession()
 
-  if (role === "SUPER_ADMIN" || role === "ADMIN") {
-    return <SuperAdminDashboard />;
-  }
-  if (role === "REGIONAL_MANAGER") {
-    return <ManagerDashboard />;
-  }
-  if (role === "TEAM_MEMBER") {
-    return <RMDashboard />;
+  if (status === 'loading') {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-trustiva-lime border-t-transparent" />
+      </div>
+    )
   }
 
-  redirect("/login");
+  const role = user?.role
+
+  if (role === 'SUPER_ADMIN' || role === 'ADMIN') return <SuperAdminDashboard />
+  if (role === 'REGIONAL_MANAGER') return <ManagerDashboard />
+  if (role === 'TEAM_MEMBER') return <RMDashboard />
+
+  return (
+    <div className="flex h-screen items-center justify-center text-gray-500">
+      Loading dashboard...
+    </div>
+  )
 }

@@ -1,9 +1,8 @@
-import { getServerSession } from 'next-auth'
+import { getRequestSession } from '@/lib/api-auth'
 import { redirect } from 'next/navigation'
-import { authOptions } from '@/lib/auth'
 
 export default async function Home() {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (session) redirect('/dashboard')
   redirect('/lms/login')
 }

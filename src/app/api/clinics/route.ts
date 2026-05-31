@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { buildClinicFilter, hasPermission } from '@/lib/permissions'
 import { checkRolePermission } from '@/lib/role-permissions'
@@ -31,7 +30,7 @@ const createSchema = z.object({
 })
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!await checkRolePermission(session.user.role as string, 'CLINICS', 'VIEW')) {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 })
@@ -108,7 +107,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!hasPermission(session.user.role, 'CLINIC_CREATE')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   if (!await checkRolePermission(session.user.role as string, 'CLINICS', 'CREATE')) {

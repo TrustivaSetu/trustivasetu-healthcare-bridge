@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { useSession } from 'next-auth/react'
+import { useTabSession } from '@/contexts/TabSessionContext'
 
 import { LeadTable } from '@/components/leads/LeadTable'
 import { LeadForm } from '@/components/leads/LeadForm'
@@ -14,7 +14,7 @@ const STATUSES = ['', 'PENDING', 'APPROVED', 'DISBURSED', 'REJECTED', 'CANCELLED
 
 export function LeadsPageContent() {
   const searchParams = useSearchParams()
-  const { data: session } = useSession()
+  const { user: session } = useTabSession()
   const [leads, setLeads] = useState<unknown[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)

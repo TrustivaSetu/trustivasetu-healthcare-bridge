@@ -1,13 +1,11 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
-import { useSession } from 'next-auth/react'
+import { useTabSession } from '@/contexts/TabSessionContext'
 import type { ModuleKey, ActionKey } from '@/types/permissions'
 
 interface PermissionsContextValue {
-  /** Returns true if the current user can perform action on module */
   can: (module: ModuleKey, action: ActionKey) => boolean
-  /** True while the first fetch is in-flight */
   loading: boolean
 }
 
@@ -17,7 +15,7 @@ const PermissionsContext = createContext<PermissionsContextValue>({
 })
 
 export function PermissionsProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession()
+  const { user, status } = useTabSession()
   const [flat, setFlat] = useState<Record<string, boolean> | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -29,31 +27,27 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
         setFlat(data.permissions as Record<string, boolean>)
       }
     } catch {
-      // network error – leave flat null (will use role-based fallback)
+      // network error — leave flat null
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      fetchPermissions()
-    } else if (status === 'unauthenticated') {
-      setLoading(false)
-    }
+    if (status === 'authenticated') fetchPermissions()
+    else if (status === 'unauthenticated') setLoading(false)
   }, [status, fetchPermissions])
 
-  const role = session?.user?.role as string | undefined
+  const role = user?.role as string | undefined
 
   const can = useCallback(
     (module: ModuleKey, action: ActionKey): boolean => {
       if (!role) return false
-      // Admin and Super Admin always have full access
-      if (role === 'SUPER_ADMIN' || role === 'ADMIN') return true
-      if (!flat) return false
+      if (role === 'SUPER_ADMIN') return true
+      if (loading || !flat) return role === 'ADMIN'
       return flat[`${module}_${action}`] === true
     },
-    [role, flat]
+    [role, flat, loading]
   )
 
   return (

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
@@ -12,7 +11,7 @@ const updateSchema = z.object({
 })
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role as string)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -35,7 +34,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (session.user.role !== 'SUPER_ADMIN') {
     return NextResponse.json({ error: 'Only Super Admin can delete lenders' }, { status: 403 })

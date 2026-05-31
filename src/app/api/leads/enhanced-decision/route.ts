@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getRequestSession } from '@/lib/api-auth'
 
 interface EnhancedDecision {
   status: 'INCOME_NOT_VERIFIED' | 'ENHANCEMENT_NOT_POSSIBLE' | 'ENHANCEMENT_DONE'
@@ -11,7 +10,7 @@ interface EnhancedDecision {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const {

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 
 // ── Smart Scoring Engine (No CIBIL hit) ───────────────────────────────────────
@@ -171,7 +170,7 @@ function matchLender(
 
 // ── Main Handler ──────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const startTime = Date.now()

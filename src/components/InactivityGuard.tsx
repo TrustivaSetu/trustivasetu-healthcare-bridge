@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { signOut, useSession } from 'next-auth/react'
+import { useTabSession, tabSignOut } from '@/contexts/TabSessionContext'
 
 const TIMEOUT_MS = 5 * 60 * 1000  // 5 minutes of idle → auto logout
 const WARNING_MS = 60 * 1000      // show warning when 60 seconds remain
@@ -9,7 +9,7 @@ const WARNING_MS = 60 * 1000      // show warning when 60 seconds remain
 const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'click'] as const
 
 export function InactivityGuard() {
-  const { status } = useSession()
+  const { status } = useTabSession()
   const lastActivityRef = useRef(Date.now())
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null)
 
@@ -33,9 +33,7 @@ export function InactivityGuard() {
 
       if (remainingMs <= 0) {
         clearInterval(tick)
-        signOut({ callbackUrl: '/lms/login?expired=true' }).catch(() => {
-          window.location.href = '/lms/login?expired=true'
-        })
+        tabSignOut('/lms/login?expired=true')
       } else if (remainingMs <= WARNING_MS) {
         setSecondsLeft(Math.ceil(remainingMs / 1000))
       } else {

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { calculateSalary } from '@/lib/hr/salary'
+import { generateAppointmentLetter, buildLetterReadyEmailHtml } from '@/lib/hr/appointment-letter'
+import { sendEmail } from '@/lib/email'
 import { z } from 'zod'
 
 function isAdmin(role: string) {
@@ -10,7 +11,7 @@ function isAdmin(role: string) {
 }
 
 export async function GET(req: NextRequest, { params }: { params: { userId: string } }) {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!isAdmin(session.user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: { userId: stri
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { userId: string } }) {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!isAdmin(session.user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
@@ -40,5 +41,40 @@ export async function PUT(req: NextRequest, { params }: { params: { userId: stri
     data: { userId: session.user.id, action: 'UPDATE', entity: 'SalaryStructure', entityId: params.userId },
   })
 
+  // Auto-generate appointment letter if the employee has already acknowledged HR policies
+  // but doesn't yet have a letter (salary was added after acknowledgement).
+  void (async () => {
+    try {
+      const employee = await db.user.findUnique({
+        where: { id: params.userId },
+        select: { email: true, name: true, employeeProfile: { select: { policyAcknowledgedAt: true } } },
+      })
+
+      if (!employee?.employeeProfile?.policyAcknowledgedAt) return // hasn't acknowledged policies yet
+
+      const result = await generateAppointmentLetter(params.userId)
+
+      if ('letter' in result && !('alreadyExists' in result) && result.letter) {
+        // New letter generated — notify the employee
+        const baseUrl = process.env.NEXTAUTH_URL ?? 'https://lms.trustivasetu.com'
+        const portalUrl = `${baseUrl}/hr/appointment-letter/${result.letter.id}`
+
+        await sendEmail({
+          to: employee.email,
+          subject: `Your Appointment Letter is Ready — ${COMPANY_NAME}`,
+          html: buildLetterReadyEmailHtml({
+            employeeName: employee.name,
+            letterNumber: result.letter.letterNumber,
+            portalUrl,
+          }),
+        })
+      }
+    } catch (e) {
+      console.error('[Salary PUT] Letter auto-gen error:', e)
+    }
+  })()
+
   return NextResponse.json({ data: { ...salary, components: calculateSalary(grossSalary, tds) } })
 }
+
+const COMPANY_NAME = 'Trustivasetu'

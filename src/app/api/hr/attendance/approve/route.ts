@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { sendEmail, attendanceStatusHtml } from '@/lib/email'
 import { format } from 'date-fns'
@@ -88,7 +87,7 @@ export async function POST(req: NextRequest) {
 
 // Admin direct approve/reject via authenticated API
 export async function PATCH(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const isAdmin = session.user.role === 'SUPER_ADMIN' || session.user.role === 'ADMIN'
   if (!isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

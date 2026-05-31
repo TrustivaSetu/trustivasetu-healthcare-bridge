@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useTabSession } from '@/contexts/TabSessionContext'
 import { generateMonthOptions, getRoleLabel, cn } from '@/lib/utils'
 import { formatINR } from '@/lib/hr/salary'
 import { format } from 'date-fns'
@@ -22,7 +22,7 @@ interface PayslipData {
 interface User { id: string; name: string; role: string }
 
 export default function PayslipPage() {
-  const { data: session } = useSession()
+  const { user: session } = useTabSession()
   const [monthOptions] = useState(() => generateMonthOptions(24))
   const [selectedMonth, setSelectedMonth] = useState(monthOptions[0].value)
   const [users, setUsers] = useState<User[]>([])
@@ -31,13 +31,13 @@ export default function PayslipPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const isAdmin = session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'ADMIN'
+  const isAdmin = session?.role === 'SUPER_ADMIN' || session?.role === 'ADMIN'
 
   useEffect(() => {
     if (isAdmin) {
       fetch('/api/users?minimal=1').then(r => r.json()).then(d => setUsers(d.data ?? []))
     }
-    if (session?.user?.id) setSelectedUserId(session.user.id)
+    if (session?.id) setSelectedUserId(session?.id)
   }, [session, isAdmin])
 
   useEffect(() => {
@@ -77,8 +77,8 @@ export default function PayslipPage() {
         {isAdmin && (
           <select value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 min-w-[180px]">
-            <option value={session?.user?.id ?? ''}>My Payslip</option>
-            {users.filter(u => u.id !== session?.user?.id).map(u => (
+            <option value={session?.id ?? ''}>My Payslip</option>
+            {users.filter(u => u.id !== session?.id).map(u => (
               <option key={u.id} value={u.id}>{u.name}</option>
             ))}
           </select>

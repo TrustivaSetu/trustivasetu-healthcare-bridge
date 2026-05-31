@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSession } from 'next-auth/react'
+import { useTabSession } from '@/contexts/TabSessionContext'
 
 import { ClinicTable } from '@/components/clinics/ClinicTable'
 import { ClinicForm } from '@/components/clinics/ClinicForm'
@@ -9,7 +9,7 @@ import { ClinicBulkUpload } from '@/components/clinics/ClinicBulkUpload'
 import { hasPermission } from '@/lib/permissions'
 
 export default function ClinicsPage() {
-  const { data: session } = useSession()
+  const { user: session } = useTabSession()
   const [clinics, setClinics] = useState<unknown[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -21,7 +21,7 @@ export default function ClinicsPage() {
   const [showBulk, setShowBulk] = useState(false)
   const [editClinic, setEditClinic] = useState<unknown>(null)
 
-  const canCreate = session?.user && hasPermission(session.user.role, 'CLINIC_CREATE')
+  const canCreate = session && hasPermission(session?.role, 'CLINIC_CREATE')
 
   useEffect(() => {
     fetch('/api/regions').then(r => r.json()).then(d => setRegions(d.data ?? []))

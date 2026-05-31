@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { calculateSalary, calculateMonthlyPayable, getWorkingDaysInMonth } from '@/lib/hr/salary'
 
@@ -8,7 +7,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { userId: string; yearMonth: string } }
 ) {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const isAdmin = session.user.role === 'SUPER_ADMIN' || session.user.role === 'ADMIN'

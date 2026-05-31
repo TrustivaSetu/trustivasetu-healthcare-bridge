@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { hasPermission } from '@/lib/permissions'
 import bcrypt from 'bcryptjs'
@@ -19,7 +18,7 @@ const createSchema = z.object({
 })
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!hasPermission(session.user.role, 'USER_READ')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
@@ -90,7 +89,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!hasPermission(session.user.role, 'USER_CREATE')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   // Only Super Admin can create SUPER_ADMIN users

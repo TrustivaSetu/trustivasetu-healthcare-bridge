@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import {
   MANAGED_ROLES,
@@ -14,23 +13,21 @@ import { getPermissionMatrix, invalidatePermissionCache } from '@/lib/role-permi
 
 /** GET /api/permissions — returns the full RolePermissionMatrix */
 export async function GET() {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role as string)) {
+  if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role as string))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
 
   const matrix = await getPermissionMatrix()
-  return NextResponse.json({ matrix })
+  return NextResponse.json({ matrix, callerRole: session.user.role })
 }
 
-/** PUT /api/permissions — saves full matrix for a specific role */
+/** PUT /api/permissions — saves the permission matrix for a specific role */
 export async function PUT(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role as string)) {
+  if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role as string))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
 
   const body = await req.json()
   const { role, permissions } = body as {
@@ -38,11 +35,13 @@ export async function PUT(req: NextRequest) {
     permissions: Record<ModuleKey, Record<ActionKey, boolean>>
   }
 
-  if (!MANAGED_ROLES.includes(role)) {
+  if (!MANAGED_ROLES.includes(role))
     return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
-  }
 
-  // Upsert every applicable cell
+  // Only SUPER_ADMIN can modify Admin-role permissions
+  if (role === 'ADMIN' && session.user.role !== 'SUPER_ADMIN')
+    return NextResponse.json({ error: 'Only Super Admin can modify Admin permissions' }, { status: 403 })
+
   const ops: Promise<unknown>[] = []
   for (const mod of MODULE_KEYS) {
     for (const action of ACTION_KEYS) {

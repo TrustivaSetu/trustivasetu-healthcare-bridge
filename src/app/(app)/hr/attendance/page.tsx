@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSession } from 'next-auth/react'
+import { useTabSession } from '@/contexts/TabSessionContext'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { format, getDaysInMonth, startOfMonth, getDay, addDays, parseISO } from 'date-fns'
@@ -65,8 +65,8 @@ const LEAVE_LABELS: Record<string, string> = {
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function AttendancePage() {
-  const { data: session } = useSession()
-  const isAdmin = session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'ADMIN'
+  const { user: session } = useTabSession()
+  const isAdmin = session?.role === 'SUPER_ADMIN' || session?.role === 'ADMIN'
 
   const now = new Date()
   const todayStr = format(now, 'yyyy-MM-dd')

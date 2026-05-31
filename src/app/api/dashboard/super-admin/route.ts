@@ -1,10 +1,9 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getRequestSession } from '@/lib/api-auth'
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  const session = await getRequestSession();
   if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.user.role as string)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

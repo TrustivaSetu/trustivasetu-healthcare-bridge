@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useSession, signOut } from 'next-auth/react'
+import { useTabSession, tabSignOut } from '@/contexts/TabSessionContext'
 import { cn } from '@/lib/utils'
 import { ADMIN_ROLES } from '@/lib/constants'
 import { usePermissions } from '@/contexts/PermissionsContext'
@@ -20,26 +20,30 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: IconDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'DASHBOARD' },
-  { href: '/leads', label: 'Leads', icon: IconLeads, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'LEADS' },
-  { href: '/clinics', label: 'Clinics / Centres', icon: IconClinic, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'CLINICS' },
-  { href: '/reports', label: 'Reports', icon: IconReports, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'REPORTS' },
-  // HR
-  { href: '/hr/my-profile', label: 'My Profile', icon: IconProfile, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr' },
-  { href: '/hr/attendance', label: 'Attendance', icon: IconCalendar, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr' },
-  { href: '/hr/payslip', label: 'Payslip', icon: IconPayslip, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr' },
-  { href: '/hr/directory', label: 'Employee Directory', icon: IconDirectory, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr' },
-  { href: '/hr', label: 'HR Dashboard', icon: IconHR, roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'hr' },
-  { href: '/hr/salary', label: 'Salary Management', icon: IconSalary, roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'hr' },
-  { href: '/hr/holidays', label: 'Holiday Calendar', icon: IconHoliday, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr' },
-  // Admin
-  { href: '/users', label: 'User Management', icon: IconUsers, roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin', module: 'USERS' },
-  { href: '/admin/regions', label: 'Regions', icon: IconGlobe, roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin' },
-  { href: '/admin/lenders', label: 'Lenders', icon: IconBank, roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin', module: 'LENDERS' },
-  { href: '/admin/targets', label: 'Targets', icon: IconTarget, roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin' },
-  { href: '/admin/permissions', label: 'Permissions', icon: IconShield, roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin' },
-  { href: '/admin/audit-logs', label: 'Audit Logs', icon: IconAudit, roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin' },
-  { href: '/admin/webhooks', label: 'Webhook Logs', icon: IconWebhook, roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin' },
+  // Core
+  { href: '/dashboard',  label: 'Dashboard',        icon: IconDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'DASHBOARD' },
+  { href: '/leads',      label: 'Leads',             icon: IconLeads,     roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'LEADS' },
+  { href: '/clinics',    label: 'Clinics / Centres', icon: IconClinic,    roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'CLINICS' },
+  { href: '/reports',    label: 'Reports',           icon: IconReports,   roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'REPORTS' },
+  // HR — module key used for permissions filtering
+  { href: '/hr/my-profile',  label: 'My Profile',         icon: IconProfile,   roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr' },
+  { href: '/hr/attendance',  label: 'Attendance',         icon: IconCalendar,  roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'ATTENDANCE' },
+  { href: '/expenses',       label: 'Expenses',           icon: IconExpense,   roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'EXPENSES' },
+  { href: '/hr/payslip',     label: 'Payslip',            icon: IconPayslip,   roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'DOCUMENTS' },
+  { href: '/hr/policies',    label: 'HR Policies',        icon: IconPolicies,  roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'HR_POLICIES' },
+  { href: '/hr/directory',   label: 'Employee Directory', icon: IconDirectory, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'DIRECTORY' },
+  { href: '/hr',             label: 'HR Dashboard',       icon: IconHR,        roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'hr', module: 'HR_MODULE' },
+  { href: '/hr/salary',      label: 'Salary Management',  icon: IconSalary,    roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'hr', module: 'SALARY' },
+  { href: '/hr/holidays',    label: 'Holiday Calendar',   icon: IconHoliday,   roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'HR_POLICIES' },
+  // Administration
+  { href: '/admin/appointment-letters', label: 'Appointment Letters', icon: IconLetter,  roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin', module: 'APPOINTMENT_LETTERS' },
+  { href: '/users',              label: 'User Management', icon: IconUsers,  roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin', module: 'USERS' },
+  { href: '/admin/regions',      label: 'Regions',         icon: IconGlobe,  roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin', module: 'REGIONS' },
+  { href: '/admin/lenders',      label: 'Lenders',         icon: IconBank,   roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin', module: 'LENDERS' },
+  { href: '/admin/targets',      label: 'Targets',         icon: IconTarget, roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin', module: 'TARGETS' },
+  { href: '/admin/permissions',  label: 'Permissions',     icon: IconShield, roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin', module: 'PERMISSIONS' },
+  { href: '/admin/audit-logs',   label: 'Audit Logs',      icon: IconAudit,  roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin', module: 'AUDIT_LOGS' },
+  { href: '/admin/webhooks',     label: 'Webhook Logs',    icon: IconWebhook,roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin', module: 'WEBHOOKS' },
 ]
 
 interface SidebarProps {
@@ -48,16 +52,23 @@ interface SidebarProps {
 }
 
 export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
-  const { data: session } = useSession()
+  const { user: session } = useTabSession()
   const pathname = usePathname()
   const { can } = usePermissions()
   const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const navRef = useRef<HTMLElement>(null)
   const savedScroll = useRef(0)
 
-  const role = session?.user?.role ?? ''
+  const role = session?.role ?? ''
   const isAdmin = ADMIN_ROLES.includes(role as (typeof ADMIN_ROLES)[number])
   const canChangePasswords = role === 'SUPER_ADMIN' || role === 'ADMIN'
+
+  // Fetch current user's photo once per session
+  useEffect(() => {
+    if (!session?.id) return
+    fetch('/api/hr/photo').then(r => r.json()).then(d => setPhotoUrl(d.photoUrl ?? null)).catch(() => {})
+  }, [session?.id])
 
   // Persist scroll position across navigations
   useEffect(() => {
@@ -71,7 +82,9 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
 
   const visible = navItems.filter(item => {
     if (!item.roles.includes(role)) return false
-    if (isAdmin) return true
+    // SUPER_ADMIN always sees everything — no permission check
+    if (role === 'SUPER_ADMIN') return true
+    // All other roles (including ADMIN) filtered by permissions
     if (item.module) return can(item.module, 'VIEW')
     return true
   })
@@ -135,12 +148,16 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
       {/* User section — pinned at bottom */}
       <div className="flex-shrink-0 px-3 py-3 border-t border-white/10">
         <div className="flex items-center gap-2.5 px-2 py-1.5 mb-1">
-          <div className="w-7 h-7 bg-trustiva-lime rounded-full flex items-center justify-center text-trustiva-navy text-xs font-bold flex-shrink-0">
-            {session?.user?.name?.charAt(0).toUpperCase()}
-          </div>
+          {photoUrl ? (
+            <img src={photoUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0 border border-white/20" />
+          ) : (
+            <div className="w-7 h-7 bg-trustiva-lime rounded-full flex items-center justify-center text-trustiva-navy text-xs font-bold flex-shrink-0">
+              {session?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
-            <p className="text-white text-xs font-semibold truncate leading-tight">{session?.user?.name}</p>
-            <p className="text-trustiva-muted text-[10px] truncate leading-tight">{session?.user?.email}</p>
+            <p className="text-white text-xs font-semibold truncate leading-tight">{session?.name}</p>
+            <p className="text-trustiva-muted text-[10px] truncate leading-tight">{session?.email}</p>
           </div>
         </div>
         <button
@@ -156,7 +173,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         </button>
         <button
           type="button"
-          onClick={() => signOut({ callbackUrl: '/lms/login' })}
+          onClick={() => tabSignOut('/lms/login')}
           className="w-full text-left px-2 py-1.5 text-xs text-slate-300 hover:bg-white/10 hover:text-white rounded-md transition flex items-center gap-2"
         >
           <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,10 +183,10 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         </button>
       </div>
 
-      {showPasswordModal && session?.user && (
+      {showPasswordModal && session && (
         <ChangePasswordModal
-          userId={session.user.id}
-          userName={session.user.name ?? 'My Account'}
+          userId={session.id}
+          userName={session.name ?? 'My Account'}
           canChange={canChangePasswords}
           onClose={() => setShowPasswordModal(false)}
         />
@@ -355,6 +372,30 @@ function IconHoliday({ className }: { className?: string }) {
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
         d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+    </svg>
+  )
+}
+function IconExpense({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+  )
+}
+function IconPolicies({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+    </svg>
+  )
+}
+function IconLetter({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
     </svg>
   )
 }

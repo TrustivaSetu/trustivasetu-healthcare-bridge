@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSession } from 'next-auth/react'
+import { useTabSession } from '@/contexts/TabSessionContext'
 import { useRouter } from 'next/navigation'
 import { getRoleLabel, cn } from '@/lib/utils'
 import { formatINR, calculateSalary } from '@/lib/hr/salary'
@@ -11,7 +11,7 @@ interface User { id: string; name: string; email: string; role: string }
 interface Salary { grossSalary: number; tds: number }
 
 export default function SalaryPage() {
-  const { data: session } = useSession()
+  const { user: session } = useTabSession()
   const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
@@ -21,7 +21,7 @@ export default function SalaryPage() {
   const [saving, setSaving] = useState(false)
   const [loadingSalary, setLoadingSalary] = useState(false)
 
-  const isAdmin = session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'ADMIN'
+  const isAdmin = session?.role === 'SUPER_ADMIN' || session?.role === 'ADMIN'
 
   useEffect(() => {
     if (session && !isAdmin) { router.push('/dashboard'); return }
