@@ -32,6 +32,11 @@ export interface ReportLead {
   approvalDate: string | null
   disbursalDate: string | null
   remarks: string | null
+  utrNumber: string | null
+  nachStatus: string | null
+  agreementSigned: boolean
+  rejectionReason: string | null
+  treatmentCategory: string | null
   metadata: LeadMeta | null
   clinic: { id: string; name: string; region: { name: string } }
   lender: { id: string; name: string } | null
@@ -172,17 +177,17 @@ export function LeadReportTable({ leads, sortBy, sortOrder, onSort }: Props) {
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium',
-                      yesNo(meta.agreementSigned) === 'Yes' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
-                      {yesNo(meta.agreementSigned)}
+                      lead.agreementSigned ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
+                      {lead.agreementSigned ? 'Yes' : 'No'}
                     </span>
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium',
-                      yesNo(meta.nachDone) === 'Yes' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
-                      {yesNo(meta.nachDone)}
+                      lead.nachStatus === 'DONE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500')}>
+                      {lead.nachStatus === 'DONE' ? 'Yes' : 'No'}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{String(meta.utrDetails ?? '—')}</td>
+                  <td className="px-3 py-2 text-gray-600 whitespace-nowrap font-mono">{lead.utrNumber ?? '—'}</td>
                   <td className="px-3 py-2 text-red-600 max-w-[160px] truncate">
                     {lead.status === 'REJECTED' ? (lead.remarks ?? '—') : '—'}
                   </td>
@@ -220,10 +225,10 @@ export function exportLeadReport(leads: ReportLead[]) {
       'Disbursal Pending': lead.status === 'APPROVED' ? 'Yes' : 'No',
       'TAT to Approval': calcTAT(lead.applicationDate, lead.approvalDate),
       'TAT to Disbursal': calcTAT(lead.approvalDate, lead.disbursalDate),
-      'Agreement Signed': yesNo(meta.agreementSigned),
-      'NACH Done': yesNo(meta.nachDone),
-      'UTR': String(meta.utrDetails ?? ''),
-      'Rejection Reason': lead.status === 'REJECTED' ? (lead.remarks ?? '') : '',
+      'Agreement Signed': lead.agreementSigned ? 'Yes' : 'No',
+      'NACH Done': lead.nachStatus === 'DONE' ? 'Yes' : 'No',
+      'UTR': lead.utrNumber ?? '',
+      'Rejection Reason': lead.rejectionReason ?? (lead.status === 'REJECTED' ? (lead.remarks ?? '') : ''),
       'Approved Amount': lead.approvedAmount ?? '',
       'Disbursed Amount': lead.disbursedAmount ?? '',
       'Clinic': lead.clinic.name,

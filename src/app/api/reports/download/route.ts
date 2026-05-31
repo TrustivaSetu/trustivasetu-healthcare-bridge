@@ -135,8 +135,10 @@ export async function GET(req: NextRequest) {
         orderBy: { name: 'asc' },
       })
 
-      const rows = clinicsWithSchemes.flatMap((c: any) =>
-        c.schemes.map((s: any) => ({
+      type ClinicWithSchemes = typeof clinicsWithSchemes[number]
+      type SchemeEntry = ClinicWithSchemes['schemes'][number]
+      const rows = clinicsWithSchemes.flatMap((c: ClinicWithSchemes) =>
+        c.schemes.map((s: SchemeEntry) => ({
           'Clinic Code': fmt(c.externalId),
           'Clinic Name': fmt(c.name),
           'Region': fmt(c.region?.name),

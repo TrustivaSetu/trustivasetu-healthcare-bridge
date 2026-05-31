@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestSession } from '@/lib/api-auth'
-
-const OTP_STORE = new Map<string, { otp: string; expires: number }>()
+import { db } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
   const session = await getRequestSession()
@@ -9,26 +8,36 @@ export async function POST(req: NextRequest) {
 
   const { phone, otp } = await req.json()
 
-  const stored = OTP_STORE.get(phone)
-
-  // Mock verify — always pass in dev if OTP is "123456"
+  // Dev bypass
   if (process.env.NODE_ENV === 'development' && otp === '123456') {
     return NextResponse.json({ verified: true, message: 'Phone verified (dev mode)' })
   }
+
+  const stored = await db.otpToken.findFirst({
+    where: { email: phone, purpose: 'PHONE_OTP', verified: false },
+    orderBy: { createdAt: 'desc' },
+  })
 
   if (!stored) {
     return NextResponse.json({ verified: false, message: 'OTP expired or not sent' })
   }
 
-  if (Date.now() > stored.expires) {
-    OTP_STORE.delete(phone)
-    return NextResponse.json({ verified: false, message: 'OTP expire ho gaya — dobara bhejo' })
+  if (new Date() > stored.expiresAt) {
+    await db.otpToken.delete({ where: { id: stored.id } })
+    return NextResponse.json({ verified: false, message: 'OTP expired — please request a new one' })
   }
 
-  if (stored.otp !== otp) {
-    return NextResponse.json({ verified: false, message: 'Galat OTP' })
+  if (stored.emailOtp !== otp) {
+    // Increment attempt counter; block after 5 attempts
+    const attempts = stored.attempts + 1
+    if (attempts >= 5) {
+      await db.otpToken.delete({ where: { id: stored.id } })
+      return NextResponse.json({ verified: false, message: 'Too many wrong attempts — please request a new OTP' })
+    }
+    await db.otpToken.update({ where: { id: stored.id }, data: { attempts } })
+    return NextResponse.json({ verified: false, message: 'Incorrect OTP' })
   }
 
-  OTP_STORE.delete(phone)
+  await db.otpToken.update({ where: { id: stored.id }, data: { verified: true } })
   return NextResponse.json({ verified: true, message: 'Phone verified successfully' })
 }

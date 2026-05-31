@@ -21,6 +21,8 @@ const createSchema = z.object({
   approvedAmount: z.number().optional(),
   disbursedAmount: z.number().optional(),
   metadata: z.record(z.unknown()).optional(),
+  treatmentCategory: z.string().optional(),
+  rejectionReason: z.string().optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -43,39 +45,44 @@ export async function GET(req: NextRequest) {
 
   const { role, regionIds, clinicIds } = session.user
 
-  let clinicFilter = buildClinicFilter(role, regionIds, clinicIds)
-  if (regionId) clinicFilter = { ...clinicFilter, regionId }
-  if (clinicId) clinicFilter = { id: clinicId }
+  try {
+    let clinicFilter = buildClinicFilter(role, regionIds, clinicIds)
+    if (regionId) clinicFilter = { ...clinicFilter, regionId }
+    if (clinicId) clinicFilter = { id: clinicId }
 
-  const validClinics = await db.clinic.findMany({ where: { ...clinicFilter, isActive: true }, select: { id: true } })
-  const validClinicIds = validClinics.map(c => c.id)
+    const validClinics = await db.clinic.findMany({ where: { ...clinicFilter, isActive: true }, select: { id: true } })
+    const validClinicIds = validClinics.map(c => c.id)
 
-  const where: Record<string, unknown> = { clinicId: { in: validClinicIds } }
-  if (lenderId) where.lenderId = lenderId
-  if (status) where.status = status
-  if (dateFrom || dateTo) {
-    where.applicationDate = {}
-    if (dateFrom) (where.applicationDate as Record<string, unknown>).gte = new Date(dateFrom)
-    if (dateTo) (where.applicationDate as Record<string, unknown>).lte = new Date(dateTo + 'T23:59:59')
+    const where: Record<string, unknown> = { clinicId: { in: validClinicIds } }
+    if (lenderId) where.lenderId = lenderId
+    if (status) where.status = status
+    if (dateFrom || dateTo) {
+      where.applicationDate = {}
+      if (dateFrom) (where.applicationDate as Record<string, unknown>).gte = new Date(dateFrom)
+      if (dateTo) (where.applicationDate as Record<string, unknown>).lte = new Date(dateTo + 'T23:59:59')
+    }
+    if (search) where.applicantName = { contains: search, mode: 'insensitive' }
+
+    const [total, leads] = await Promise.all([
+      db.lead.count({ where }),
+      db.lead.findMany({
+        where,
+        include: {
+          clinic: { select: { id: true, name: true, region: { select: { id: true, name: true } } } },
+          lender: { select: { id: true, name: true } },
+          createdBy: { select: { id: true, name: true } },
+        },
+        orderBy: { applicationDate: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ])
+
+    return NextResponse.json({ data: leads, total, page, pageSize })
+  } catch (e) {
+    console.error('[GET /api/leads]', e)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-  if (search) where.applicantName = { contains: search }
-
-  const [total, leads] = await Promise.all([
-    db.lead.count({ where }),
-    db.lead.findMany({
-      where,
-      include: {
-        clinic: { select: { id: true, name: true, region: { select: { id: true, name: true } } } },
-        lender: { select: { id: true, name: true } },
-        createdBy: { select: { id: true, name: true } },
-      },
-      orderBy: { applicationDate: 'desc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-  ])
-
-  return NextResponse.json({ data: leads, total, page, pageSize })
 }
 
 export async function POST(req: NextRequest) {
@@ -91,8 +98,10 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 400 })
 
   const d = parsed.data
-  const lead = await db.lead.create({
-    data: {
+  const VALID_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'DISBURSED', 'CANCELLED']
+
+  try {
+    const createData = {
       applicantName: d.applicantName,
       phone: d.phone,
       email: d.email || null,
@@ -105,10 +114,24 @@ export async function POST(req: NextRequest) {
       createdById: session.user.id,
       treatmentName: d.treatmentName,
       motherName: d.motherName || null,
-    },
-    include: { clinic: { select: { id: true, name: true } }, lender: { select: { id: true, name: true } } },
-  })
+      treatmentCategory: d.treatmentCategory,
+      rejectionReason: d.rejectionReason,
+      status: d.status && VALID_STATUSES.includes(d.status)
+        ? d.status as 'PENDING' | 'APPROVED' | 'REJECTED' | 'DISBURSED' | 'CANCELLED'
+        : 'PENDING' as const,
+      approvedAmount: d.approvedAmount ?? null,
+      disbursedAmount: d.disbursedAmount ?? null,
+      metadata: d.metadata ? JSON.parse(JSON.stringify(d.metadata)) : undefined,
+    }
+    const lead = await db.lead.create({
+      data: createData,
+      include: { clinic: { select: { id: true, name: true } }, lender: { select: { id: true, name: true } } },
+    })
 
-  await db.auditLog.create({ data: { userId: session.user.id, action: 'CREATE', entity: 'Lead', entityId: lead.id } })
-  return NextResponse.json({ data: lead }, { status: 201 })
+    await db.auditLog.create({ data: { userId: session.user.id, action: 'CREATE', entity: 'Lead', entityId: lead.id } })
+    return NextResponse.json({ data: lead }, { status: 201 })
+  } catch (e) {
+    console.error('[POST /api/leads]', e)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }

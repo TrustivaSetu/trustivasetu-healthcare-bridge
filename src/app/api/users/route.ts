@@ -34,6 +34,9 @@ export async function GET(req: NextRequest) {
     { email: { contains: search, mode: 'insensitive' } },
   ]
 
+  const page = parseInt(searchParams.get('page') ?? '1')
+  const pageSize = Math.min(parseInt(searchParams.get('pageSize') ?? '50'), 200)
+
   if (minimal) {
     const users = await db.user.findMany({
       where: { ...where, isActive: true },
@@ -55,37 +58,45 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  const users = await db.user.findMany({
-    where,
-    select: {
-      id: true, email: true, name: true, role: true, isActive: true,
-      phone: true, createdAt: true, reportingManagerId: true,
-      employeeProfile: { select: { designation: true } },
-      reportingManager: {
-        select: {
-          id: true, name: true,
-          employeeProfile: { select: { designation: true } },
+  try {
+    const users = await db.user.findMany({
+      where,
+      select: {
+        id: true, email: true, name: true, role: true, isActive: true,
+        phone: true, createdAt: true, reportingManagerId: true,
+        employeeProfile: { select: { designation: true } },
+        reportingManager: {
+          select: {
+            id: true, name: true,
+            employeeProfile: { select: { designation: true } },
+          },
         },
+        regionAssignments: { include: { region: { select: { id: true, name: true } } } },
+        clinicAssignments: { include: { clinic: { select: { id: true, name: true } } } },
       },
-      regionAssignments: { include: { region: { select: { id: true, name: true } } } },
-      clinicAssignments: { include: { clinic: { select: { id: true, name: true } } } },
-    },
-    orderBy: { createdAt: 'desc' },
-  })
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    })
 
-  const data = users.map(u => ({
-    ...u,
-    designation: u.employeeProfile?.designation ?? null,
-    reportingManager: u.reportingManager
-      ? {
-          id: u.reportingManager.id,
-          name: u.reportingManager.name,
-          designation: u.reportingManager.employeeProfile?.designation ?? null,
-        }
-      : null,
-  }))
+    const data = users.map(u => ({
+      ...u,
+      designation: u.employeeProfile?.designation ?? null,
+      reportingManager: u.reportingManager
+        ? {
+            id: u.reportingManager.id,
+            name: u.reportingManager.name,
+            designation: u.reportingManager.employeeProfile?.designation ?? null,
+          }
+        : null,
+    }))
 
-  return NextResponse.json({ data, total: data.length })
+    const total = await db.user.count({ where })
+    return NextResponse.json({ data, total, page, pageSize })
+  } catch (e) {
+    console.error('[GET /api/users]', e)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -101,33 +112,39 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 400 })
 
   const d = parsed.data
-  const exists = await db.user.findUnique({ where: { email: d.email.toLowerCase() } })
-  if (exists) return NextResponse.json({ error: 'Email already in use' }, { status: 409 })
 
-  const hash = await bcrypt.hash(d.password, 12)
-  const user = await db.user.create({
-    data: {
-      email: d.email.toLowerCase(),
-      password: hash,
-      name: d.name,
-      role: d.role,
-      phone: d.phone,
-      reportingManagerId: d.reportingManagerId || null,
-      createdById: session.user.id,
-      regionAssignments: d.regionIds?.length
-        ? { create: d.regionIds.map(rid => ({ regionId: rid })) }
-        : undefined,
-      clinicAssignments: d.clinicIds?.length
-        ? { create: d.clinicIds.map(cid => ({ clinicId: cid })) }
-        : undefined,
-    },
-    select: { id: true, email: true, name: true, role: true, isActive: true, createdAt: true },
-  })
+  try {
+    const exists = await db.user.findUnique({ where: { email: d.email.toLowerCase() } })
+    if (exists) return NextResponse.json({ error: 'Email already in use' }, { status: 409 })
 
-  if (d.designation) {
-    await db.employeeProfile.create({ data: { userId: user.id, designation: d.designation } })
+    const hash = await bcrypt.hash(d.password, 12)
+    const user = await db.user.create({
+      data: {
+        email: d.email.toLowerCase(),
+        password: hash,
+        name: d.name,
+        role: d.role,
+        phone: d.phone,
+        reportingManagerId: d.reportingManagerId || null,
+        createdById: session.user.id,
+        regionAssignments: d.regionIds?.length
+          ? { create: d.regionIds.map(rid => ({ regionId: rid })) }
+          : undefined,
+        clinicAssignments: d.clinicIds?.length
+          ? { create: d.clinicIds.map(cid => ({ clinicId: cid })) }
+          : undefined,
+      },
+      select: { id: true, email: true, name: true, role: true, isActive: true, createdAt: true },
+    })
+
+    if (d.designation) {
+      await db.employeeProfile.create({ data: { userId: user.id, designation: d.designation } })
+    }
+
+    await db.auditLog.create({ data: { userId: session.user.id, action: 'CREATE', entity: 'User', entityId: user.id } })
+    return NextResponse.json({ data: user }, { status: 201 })
+  } catch (e) {
+    console.error('[POST /api/users]', e)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-
-  await db.auditLog.create({ data: { userId: session.user.id, action: 'CREATE', entity: 'User', entityId: user.id } })
-  return NextResponse.json({ data: user }, { status: 201 })
 }

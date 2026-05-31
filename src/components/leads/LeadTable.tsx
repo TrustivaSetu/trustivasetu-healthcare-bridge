@@ -71,18 +71,26 @@ export function LeadTable({ leads, onEdit, onStatusUpdate, canEdit }: Props) {
                 <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{lead.disbursalDate ? formatDate(lead.disbursalDate) : '—'}</td>
                 <td className="px-4 py-3">
                   {canEdit && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {onEdit && (
                         <button onClick={() => onEdit(lead)}
                           className="text-xs text-brand-600 hover:text-brand-800 font-medium">Edit</button>
                       )}
                       {onStatusUpdate && lead.status === 'PENDING' && (
-                        <button onClick={() => onStatusUpdate(lead, 'APPROVED')}
-                          className="text-xs text-blue-600 hover:text-blue-800 font-medium">Approve</button>
+                        <>
+                          <button onClick={() => onStatusUpdate(lead, 'APPROVED')}
+                            className="text-xs text-blue-600 hover:text-blue-800 font-medium">Approve</button>
+                          <button onClick={() => onStatusUpdate(lead, 'REJECTED')}
+                            className="text-xs text-red-500 hover:text-red-700 font-medium">Reject</button>
+                        </>
                       )}
                       {onStatusUpdate && lead.status === 'APPROVED' && (
-                        <button onClick={() => onStatusUpdate(lead, 'DISBURSED')}
-                          className="text-xs text-green-600 hover:text-green-800 font-medium">Disburse</button>
+                        <>
+                          <button onClick={() => onStatusUpdate(lead, 'DISBURSED')}
+                            className="text-xs text-green-600 hover:text-green-800 font-medium">Disburse</button>
+                          <button onClick={() => onStatusUpdate(lead, 'REJECTED')}
+                            className="text-xs text-red-500 hover:text-red-700 font-medium">Reject</button>
+                        </>
                       )}
                     </div>
                   )}

@@ -145,10 +145,15 @@ model Lead {
   lenderId        String?
   createdById     String?
   metadata        Json?
-  losEnquiryId    String?    @unique
-  enquiryType     String?
-  motherName      String?
-  treatmentName   String?
+  losEnquiryId      String?    @unique
+  enquiryType       String?
+  motherName        String?
+  treatmentName     String?
+  treatmentCategory String?
+  utrNumber         String?
+  nachStatus        String?
+  agreementSigned   Boolean    @default(false)
+  rejectionReason   String?
   clinic          Clinic     @relation(fields: [clinicId], references: [id])
   createdBy       User?      @relation("LeadCreatedBy", fields: [createdById], references: [id])
   lender          Lender?    @relation(fields: [lenderId], references: [id])
@@ -157,6 +162,8 @@ model Lead {
   @@index([lenderId])
   @@index([status])
   @@index([applicationDate])
+  @@index([nachStatus])
+  @@index([agreementSigned])
 }
 
 model Target {

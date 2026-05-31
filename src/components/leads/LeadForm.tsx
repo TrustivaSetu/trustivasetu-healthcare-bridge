@@ -35,7 +35,7 @@ interface LoanScheme {
 }
 
 type EmploymentType = 'SALARIED' | 'SELF_EMPLOYED' | 'BUSINESS' | 'OTHER'
-type Step = 1 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
+type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
 
 const TREATMENT_CATEGORIES: Record<string, string[]> = {
   'Cosmetology & Aesthetics': ['LASIK Eye', 'Botox', 'Liposuction', 'Rhinoplasty', 'Facelift', 'Breast Augmentation'],
@@ -99,6 +99,9 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
   const [offers, setOffers] = useState<LenderOffer[]>([])
   const [selectedOffer, setSelectedOffer] = useState<LenderOffer | null>(null)
   const [qualifying, setQualifying] = useState(false)
+  const [otpSent, setOtpSent] = useState(false)
+  const [otpInput, setOtpInput] = useState('')
+  const [phoneVerified, setPhoneVerified] = useState(false)
   const [totalLenders, setTotalLenders] = useState(0)
   const [totalEligible, setTotalEligible] = useState(0)
 
@@ -140,6 +143,39 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
       if (json.verified) { setAadhaarVerified(true); toast.success('Aadhaar verified! ✅') }
       else toast.error(json.message ?? 'Aadhaar verification failed — you can proceed anyway')
     } catch { toast.error('Aadhaar verify failed') }
+    finally { setLoading(false) }
+  }
+
+  async function sendOTP() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/leads/send-otp', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      })
+      const json = await res.json()
+      if (json.success) { setOtpSent(true); toast.success('OTP sent to +91 ' + phone) }
+      else toast.error(json.error ?? 'Failed to send OTP')
+    } catch { toast.error('Failed to send OTP') }
+    finally { setLoading(false) }
+  }
+
+  async function verifyOTP() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/leads/verify-otp', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, otp: otpInput }),
+      })
+      const json = await res.json()
+      if (json.verified) {
+        setPhoneVerified(true)
+        toast.success('Phone verified! ✅')
+        setStep(3)
+      } else {
+        toast.error(json.message ?? 'Invalid OTP')
+      }
+    } catch { toast.error('OTP verification failed') }
     finally { setLoading(false) }
   }
 
@@ -235,8 +271,10 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
         },
       }
 
-      const res = await fetch('/api/leads', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const url = isEdit ? `/api/leads/${initial!.id}` : '/api/leads'
+      const method = isEdit ? 'PATCH' : 'POST'
+      const res = await fetch(url, {
+        method, headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
       if (!res.ok) { const e = await res.json(); throw new Error(e.error ?? 'Failed') }
@@ -248,11 +286,11 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
   }
 
   const STEP_LABELS: Record<number, string> = {
-    1: 'Basic Info', 3: 'KYC', 4: 'Employment',
+    1: 'Basic Info', 2: 'Phone OTP', 3: 'KYC', 4: 'Employment',
     5: 'Treatment & Scheme', 6: 'Smart Qualify', 7: 'Confirm',
     8: 'Income Verify', 9: 'Enhanced Decision', 10: 'Final Submit',
   }
-  const STEP_NUMS = wantsEnhancement ? [1,3,4,5,6,7,8,9,10] : [1,3,4,5,6,7]
+  const STEP_NUMS = wantsEnhancement ? [1,2,3,4,5,6,7,8,9,10] : [1,2,3,4,5,6,7]
   const currentIdx = STEP_NUMS.indexOf(step)
   const progress = Math.round(((currentIdx + 1) / STEP_NUMS.length) * 100)
   const treatments = treatmentCategory ? TREATMENT_CATEGORIES[treatmentCategory] ?? [] : []
@@ -288,9 +326,48 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
               if (!applicantName || phone.length < 10) {
                 toast.error('Name and 10-digit phone number are required'); return
               }
-              setStep(3) // OTP skipped — mock mode (real OTP to be implemented)
+              setStep(2)
             }}
             onCancel={onCancel} nextLabel="Next: KYC →" />
+        </div>
+      )}
+
+      {/* STEP 2: Phone OTP */}
+      {step === 2 && (
+        <div className="space-y-4">
+          <StepHeader icon="📱" title="Phone Verification" subtitle="Verify mobile number via OTP" />
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+            <p className="text-sm text-gray-700">Sending OTP to <strong>+91 {phone}</strong></p>
+            {!otpSent ? (
+              <button onClick={sendOTP} disabled={loading}
+                className="w-full py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-60">
+                {loading ? 'Sending...' : '📲 Send OTP'}
+              </button>
+            ) : !phoneVerified ? (
+              <div className="space-y-3">
+                <input
+                  value={otpInput}
+                  onChange={e => setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="Enter 6-digit OTP"
+                  maxLength={6}
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg text-sm font-mono text-center text-xl tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <button onClick={verifyOTP} disabled={loading || otpInput.length !== 6}
+                  className="w-full py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-60">
+                  {loading ? 'Verifying...' : '✅ Verify OTP'}
+                </button>
+                <button type="button" onClick={sendOTP} disabled={loading}
+                  className="w-full text-xs text-blue-600 hover:text-blue-800 py-1">
+                  Resend OTP
+                </button>
+              </div>
+            ) : null}
+            {phoneVerified && <StatusBadge ok text="Phone Verified" />}
+          </div>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
+            <p className="text-xs text-yellow-700">⚠️ Dev mode: use <strong>123456</strong> as OTP to bypass</p>
+          </div>
+          <NavBtn onBack={() => setStep(1)} onCancel={onCancel} hideNext />
         </div>
       )}
 

@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
   if (clinicId) { clinicFilter.id = clinicId; delete clinicFilter.regionId }
   if (rmId) clinicFilter.assignedRMId = rmId
 
+  try {
   const clinics = await db.clinic.findMany({ where: { ...clinicFilter, isActive: true }, select: { id: true } })
   const clinicIdList = clinics.map(c => c.id)
 
@@ -79,30 +80,30 @@ export async function GET(req: NextRequest) {
     })
   )
 
-  // Monthly trend (6 months)
-  const monthlyTrend = []
-  for (let i = 5; i >= 0; i--) {
-    const mo = subMonths(now, i)
-    const mStart = startOfMonth(mo), mEnd = endOfMonth(mo)
-    const mWhere: Record<string, unknown> = { clinicId: { in: clinicIdList }, applicationDate: { gte: mStart, lte: mEnd } }
-    if (lenderId) mWhere.lenderId = lenderId
+  // Monthly trend (6 months) — all months queried in parallel
+  const monthlyTrend = await Promise.all(
+    Array.from({ length: 6 }, (_, i) => subMonths(now, 5 - i)).map(async (mo) => {
+      const mStart = startOfMonth(mo), mEnd = endOfMonth(mo)
+      const mWhere: Record<string, unknown> = { clinicId: { in: clinicIdList }, applicationDate: { gte: mStart, lte: mEnd } }
+      if (lenderId) mWhere.lenderId = lenderId
 
-    const [ml, ma, md, mlv, mav, mdv] = await Promise.all([
-      db.lead.count({ where: mWhere }),
-      db.lead.count({ where: { ...mWhere, status: { in: ['APPROVED', 'DISBURSED'] } } }),
-      db.lead.count({ where: { ...mWhere, status: 'DISBURSED' } }),
-      db.lead.aggregate({ _sum: { amount: true }, where: mWhere }),
-      db.lead.aggregate({ _sum: { approvedAmount: true }, where: { ...mWhere, status: { in: ['APPROVED', 'DISBURSED'] } } }),
-      db.lead.aggregate({ _sum: { disbursedAmount: true }, where: { ...mWhere, status: 'DISBURSED' } }),
-    ])
-    monthlyTrend.push({
-      month: format(mo, 'MMM yy'),
-      leads: ml, approved: ma, disbursed: md,
-      leadValue: mlv._sum.amount ?? 0,
-      approvedValue: mav._sum.approvedAmount ?? 0,
-      disbursedValue: mdv._sum.disbursedAmount ?? 0,
+      const [ml, ma, md, mlv, mav, mdv] = await Promise.all([
+        db.lead.count({ where: mWhere }),
+        db.lead.count({ where: { ...mWhere, status: { in: ['APPROVED', 'DISBURSED'] } } }),
+        db.lead.count({ where: { ...mWhere, status: 'DISBURSED' } }),
+        db.lead.aggregate({ _sum: { amount: true }, where: mWhere }),
+        db.lead.aggregate({ _sum: { approvedAmount: true }, where: { ...mWhere, status: { in: ['APPROVED', 'DISBURSED'] } } }),
+        db.lead.aggregate({ _sum: { disbursedAmount: true }, where: { ...mWhere, status: 'DISBURSED' } }),
+      ])
+      return {
+        month: format(mo, 'MMM yy'),
+        leads: ml, approved: ma, disbursed: md,
+        leadValue: mlv._sum.amount ?? 0,
+        approvedValue: mav._sum.approvedAmount ?? 0,
+        disbursedValue: mdv._sum.disbursedAmount ?? 0,
+      }
     })
-  }
+  )
 
   // Target & run rate
   const curMonth = now.getMonth() + 1, curYear = now.getFullYear()
@@ -158,6 +159,10 @@ export async function GET(req: NextRequest) {
       requiredDisbursalRunRate: rem > 0 ? (disbursalTarget - mtdDisb) / rem : 0,
     },
   })
+  } catch (e) {
+    console.error('[GET /api/dashboard]', e)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
 
 function emptyMetrics() {

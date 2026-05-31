@@ -161,7 +161,7 @@ export default function ExpensesPage() {
 
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">
-        {['', 'DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED'].map(s => (
+        {['', 'DRAFT', 'SUBMITTED', 'APPROVED', 'PARTIALLY_APPROVED', 'REJECTED'].map(s => (
           <button key={s} onClick={() => setFilterStatus(s)}
             className={cn('px-3 py-1.5 text-xs font-medium rounded-full border transition',
               filterStatus === s ? 'bg-brand-600 text-white border-brand-600' : 'border-gray-200 text-gray-600 hover:border-brand-300')}>

@@ -108,7 +108,7 @@ function matchLender(
   smartScore: SmartScore,
 ): LenderOffer | null {
   const income = req.monthlyIncome
-  const requestedAmount = Math.min(req.loanAmount, 75000)
+  const requestedAmount = req.loanAmount
 
   // Lender profiles (internal — rate not shown to customer)
   const profiles: Record<string, {
@@ -191,7 +191,6 @@ export async function POST(req: NextRequest) {
 
   // 3. Parallel matching — all lenders simultaneously
   const offerPromises = dbLenders.map(async (lender) => {
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 300))
     return matchLender(lender.id, lender.name, lender.code, body, smartScore)
   })
 

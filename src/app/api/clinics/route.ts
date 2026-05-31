@@ -46,8 +46,9 @@ export async function GET(req: NextRequest) {
   const { role, regionIds, clinicIds } = session.user
   const clinicFilter: Record<string, unknown> = buildClinicFilter(role, regionIds, clinicIds)
   if (regionId) clinicFilter.regionId = regionId
-  if (search) clinicFilter.name = { contains: search }
+  if (search) clinicFilter.name = { contains: search, mode: 'insensitive' }
 
+  try {
   if (minimal) {
     const clinics = await db.clinic.findMany({
       where: { ...clinicFilter, isActive: true },
@@ -72,38 +73,49 @@ export async function GET(req: NextRequest) {
   const mtdStart = startOfMonth(now)
   const prevStart = startOfMonth(subMonths(now, 1))
   const prevEnd = endOfMonth(subMonths(now, 1))
+  const pageClinicIds = clinics.map(c => c.id)
 
-  const clinicsWithStats = await Promise.all(
-    clinics.map(async clinic => {
-      const [totalLeads, mtdLeads, lmtdLeads, totalDisbAgg, mtdDisbAgg, lmtdDisbAgg, firstLead] = await Promise.all([
-        db.lead.count({ where: { clinicId: clinic.id } }),
-        db.lead.count({ where: { clinicId: clinic.id, applicationDate: { gte: mtdStart } } }),
-        db.lead.count({ where: { clinicId: clinic.id, applicationDate: { gte: prevStart, lte: prevEnd } } }),
-        db.lead.aggregate({ _sum: { disbursedAmount: true }, where: { clinicId: clinic.id, status: 'DISBURSED' } }),
-        db.lead.aggregate({ _sum: { disbursedAmount: true }, where: { clinicId: clinic.id, status: 'DISBURSED', disbursalDate: { gte: mtdStart } } }),
-        db.lead.aggregate({ _sum: { disbursedAmount: true }, where: { clinicId: clinic.id, status: 'DISBURSED', disbursalDate: { gte: prevStart, lte: prevEnd } } }),
-        db.lead.findFirst({ where: { clinicId: clinic.id }, orderBy: { applicationDate: 'asc' }, select: { applicationDate: true } }),
-      ])
+  // Fetch all stats in 7 parallel bulk queries instead of 7 per clinic
+  const [totalGroups, mtdGroups, lmtdGroups, totalDisbGroups, mtdDisbGroups, lmtdDisbGroups, firstLeads] = await Promise.all([
+    db.lead.groupBy({ by: ['clinicId'], where: { clinicId: { in: pageClinicIds } }, _count: { id: true } }),
+    db.lead.groupBy({ by: ['clinicId'], where: { clinicId: { in: pageClinicIds }, applicationDate: { gte: mtdStart } }, _count: { id: true } }),
+    db.lead.groupBy({ by: ['clinicId'], where: { clinicId: { in: pageClinicIds }, applicationDate: { gte: prevStart, lte: prevEnd } }, _count: { id: true } }),
+    db.lead.groupBy({ by: ['clinicId'], where: { clinicId: { in: pageClinicIds }, status: 'DISBURSED' }, _sum: { disbursedAmount: true } }),
+    db.lead.groupBy({ by: ['clinicId'], where: { clinicId: { in: pageClinicIds }, status: 'DISBURSED', disbursalDate: { gte: mtdStart } }, _sum: { disbursedAmount: true } }),
+    db.lead.groupBy({ by: ['clinicId'], where: { clinicId: { in: pageClinicIds }, status: 'DISBURSED', disbursalDate: { gte: prevStart, lte: prevEnd } }, _sum: { disbursedAmount: true } }),
+    db.lead.findMany({ where: { clinicId: { in: pageClinicIds } }, orderBy: { applicationDate: 'asc' }, distinct: ['clinicId'], select: { clinicId: true, applicationDate: true } }),
+  ])
 
-      const mtdDisb = mtdDisbAgg._sum.disbursedAmount ?? 0
-      const lmtdDisb = lmtdDisbAgg._sum.disbursedAmount ?? 0
+  const lookup = <T extends { clinicId: string }>(arr: T[], id: string): T | undefined => arr.find(x => x.clinicId === id)
 
-      return {
-        ...clinic,
-        totalLeads,
-        mtdLeads,
-        lmtdLeads,
-        totalDisbursalValue: totalDisbAgg._sum.disbursedAmount ?? 0,
-        mtdDisbursalValue: mtdDisb,
-        lmtdDisbursalValue: lmtdDisb,
-        leadsGrowth: lmtdLeads > 0 ? ((mtdLeads - lmtdLeads) / lmtdLeads) * 100 : (mtdLeads > 0 ? 100 : 0),
-        disbursalGrowth: lmtdDisb > 0 ? ((mtdDisb - lmtdDisb) / lmtdDisb) * 100 : (mtdDisb > 0 ? 100 : 0),
-        firstLeadDate: firstLead?.applicationDate ?? null,
-      }
-    })
-  )
+  const clinicsWithStats = clinics.map(clinic => {
+    const totalLeads = (lookup(totalGroups, clinic.id) as { _count: { id: number } } | undefined)?._count.id ?? 0
+    const mtdLeads = (lookup(mtdGroups, clinic.id) as { _count: { id: number } } | undefined)?._count.id ?? 0
+    const lmtdLeads = (lookup(lmtdGroups, clinic.id) as { _count: { id: number } } | undefined)?._count.id ?? 0
+    const totalDisbursalValue = (lookup(totalDisbGroups, clinic.id) as { _sum: { disbursedAmount: number | null } } | undefined)?._sum.disbursedAmount ?? 0
+    const mtdDisb = (lookup(mtdDisbGroups, clinic.id) as { _sum: { disbursedAmount: number | null } } | undefined)?._sum.disbursedAmount ?? 0
+    const lmtdDisb = (lookup(lmtdDisbGroups, clinic.id) as { _sum: { disbursedAmount: number | null } } | undefined)?._sum.disbursedAmount ?? 0
+    const firstLead = firstLeads.find(f => f.clinicId === clinic.id)
+
+    return {
+      ...clinic,
+      totalLeads,
+      mtdLeads,
+      lmtdLeads,
+      totalDisbursalValue,
+      mtdDisbursalValue: mtdDisb,
+      lmtdDisbursalValue: lmtdDisb,
+      leadsGrowth: lmtdLeads > 0 ? ((mtdLeads - lmtdLeads) / lmtdLeads) * 100 : (mtdLeads > 0 ? 100 : 0),
+      disbursalGrowth: lmtdDisb > 0 ? ((mtdDisb - lmtdDisb) / lmtdDisb) * 100 : (mtdDisb > 0 ? 100 : 0),
+      firstLeadDate: firstLead?.applicationDate ?? null,
+    }
+  })
 
   return NextResponse.json({ data: clinicsWithStats, total, page, pageSize })
+  } catch (e) {
+    console.error('[GET /api/clinics]', e)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -119,6 +131,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 400 })
 
   const data = parsed.data
+  try {
   const clinic = await db.clinic.create({
     data: {
       name: data.name,
@@ -172,4 +185,8 @@ export async function POST(req: NextRequest) {
 
   await db.auditLog.create({ data: { userId: session.user.id, action: 'CREATE', entity: 'Clinic', entityId: clinic.id } })
   return NextResponse.json({ data: clinic }, { status: 201 })
+  } catch (e) {
+    console.error('[POST /api/clinics]', e)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
