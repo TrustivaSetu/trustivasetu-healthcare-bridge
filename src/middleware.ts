@@ -38,8 +38,13 @@ export default async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
 
-    // Pass validated user data to the API route via a request header
-    const userBase64 = Buffer.from(JSON.stringify(payload)).toString('base64')
+    // Pass validated user data to the API route via a request header.
+    // Use btoa + TextEncoder instead of Buffer — Buffer is not available in Edge runtime.
+    const jsonStr = JSON.stringify(payload)
+    const bytes = new TextEncoder().encode(jsonStr)
+    let binary = ''
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+    const userBase64 = btoa(binary)
     const requestHeaders = new Headers(req.headers)
     requestHeaders.set('x-tab-user', userBase64)
     return NextResponse.next({ request: { headers: requestHeaders } })
