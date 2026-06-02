@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
+import { useTabSession } from '@/contexts/TabSessionContext'
 import { SmartOfferCard } from '@/components/leads/SmartOfferCard'
 import { SmartScoreMeter } from '@/components/leads/SmartScoreMeter'
 import { LoanSchemeSelector } from '@/components/leads/LoanSchemeSelector'
@@ -62,6 +63,8 @@ interface Props {
 }
 
 export function LeadForm({ initial, onSuccess, onCancel }: Props) {
+  const { user: sessionUser } = useTabSession()
+  const isSuperAdmin = sessionUser?.role === 'SUPER_ADMIN'
   const isEdit = !!initial?.id
 
   const [step, setStep] = useState<Step>(1)
@@ -389,9 +392,11 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
             ) : null}
             {phoneVerified && <StatusBadge ok text="Phone Verified" />}
           </div>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
-            <p className="text-xs text-yellow-700">⚠️ Dev mode: use <strong>123456</strong> as OTP to bypass</p>
-          </div>
+          {isSuperAdmin && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
+              <p className="text-xs text-yellow-700">⚠️ Dev mode: use <strong>123456</strong> as OTP to bypass</p>
+            </div>
+          )}
           <NavBtn onBack={() => setStep(1)} onCancel={onCancel} hideNext />
         </div>
       )}

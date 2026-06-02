@@ -6,6 +6,11 @@ export async function POST(req: NextRequest) {
 
   if (!phone || !otp) return NextResponse.json({ verified: false, message: 'Missing fields' }, { status: 400 })
 
+  // Dev bypass — active when NODE_ENV is not production OR ENABLE_OTP_BYPASS=true
+  if ((process.env.NODE_ENV !== 'production' || process.env.ENABLE_OTP_BYPASS === 'true') && otp === '123456') {
+    return NextResponse.json({ verified: true })
+  }
+
   const stored = await db.otpToken.findFirst({
     where: { email: `pub_${phone}`, purpose: 'PUBLIC_PHONE_OTP', verified: false },
     orderBy: { createdAt: 'desc' },

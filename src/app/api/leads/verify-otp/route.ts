@@ -8,8 +8,8 @@ export async function POST(req: NextRequest) {
 
   const { phone, otp } = await req.json()
 
-  // Dev bypass
-  if (process.env.NODE_ENV === 'development' && otp === '123456') {
+  // Dev bypass — active when NODE_ENV is not production OR ENABLE_OTP_BYPASS=true
+  if ((process.env.NODE_ENV !== 'production' || process.env.ENABLE_OTP_BYPASS === 'true') && otp === '123456') {
     return NextResponse.json({ verified: true, message: 'Phone verified (dev mode)' })
   }
 
