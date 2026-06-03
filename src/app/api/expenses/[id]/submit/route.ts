@@ -87,20 +87,27 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   </td></tr>
 </table></body></html>`
 
-  // Email to manager (or admins if no manager)
-  const managerEmail = expense.user.reportingManager?.email
-  if (managerEmail) {
-    await sendEmail({
-      to: managerEmail,
-      subject: `Expense Approval: ${expense.user.name} — ${formatINR(expense.totalAmount)}`,
-      html: emailHtml,
-    })
-  } else {
-    const admins = await db.user.findMany({ where: { role: { in: ['SUPER_ADMIN', 'ADMIN'] }, isActive: true }, select: { email: true } })
-    for (const a of admins) {
-      await sendEmail({ to: a.email, subject: `Expense Approval: ${expense.user.name} — ${formatINR(expense.totalAmount)}`, html: emailHtml })
+  // Email to manager (or admins if no manager) — fire-and-forget so email failure
+  // does not return 500 after the DB record is already SUBMITTED
+  void (async () => {
+    try {
+      const managerEmail = expense.user.reportingManager?.email
+      if (managerEmail) {
+        await sendEmail({
+          to: managerEmail,
+          subject: `Expense Approval: ${expense.user.name} — ${formatINR(expense.totalAmount)}`,
+          html: emailHtml,
+        })
+      } else {
+        const admins = await db.user.findMany({ where: { role: { in: ['SUPER_ADMIN', 'ADMIN'] }, isActive: true }, select: { email: true } })
+        for (const a of admins) {
+          await sendEmail({ to: a.email, subject: `Expense Approval: ${expense.user.name} — ${formatINR(expense.totalAmount)}`, html: emailHtml })
+        }
+      }
+    } catch (e) {
+      console.error('[Expense Submit Email Error]', e)
     }
-  }
+  })()
 
   return NextResponse.json({ data: updated })
 }
