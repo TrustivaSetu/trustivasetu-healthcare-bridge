@@ -11,6 +11,8 @@ interface BulkResult {
   created: string[]
   failed: { row: number; name: string; error: string }[]
   total: number
+  usersCreated: number
+  emailsSent: number
 }
 
 interface Props {
@@ -367,8 +369,14 @@ export function ClinicBulkUpload({ onSuccess, onCancel }: Props) {
         <div className="space-y-4">
           <div className={`rounded-xl p-4 ${result.failed.length === 0 ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
             <p className="text-sm font-bold">{result.message}</p>
-            <div className="flex gap-4 mt-2">
-              <span className="text-xs text-green-700 font-medium">✅ {result.created.length} created</span>
+            <div className="flex gap-4 mt-2 flex-wrap">
+              <span className="text-xs text-green-700 font-medium">✅ {result.created.length} clinics created</span>
+              {result.usersCreated > 0 && (
+                <span className="text-xs text-blue-700 font-medium">👤 {result.usersCreated} portal users created</span>
+              )}
+              {result.emailsSent > 0 && (
+                <span className="text-xs text-teal-700 font-medium">📧 {result.emailsSent} welcome emails sent</span>
+              )}
               {result.failed.length > 0 && (
                 <span className="text-xs text-red-600 font-medium">❌ {result.failed.length} failed</span>
               )}

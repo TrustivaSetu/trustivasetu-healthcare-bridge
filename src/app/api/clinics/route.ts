@@ -5,6 +5,8 @@ import { buildClinicFilter, hasPermission } from '@/lib/permissions'
 import { checkRolePermission } from '@/lib/role-permissions'
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns'
 import { z } from 'zod'
+import bcrypt from 'bcryptjs'
+import { sendEmail, portalAccessEmailHtml } from '@/lib/email'
 
 function generateClinicCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -13,6 +15,19 @@ function generateClinicCode(): string {
     code += chars[Math.floor(Math.random() * chars.length)]
   }
   return code
+}
+
+function generatePassword(length = 12): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%'
+  let password = ''
+  password += 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)]
+  password += 'abcdefghjkmnpqrstuvwxyz'[Math.floor(Math.random() * 23)]
+  password += '23456789'[Math.floor(Math.random() * 8)]
+  password += '!@#$%'[Math.floor(Math.random() * 5)]
+  for (let i = password.length; i < length; i++) {
+    password += chars[Math.floor(Math.random() * chars.length)]
+  }
+  return password.split('').sort(() => Math.random() - 0.5).join('')
 }
 
 const createSchema = z.object({
@@ -26,6 +41,7 @@ const createSchema = z.object({
   regionId: z.string().cuid(),
   assignedRMId: z.string().cuid().optional().or(z.literal('')),
   externalId: z.string().optional(),
+  hospitalType: z.string().optional(),
   metadata: z.record(z.unknown()).optional(),
 })
 
@@ -75,7 +91,6 @@ export async function GET(req: NextRequest) {
   const prevEnd = endOfMonth(subMonths(now, 1))
   const pageClinicIds = clinics.map(c => c.id)
 
-  // Fetch all stats in 7 parallel bulk queries instead of 7 per clinic
   const [totalGroups, mtdGroups, lmtdGroups, totalDisbGroups, mtdDisbGroups, lmtdDisbGroups, firstLeads] = await Promise.all([
     db.lead.groupBy({ by: ['clinicId'], where: { clinicId: { in: pageClinicIds } }, _count: { id: true } }),
     db.lead.groupBy({ by: ['clinicId'], where: { clinicId: { in: pageClinicIds }, applicationDate: { gte: mtdStart } }, _count: { id: true } }),
@@ -128,63 +143,113 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
   const parsed = createSchema.safeParse(body)
-  if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 400 })
+  if (!parsed.success) {
+    const errors = parsed.error.flatten()
+    console.error('[POST /api/clinics] Validation failed:', JSON.stringify(errors, null, 2))
+    return NextResponse.json({ error: 'Validation failed', details: errors }, { status: 400 })
+  }
 
   const data = parsed.data
+
+  // Prepare portal user credentials outside transaction (bcrypt is I/O heavy)
+  let plainPassword: string | null = null
+  let hashedPassword: string | null = null
+  if (data.email) {
+    plainPassword = generatePassword(12)
+    hashedPassword = await bcrypt.hash(plainPassword, 12)
+  }
+
   try {
-  const clinic = await db.clinic.create({
-    data: {
-      name: data.name,
-      address: data.address,
-      accountNumber: data.accountNumber,
-      contactPerson: data.contactPerson,
-      contactNumber: data.contactNumber,
-      email: data.email || null,
-      businessPotential: data.businessPotential,
-      regionId: data.regionId,
-      assignedRMId: data.assignedRMId || null,
-      externalId: data.externalId || generateClinicCode(),
-      metadata: data.metadata ? JSON.parse(JSON.stringify(data.metadata)) : undefined,
-    },
-    include: { region: true, assignedRM: { select: { id: true, name: true } } },
-  })
-
-  // Auto-assign clinic to RM in UserClinic table
-  if (clinic.assignedRMId) {
-    await db.userClinic.upsert({
-      where: {
-        userId_clinicId: {
-          userId: clinic.assignedRMId,
-          clinicId: clinic.id,
+    const { clinic, portalUser } = await db.$transaction(async (tx) => {
+      const clinic = await tx.clinic.create({
+        data: {
+          name: data.name,
+          address: data.address,
+          accountNumber: data.accountNumber,
+          contactPerson: data.contactPerson,
+          contactNumber: data.contactNumber,
+          email: data.email || null,
+          businessPotential: data.businessPotential,
+          regionId: data.regionId,
+          assignedRMId: data.assignedRMId || null,
+          externalId: data.externalId || generateClinicCode(),
+          hospitalType: data.hospitalType || null,
+          metadata: data.metadata ? JSON.parse(JSON.stringify(data.metadata)) : undefined,
         },
-      },
-      create: {
-        userId: clinic.assignedRMId,
-        clinicId: clinic.id,
-      },
-      update: {},
-    })
-  }
+        include: { region: true, assignedRM: { select: { id: true, name: true } } },
+      })
 
-  // Also auto-assign creating user if they are TEAM_MEMBER
-  if (session.user.role === 'TEAM_MEMBER' && session.user.id !== clinic.assignedRMId) {
-    await db.userClinic.upsert({
-      where: {
-        userId_clinicId: {
-          userId: session.user.id,
-          clinicId: clinic.id,
-        },
-      },
-      create: {
-        userId: session.user.id,
-        clinicId: clinic.id,
-      },
-      update: {},
-    })
-  }
+      // Auto-assign clinic to RM
+      if (clinic.assignedRMId) {
+        await tx.userClinic.upsert({
+          where: { userId_clinicId: { userId: clinic.assignedRMId, clinicId: clinic.id } },
+          create: { userId: clinic.assignedRMId, clinicId: clinic.id },
+          update: {},
+        })
+      }
 
-  await db.auditLog.create({ data: { userId: session.user.id, action: 'CREATE', entity: 'Clinic', entityId: clinic.id } })
-  return NextResponse.json({ data: clinic }, { status: 201 })
+      // Auto-assign creating user if TEAM_MEMBER
+      if (session.user.role === 'TEAM_MEMBER' && session.user.id !== clinic.assignedRMId) {
+        await tx.userClinic.upsert({
+          where: { userId_clinicId: { userId: session.user.id, clinicId: clinic.id } },
+          create: { userId: session.user.id, clinicId: clinic.id },
+          update: {},
+        })
+      }
+
+      // Auto-create CLINIC_USER portal user if email provided
+      let portalUser: { email: string } | null = null
+      if (clinic.email && hashedPassword) {
+        const emailConflict = await tx.user.findUnique({
+          where: { email: clinic.email.toLowerCase() },
+          select: { id: true },
+        })
+        const userEmail = emailConflict
+          ? `portal+${clinic.id.slice(-6)}@trustivasetu.com`
+          : clinic.email.toLowerCase()
+
+        portalUser = await tx.user.create({
+          data: {
+            email: userEmail,
+            password: hashedPassword,
+            name: clinic.name,
+            role: 'CLINIC_USER',
+            mustChangePassword: true,
+            clinicAssignments: { create: { clinicId: clinic.id } },
+          },
+          select: { email: true },
+        })
+
+        await tx.clinic.update({
+          where: { id: clinic.id },
+          data: { portalAccessSent: true, portalAccessSentAt: new Date() },
+        })
+      }
+
+      return { clinic, portalUser }
+    })
+
+    // Send welcome email outside transaction
+    if (portalUser && plainPassword && clinic.email) {
+      const loginUrl = `${process.env.NEXTAUTH_URL ?? 'https://lms.trustivasetu.com'}/lms/login`
+      try {
+        await sendEmail({
+          to: clinic.email,
+          subject: `Your Trustiva Setu Portal Access — ${clinic.name}`,
+          html: portalAccessEmailHtml({
+            clinicName: clinic.name,
+            email: portalUser.email,
+            password: plainPassword,
+            loginUrl,
+          }),
+        })
+      } catch (emailErr) {
+        console.error('[POST /api/clinics] Portal welcome email failed:', emailErr)
+      }
+    }
+
+    await db.auditLog.create({ data: { userId: session.user.id, action: 'CREATE', entity: 'Clinic', entityId: clinic.id } })
+    return NextResponse.json({ data: clinic, portalAccessSent: !!portalUser }, { status: 201 })
   } catch (e) {
     console.error('[POST /api/clinics]', e)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -3,12 +3,10 @@ import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { sendEmail, portalAccessEmailHtml } from '@/lib/email'
-import { signTabToken, createTabSessionRecord } from '@/lib/tab-session'
 
 function generatePassword(length = 12): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%'
   let password = ''
-  // Ensure at least one of each required character type
   password += 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)]
   password += 'abcdefghjkmnpqrstuvwxyz'[Math.floor(Math.random() * 23)]
   password += '23456789'[Math.floor(Math.random() * 8)]
@@ -61,20 +59,17 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const portalEmail = clinic.email.toLowerCase()
 
-  // Check if portal user already exists
   const existing = await db.user.findFirst({
     where: { role: 'CLINIC_USER', clinicAssignments: { some: { clinicId: params.id } } },
   })
 
   let portalUser
   if (existing) {
-    // Resend: update password and set mustChangePassword
     portalUser = await db.user.update({
       where: { id: existing.id },
       data: { password: hashed, mustChangePassword: true, isActive: true },
     })
   } else {
-    // Check if a user with this email already exists (any role)
     const emailConflict = await db.user.findUnique({ where: { email: portalEmail }, select: { id: true } })
     const userEmail = emailConflict ? `portal+${params.id.slice(-6)}@trustivasetu.com` : portalEmail
 
@@ -90,13 +85,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     })
   }
 
-  // Update clinic portal access flags
   await db.clinic.update({
     where: { id: params.id },
     data: { portalAccessSent: true, portalAccessSentAt: new Date() },
   })
 
-  // Send email
   const loginUrl = `${process.env.NEXTAUTH_URL ?? 'https://lms.trustivasetu.com'}/lms/login`
   try {
     await sendEmail({
@@ -110,7 +103,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       }),
     })
   } catch (err) {
-    console.error('[portal-access] Email send failed:', err)
+    console.error('[portal-access POST] Email send failed:', err)
   }
 
   await db.auditLog.create({
@@ -124,4 +117,68 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   })
 
   return NextResponse.json({ success: true, email: portalUser.email })
+}
+
+// Reset portal password with a custom password provided by admin
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getRequestSession()
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const body = await req.json()
+  const { password } = body
+  if (!password || typeof password !== 'string' || password.length < 8) {
+    return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
+  }
+
+  const clinic = await db.clinic.findUnique({
+    where: { id: params.id },
+    select: { id: true, name: true, email: true },
+  })
+  if (!clinic) return NextResponse.json({ error: 'Clinic not found' }, { status: 404 })
+
+  const portalUser = await db.user.findFirst({
+    where: { role: 'CLINIC_USER', clinicAssignments: { some: { clinicId: params.id } } },
+  })
+  if (!portalUser) {
+    return NextResponse.json({ error: 'No portal user found for this clinic' }, { status: 404 })
+  }
+
+  const hashed = await bcrypt.hash(password, 12)
+  await db.user.update({
+    where: { id: portalUser.id },
+    data: { password: hashed, mustChangePassword: false },
+  })
+
+  if (clinic.email) {
+    const loginUrl = `${process.env.NEXTAUTH_URL ?? 'https://lms.trustivasetu.com'}/lms/login`
+    try {
+      await sendEmail({
+        to: clinic.email,
+        subject: `Password Reset — ${clinic.name} Portal`,
+        html: portalAccessEmailHtml({
+          clinicName: clinic.name,
+          email: portalUser.email,
+          password,
+          loginUrl,
+        }),
+      })
+    } catch (err) {
+      console.error('[portal-access PATCH] Email send failed:', err)
+    }
+  }
+
+  await db.auditLog.create({
+    data: {
+      userId: session.user.id,
+      action: 'UPDATE',
+      entity: 'PortalAccess',
+      entityId: params.id,
+      details: `Password manually reset for clinic portal ${clinic.name}`,
+    },
+  })
+
+  return NextResponse.json({ success: true })
 }

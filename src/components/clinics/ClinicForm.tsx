@@ -222,6 +222,34 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
+
+    // Client-side validation — required fields may be on hidden tabs
+    if (!form.name || form.name.trim().length < 2) {
+      toast.error('Hospital name is required (min 2 chars)')
+      setTab('basic')
+      return
+    }
+    if (!form.address || form.address.trim().length < 5) {
+      toast.error('Address is required (min 5 chars)')
+      setTab('basic')
+      return
+    }
+    if (!form.contactPerson || form.contactPerson.trim().length < 2) {
+      toast.error('Contact person name is required')
+      setTab('basic')
+      return
+    }
+    if (!form.contactNumber || form.contactNumber.trim().length < 10) {
+      toast.error('Contact number must be at least 10 digits')
+      setTab('basic')
+      return
+    }
+    if (!isEdit && !form.regionId) {
+      toast.error('Please select a Region — go to Basic Info tab')
+      setTab('basic')
+      return
+    }
+
     setLoading(true)
     try {
       const payload = {
@@ -265,6 +293,14 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
 
       if (!res.ok) {
         const err = await res.json()
+        // Show field-level errors when available
+        const fieldErrors = err.details?.fieldErrors as Record<string, string[]> | undefined
+        if (fieldErrors) {
+          const firstField = Object.entries(fieldErrors)[0]
+          if (firstField) {
+            throw new Error(`${firstField[0]}: ${firstField[1].join(', ')}`)
+          }
+        }
         throw new Error(err.error ?? 'Failed')
       }
 

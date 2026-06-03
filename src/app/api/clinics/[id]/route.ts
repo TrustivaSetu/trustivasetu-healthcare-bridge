@@ -15,6 +15,8 @@ const updateSchema = z.object({
   regionId: z.string().cuid().optional(),
   assignedRMId: z.string().optional(),
   isActive: z.boolean().optional(),
+  hospitalType: z.string().optional().nullable(),
+  metadata: z.record(z.unknown()).optional(),
 })
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
@@ -41,11 +43,25 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const body = await req.json()
   const parsed = updateSchema.safeParse(body)
-  if (!parsed.success) return NextResponse.json({ error: 'Validation failed' }, { status: 400 })
+  if (!parsed.success) {
+    const errors = parsed.error.flatten()
+    console.error('[PATCH /api/clinics/:id] Validation failed:', JSON.stringify(errors, null, 2))
+    return NextResponse.json({ error: 'Validation failed', details: errors }, { status: 400 })
+  }
+
+  const { metadata, hospitalType, ...rest } = parsed.data
+
+  const updateData: Record<string, unknown> = {
+    ...rest,
+    assignedRMId: rest.assignedRMId || null,
+    email: rest.email || null,
+  }
+  if (hospitalType !== undefined) updateData.hospitalType = hospitalType || null
+  if (metadata !== undefined) updateData.metadata = JSON.parse(JSON.stringify(metadata))
 
   const clinic = await db.clinic.update({
     where: { id: params.id },
-    data: { ...parsed.data, assignedRMId: parsed.data.assignedRMId || null, email: parsed.data.email || null },
+    data: updateData,
     include: { region: true, assignedRM: { select: { id: true, name: true } } },
   })
 
@@ -64,7 +80,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   })
   if (!clinic) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  // Save snapshot to RecycleBin before deleting
   await db.recycleBin.create({
     data: {
       entityType: 'Clinic',
@@ -75,7 +90,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     },
   })
 
-  // Hard delete: remove leads first (required FK), then targets, then clinic (ClinicScheme/UserClinic cascade)
   const leads = await db.lead.findMany({
     where: { clinicId: params.id },
     select: { id: true, applicantName: true, phone: true, email: true, amount: true, status: true, clinicId: true, approvedAmount: true, disbursedAmount: true, utrNumber: true, rejectionReason: true },
