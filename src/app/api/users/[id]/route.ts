@@ -8,9 +8,10 @@ import { z } from 'zod'
 const updateSchema = z.object({
   name: z.string().min(2).optional(),
   phone: z.string().optional(),
-  role: z.enum(['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER']).optional(),
+  role: z.enum(['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER', 'CLINIC_USER']).optional(),
   isActive: z.boolean().optional(),
   password: z.string().min(8).optional(),
+  mustChangePassword: z.boolean().optional(),
   designation: z.string().nullable().optional(),
   regionIds: z.array(z.string()).optional(),
   clinicIds: z.array(z.string()).optional(),
@@ -75,7 +76,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const { regionIds, clinicIds, password, reportingManagerId, designation, ...rest } = parsed.data
   const updateData: Record<string, unknown> = { ...rest }
-  if (password) updateData.password = await bcrypt.hash(password, 12)
+  if (password) {
+    updateData.password = await bcrypt.hash(password, 12)
+    updateData.mustChangePassword = false
+  }
   if (reportingManagerId !== undefined) updateData.reportingManagerId = reportingManagerId ?? null
 
   if (regionIds !== undefined) {
@@ -120,12 +124,24 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!hasPermission(session.user.role, 'USER_DELETE')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   if (params.id === session.user.id) return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 })
 
-  const target = await db.user.findUnique({ where: { id: params.id }, select: { id: true, email: true } })
+  const target = await db.user.findUnique({
+    where: { id: params.id },
+    select: { id: true, email: true, name: true, role: true, phone: true, password: true, isActive: true, createdAt: true },
+  })
   if (!target) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (PROTECTED_EMAILS.includes(target.email)) {
     return NextResponse.json({ error: 'This account cannot be deleted' }, { status: 403 })
   }
 
+  await db.recycleBin.create({
+    data: {
+      entityType: 'User',
+      entityId: target.id,
+      entityName: `${target.name} (${target.email})`,
+      deletedBy: session.user.id,
+      snapshot: target as object,
+    },
+  })
   await db.user.delete({ where: { id: params.id } })
   await db.auditLog.create({ data: { userId: session.user.id, action: 'DELETE', entity: 'User', entityId: params.id } })
   return NextResponse.json({ success: true })

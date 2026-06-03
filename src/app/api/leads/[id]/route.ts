@@ -162,6 +162,21 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
+    const leadSnapshot = await db.lead.findUnique({
+      where: { id: params.id },
+      select: { id: true, applicantName: true, phone: true, email: true, amount: true, status: true, clinicId: true, lenderId: true, approvedAmount: true, disbursedAmount: true, utrNumber: true, rejectionReason: true, applicationDate: true },
+    })
+    if (leadSnapshot) {
+      await db.recycleBin.create({
+        data: {
+          entityType: 'Lead',
+          entityId: leadSnapshot.id,
+          entityName: leadSnapshot.applicantName,
+          deletedBy: session.user.id,
+          snapshot: leadSnapshot as object,
+        },
+      })
+    }
     await db.lead.delete({ where: { id: params.id } })
     await db.auditLog.create({ data: { userId: session.user.id, action: 'DELETE', entity: 'Lead', entityId: params.id } })
     return NextResponse.json({ success: true })

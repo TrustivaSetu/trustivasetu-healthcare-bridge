@@ -15,6 +15,7 @@ model User {
   name                 String
   role                 UserRole              @default(TEAM_MEMBER)
   isActive             Boolean               @default(true)
+  mustChangePassword   Boolean               @default(false)
   metadata             Json?
   phone                String?
   createdAt            DateTime              @default(now())
@@ -88,23 +89,26 @@ model UserClinic {
 }
 
 model Clinic {
-  id                String       @id @default(cuid())
-  externalId        String?      @unique
-  name              String
-  address           String
-  accountNumber     String?
-  contactPerson     String
-  contactNumber     String
-  email             String?
-  businessPotential Float?
-  isActive          Boolean      @default(true)
-  onboardedAt       DateTime     @default(now())
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  regionId          String
-  assignedRMId      String?
-  hospitalType      String?
-  metadata          Json?
+  id                  String       @id @default(cuid())
+  externalId          String?      @unique
+  name                String
+  address             String
+  accountNumber       String?
+  contactPerson       String
+  contactNumber       String
+  email               String?
+  businessPotential   Float?
+  isActive            Boolean      @default(true)
+  portalAccessSent    Boolean      @default(false)
+  portalAccessSentAt  DateTime?
+  reportEmails        String[]
+  onboardedAt         DateTime     @default(now())
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  regionId            String
+  assignedRMId        String?
+  hospitalType        String?
+  metadata            Json?
   assignedRM        User?        @relation("ClinicRM", fields: [assignedRMId], references: [id])
   region            Region       @relation(fields: [regionId], references: [id])
   leads             Lead[]
@@ -245,6 +249,7 @@ enum UserRole {
   ADMIN
   REGIONAL_MANAGER
   TEAM_MEMBER
+  CLINIC_USER
 }
 
 enum LeadStatus {
@@ -533,4 +538,17 @@ model ClinicScheme {
 
   @@unique([clinicId, schemeTemplateId])
   @@index([clinicId])
+}
+
+model RecycleBin {
+  id         String   @id @default(cuid())
+  entityType String
+  entityId   String
+  entityName String
+  deletedBy  String
+  deletedAt  DateTime @default(now())
+  snapshot   Json
+
+  @@index([entityType])
+  @@index([deletedAt])
 }

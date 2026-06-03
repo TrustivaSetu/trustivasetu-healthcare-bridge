@@ -11,6 +11,7 @@ export interface TabUser {
   role: string
   regionIds: string[]
   clinicIds: string[]
+  mustChangePassword?: boolean
 }
 
 export interface TabSessionState {

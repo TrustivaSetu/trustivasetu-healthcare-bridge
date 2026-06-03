@@ -2,6 +2,9 @@
   "buildCommand": "npm run vercel-build",
   "framework": "nextjs",
   "regions": ["bom1"],
+  "crons": [
+    { "path": "/api/cron/monthly-report", "schedule": "30 3 2 * *" }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",

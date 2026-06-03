@@ -40,8 +40,22 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     return NextResponse.json({ error: 'Only Super Admin can delete lenders' }, { status: 403 })
   }
 
-  const lender = await db.lender.findUnique({ where: { id: params.id }, select: { id: true } })
+  const lender = await db.lender.findUnique({
+    where: { id: params.id },
+    select: { id: true, name: true, code: true, isActive: true, metadata: true },
+  })
   if (!lender) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  // Save snapshot to RecycleBin before deleting
+  await db.recycleBin.create({
+    data: {
+      entityType: 'Lender',
+      entityId: lender.id,
+      entityName: lender.name,
+      deletedBy: session.user.id,
+      snapshot: lender as object,
+    },
+  })
 
   // Hard delete: null out optional lenderId on leads first, then delete
   await db.lead.updateMany({ where: { lenderId: params.id }, data: { lenderId: null } })

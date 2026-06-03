@@ -11,6 +11,7 @@ export interface TabUserPayload {
   role: string
   regionIds: string[]
   clinicIds: string[]
+  mustChangePassword?: boolean
 }
 
 export async function signTabToken(user: TabUserPayload): Promise<string> {
@@ -24,7 +25,7 @@ export async function signTabToken(user: TabUserPayload): Promise<string> {
 export async function verifyTabToken(token: string): Promise<TabUserPayload | null> {
   try {
     const { payload } = await jwtVerify(token, SECRET)
-    const { id, email, name, role, regionIds, clinicIds } = payload as Record<string, unknown>
+    const { id, email, name, role, regionIds, clinicIds, mustChangePassword } = payload as Record<string, unknown>
     if (typeof id !== 'string' || typeof role !== 'string') return null
     return {
       id: id as string,
@@ -33,6 +34,7 @@ export async function verifyTabToken(token: string): Promise<TabUserPayload | nu
       role: role as string,
       regionIds: Array.isArray(regionIds) ? (regionIds as string[]) : [],
       clinicIds: Array.isArray(clinicIds) ? (clinicIds as string[]) : [],
+      mustChangePassword: mustChangePassword === true,
     }
   } catch {
     return null

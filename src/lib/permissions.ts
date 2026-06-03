@@ -53,3 +53,7 @@ export function buildClinicFilter(role: string, regionIds: string[], clinicIds: 
   if (role === 'REGIONAL_MANAGER') return { regionId: { in: regionIds } }
   return { id: { in: clinicIds } }
 }
+
+export function isClinicUser(role: string): boolean {
+  return role === 'CLINIC_USER'
+}

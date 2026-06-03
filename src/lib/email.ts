@@ -99,6 +99,37 @@ export function attendanceApprovalRequestHtml(opts: {
   `)
 }
 
+export function portalAccessEmailHtml(opts: { clinicName: string; email: string; password: string; loginUrl: string }) {
+  const { clinicName, email, password, loginUrl } = opts
+  return layout(`Your Trustiva Setu Portal Access — ${clinicName}`, `
+    <h2 style="margin:0 0 8px;color:#111827;font-size:20px;">Welcome to Trustiva Setu Portal</h2>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Your clinic portal access has been created for <strong>${clinicName}</strong>. Use the credentials below to log in and view your leads and disbursal reports.</p>
+    <div style="background:#f3f4f6;border-radius:10px;padding:20px;margin-bottom:24px;">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr><td style="padding:6px 0;color:#6b7280;width:120px;">Login URL</td><td style="padding:6px 0;font-weight:600;color:#111827;"><a href="${loginUrl}" style="color:#0284c7;">${loginUrl}</a></td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Email</td><td style="padding:6px 0;font-weight:600;color:#111827;font-family:monospace;">${email}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Password</td><td style="padding:6px 0;font-weight:600;color:#111827;font-family:monospace;">${password}</td></tr>
+      </table>
+    </div>
+    <div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:12px 16px;font-size:13px;color:#713f12;margin-bottom:16px;">
+      <strong>Important:</strong> You will be asked to change your password on first login. Please keep your credentials secure.
+    </div>
+    <p style="font-size:13px;color:#9ca3af;margin:0;">If you did not expect this email, please contact your Trustiva Setu relationship manager immediately.</p>
+  `)
+}
+
+export function monthlyReportEmailHtml(opts: { clinicName: string; month: string; year: number; totalLeads: number }) {
+  const { clinicName, month, year, totalLeads } = opts
+  return layout(`Monthly Lead Report — ${clinicName} — ${month} ${year}`, `
+    <h2 style="margin:0 0 8px;color:#111827;font-size:20px;">Monthly Lead Report</h2>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Please find attached the consolidated lead report for <strong>${clinicName}</strong> for the month of <strong>${month} ${year}</strong>.</p>
+    <div style="background:#f3f4f6;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+      <p style="margin:0;font-size:14px;color:#374151;">Total Leads in Report: <strong>${totalLeads}</strong></p>
+    </div>
+    <p style="font-size:13px;color:#9ca3af;margin:0;">This report is automatically generated on the 2nd of every month. For any queries, please contact your Trustiva Setu relationship manager.</p>
+  `)
+}
+
 export function attendanceStatusHtml(status: 'APPROVED' | 'REJECTED', emp: string, date: string, reason?: string) {
   const isApproved = status === 'APPROVED'
   return layout(`Attendance ${isApproved ? 'Approved' : 'Rejected'}`, `

@@ -52,6 +52,7 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           regionIds: user.regionAssignments.map(r => r.regionId),
           clinicIds: user.clinicAssignments.map(c => c.clinicId),
+          mustChangePassword: user.mustChangePassword,
         }
       },
     }),
@@ -63,6 +64,7 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role
         token.regionIds = user.regionIds
         token.clinicIds = user.clinicIds
+        token.mustChangePassword = user.mustChangePassword
       }
       return token
     },
@@ -72,6 +74,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role
         session.user.regionIds = token.regionIds
         session.user.clinicIds = token.clinicIds
+        session.user.mustChangePassword = token.mustChangePassword
       }
       return session
     },

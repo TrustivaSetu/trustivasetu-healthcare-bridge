@@ -6,6 +6,7 @@ declare module "next-auth" {
     role: string;
     regionIds: string[];
     clinicIds: string[];
+    mustChangePassword?: boolean;
   }
 
   interface Session {
@@ -16,6 +17,7 @@ declare module "next-auth" {
       role: string;
       regionIds: string[];
       clinicIds: string[];
+      mustChangePassword?: boolean;
     };
   }
 }
@@ -26,5 +28,6 @@ declare module "next-auth/jwt" {
     role: string;
     regionIds: string[];
     clinicIds: string[];
+    mustChangePassword?: boolean;
   }
 }

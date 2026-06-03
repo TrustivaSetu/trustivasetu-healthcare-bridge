@@ -4,6 +4,7 @@ import { jwtVerify } from 'jose'
 
 const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN'] as const
 const ADMIN_ONLY_PREFIXES = ['/users', '/admin']
+const CLINIC_USER_ALLOWED_PREFIX = '/dashboard/clinic'
 
 const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET!)
 
@@ -31,6 +32,17 @@ export default async function middleware(req: NextRequest) {
     }
 
     const role = payload.role as string
+
+    // CLINIC_USER API calls: only allow /api/clinic/* and /api/auth/* endpoints
+    if (role === 'CLINIC_USER') {
+      const allowedApiPrefixes = ['/api/clinic/', '/api/auth/', '/api/hr/photo']
+      const allowed = allowedApiPrefixes.some(p => pathname.startsWith(p))
+      if (!allowed) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+      return NextResponse.next()
+    }
+
     const isAdminRoute = ADMIN_ONLY_PREFIXES.some(
       prefix => pathname === prefix || pathname.startsWith(`${prefix}/`)
     )
@@ -49,6 +61,30 @@ export default async function middleware(req: NextRequest) {
   }
 
   const role = token.role as string | undefined
+
+  // CLINIC_USER page routing
+  if (role === 'CLINIC_USER') {
+    const mustChange = token.mustChangePassword as boolean | undefined
+    const changePasswordPath = '/dashboard/clinic/change-password'
+
+    // Force to change password page if mustChangePassword is set
+    if (mustChange && pathname !== changePasswordPath) {
+      return NextResponse.redirect(new URL(changePasswordPath, req.url))
+    }
+
+    // Restrict CLINIC_USER to /dashboard/clinic/* only
+    if (!pathname.startsWith(CLINIC_USER_ALLOWED_PREFIX)) {
+      return NextResponse.redirect(new URL(CLINIC_USER_ALLOWED_PREFIX, req.url))
+    }
+
+    return NextResponse.next()
+  }
+
+  // Non-CLINIC_USER trying to access clinic portal — redirect to main dashboard
+  if (pathname.startsWith(CLINIC_USER_ALLOWED_PREFIX)) {
+    return NextResponse.redirect(new URL('/dashboard', req.url))
+  }
+
   const isAdminRoute = ADMIN_ONLY_PREFIXES.some(
     prefix => pathname === prefix || pathname.startsWith(`${prefix}/`)
   )

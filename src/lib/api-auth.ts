@@ -12,6 +12,7 @@ export type SessionUser = {
   role: string
   regionIds: string[]
   clinicIds: string[]
+  mustChangePassword?: boolean
 }
 
 /**

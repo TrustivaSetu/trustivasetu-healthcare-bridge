@@ -4,16 +4,25 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
+import { useTabSession } from '@/contexts/TabSessionContext'
+import toast from 'react-hot-toast'
 
 import { formatDate, formatLakhs, cn } from '@/lib/utils'
 
 export default function ClinicDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const { user } = useTabSession()
   const [data, setData] = useState<Record<string, unknown> | null>(null)
   const [leads, setLeads] = useState<unknown[]>([])
   const [loading, setLoading] = useState(true)
   const [qrError, setQrError] = useState(false)
   const [copied, setCopied] = useState<'id' | 'link' | null>(null)
+  const [portalStatus, setPortalStatus] = useState<{ portalAccessSent: boolean; portalUser: { email: string; mustChangePassword: boolean } | null } | null>(null)
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [reportSending, setReportSending] = useState(false)
+
+  const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN'
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN'
 
   useEffect(() => {
     Promise.all([
@@ -25,6 +34,41 @@ export default function ClinicDetailPage() {
       setLoading(false)
     })
   }, [id])
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetch(`/api/clinics/${id}/portal-access`)
+        .then(r => r.json())
+        .then(d => setPortalStatus(d.data ?? null))
+        .catch(() => {})
+    }
+  }, [id, isAdmin])
+
+  async function handleCreatePortalAccess() {
+    setPortalLoading(true)
+    try {
+      const res = await fetch(`/api/clinics/${id}/portal-access`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error ?? 'Failed'); return }
+      toast.success(`Portal access sent to ${data.email}`)
+      // Refresh portal status
+      fetch(`/api/clinics/${id}/portal-access`).then(r => r.json()).then(d => setPortalStatus(d.data ?? null))
+    } catch { toast.error('Something went wrong') }
+    finally { setPortalLoading(false) }
+  }
+
+  async function handleSendReport() {
+    setReportSending(true)
+    try {
+      // Uses the tab Bearer token automatically (fetch interceptor adds Authorization header)
+      const res = await fetch(`/api/clinics/${id}/send-report`, { method: 'POST' })
+      const data = await res.json()
+      if (data.sent > 0) toast.success('Monthly report sent successfully')
+      else if (data.sent === 0) toast.error('No email configured or SMTP not set up')
+      else toast.error(data.error ?? 'Failed to send report')
+    } catch { toast.error('Something went wrong') }
+    finally { setReportSending(false) }
+  }
 
   const clinic = data as Record<string, unknown> | null
   const externalId = clinic?.externalId as string | undefined
@@ -208,6 +252,71 @@ export default function ClinicDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Portal Access & Report — Admin only */}
+        {isAdmin && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Create Portal Access */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Clinic Portal Access</h3>
+              {portalStatus?.portalUser ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                    <p className="text-sm text-gray-700">Active: <span className="font-medium">{portalStatus.portalUser.email}</span></p>
+                  </div>
+                  {portalStatus.portalUser.mustChangePassword && (
+                    <p className="text-xs text-yellow-600 bg-yellow-50 rounded px-2 py-1">Awaiting first login (password change pending)</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleCreatePortalAccess}
+                    disabled={portalLoading}
+                    className="mt-2 flex items-center gap-1.5 text-xs bg-orange-50 text-orange-700 border border-orange-200 px-3 py-2 rounded-lg hover:bg-orange-100 transition disabled:opacity-60"
+                  >
+                    {portalLoading ? 'Sending...' : 'Reset & Resend Credentials'}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-500">
+                    {portalStatus === null ? 'Loading...' : 'No portal access created yet. Click below to create credentials and send to clinic email.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleCreatePortalAccess}
+                    disabled={portalLoading || !(data?.email)}
+                    className="flex items-center gap-1.5 text-xs bg-trustiva-navy text-trustiva-lime font-semibold px-3 py-2 rounded-lg hover:bg-gray-800 transition disabled:opacity-60"
+                  >
+                    {portalLoading ? 'Creating...' : '+ Create Portal Access'}
+                  </button>
+                  {!data?.email && <p className="text-xs text-red-500">Add an email to this clinic first</p>}
+                </div>
+              )}
+            </div>
+
+            {/* Send Monthly Report */}
+            {isSuperAdmin && (
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Monthly Report</h3>
+                <p className="text-xs text-gray-500 mb-3">
+                  Auto-sent on the 2nd of every month. Click below to send the previous month&apos;s report immediately.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleSendReport}
+                  disabled={reportSending}
+                  className="flex items-center gap-1.5 text-xs bg-blue-50 text-blue-700 border border-blue-200 px-3 py-2 rounded-lg hover:bg-blue-100 transition disabled:opacity-60"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  {reportSending ? 'Sending...' : 'Send Report Now'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Recent Leads */}
         <div className="bg-white rounded-xl border border-gray-200">

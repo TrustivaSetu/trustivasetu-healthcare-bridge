@@ -58,10 +58,39 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!hasPermission(session.user.role, 'CLINIC_DELETE')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const clinic = await db.clinic.findUnique({ where: { id: params.id }, select: { id: true } })
+  const clinic = await db.clinic.findUnique({
+    where: { id: params.id },
+    select: { id: true, name: true, address: true, contactPerson: true, contactNumber: true, email: true, regionId: true, isActive: true },
+  })
   if (!clinic) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
+  // Save snapshot to RecycleBin before deleting
+  await db.recycleBin.create({
+    data: {
+      entityType: 'Clinic',
+      entityId: clinic.id,
+      entityName: clinic.name,
+      deletedBy: session.user.id,
+      snapshot: clinic as object,
+    },
+  })
+
   // Hard delete: remove leads first (required FK), then targets, then clinic (ClinicScheme/UserClinic cascade)
+  const leads = await db.lead.findMany({
+    where: { clinicId: params.id },
+    select: { id: true, applicantName: true, phone: true, email: true, amount: true, status: true, clinicId: true, approvedAmount: true, disbursedAmount: true, utrNumber: true, rejectionReason: true },
+  })
+  for (const lead of leads) {
+    await db.recycleBin.create({
+      data: {
+        entityType: 'Lead',
+        entityId: lead.id,
+        entityName: lead.applicantName,
+        deletedBy: session.user.id,
+        snapshot: lead as object,
+      },
+    })
+  }
   await db.lead.deleteMany({ where: { clinicId: params.id } })
   await db.target.deleteMany({ where: { clinicId: params.id } })
   await db.clinic.delete({ where: { id: params.id } })

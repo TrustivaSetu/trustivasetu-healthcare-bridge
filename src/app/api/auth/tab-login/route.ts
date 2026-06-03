@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
       role: user.role as string,
       regionIds: user.regionAssignments.map(r => r.regionId),
       clinicIds: user.clinicAssignments.map(c => c.clinicId),
+      mustChangePassword: user.mustChangePassword,
     }
 
     const token = await signTabToken(userPayload)
