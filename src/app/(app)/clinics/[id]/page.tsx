@@ -20,9 +20,14 @@ export default function ClinicDetailPage() {
   const [portalStatus, setPortalStatus] = useState<{ portalAccessSent: boolean; portalUser: { email: string; mustChangePassword: boolean } | null } | null>(null)
   const [portalLoading, setPortalLoading] = useState(false)
   const [reportSending, setReportSending] = useState(false)
+  const [reportEmails, setReportEmails] = useState<string[]>([])
+  const [newEmail, setNewEmail] = useState('')
+  const [emailSaving, setEmailSaving] = useState(false)
 
   const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN'
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
+  const isClinicUser = user?.role === 'CLINIC_USER'
+  const canManageReportEmails = isAdmin || isClinicUser
 
   useEffect(() => {
     Promise.all([
@@ -44,6 +49,15 @@ export default function ClinicDetailPage() {
     }
   }, [id, isAdmin])
 
+  useEffect(() => {
+    if (canManageReportEmails) {
+      fetch(`/api/clinics/${id}/report-emails`)
+        .then(r => r.json())
+        .then(d => setReportEmails(d.data ?? []))
+        .catch(() => {})
+    }
+  }, [id, canManageReportEmails])
+
   async function handleCreatePortalAccess() {
     setPortalLoading(true)
     try {
@@ -55,6 +69,34 @@ export default function ClinicDetailPage() {
       fetch(`/api/clinics/${id}/portal-access`).then(r => r.json()).then(d => setPortalStatus(d.data ?? null))
     } catch { toast.error('Something went wrong') }
     finally { setPortalLoading(false) }
+  }
+
+  async function saveReportEmails(emails: string[]) {
+    setEmailSaving(true)
+    try {
+      const res = await fetch(`/api/clinics/${id}/report-emails`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportEmails: emails }),
+      })
+      const d = await res.json()
+      if (res.ok) { setReportEmails(d.data ?? emails); toast.success('Report emails updated') }
+      else toast.error(d.error ?? 'Failed to save')
+    } catch { toast.error('Something went wrong') }
+    finally { setEmailSaving(false) }
+  }
+
+  async function handleAddEmail(e: React.FormEvent) {
+    e.preventDefault()
+    const email = newEmail.trim().toLowerCase()
+    if (!email || reportEmails.includes(email)) return
+    const updated = [...reportEmails, email]
+    setNewEmail('')
+    await saveReportEmails(updated)
+  }
+
+  async function handleRemoveEmail(email: string) {
+    await saveReportEmails(reportEmails.filter(e => e !== email))
   }
 
   async function handleSendReport() {
@@ -315,6 +357,48 @@ export default function ClinicDetailPage() {
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Report Email Settings */}
+        {canManageReportEmails && (
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">Report Email Settings</h3>
+            <p className="text-xs text-gray-500 mb-3">
+              Monthly reports will be sent to the clinic email and all addresses below.
+            </p>
+            <div className="space-y-2 mb-3">
+              {reportEmails.length === 0 && <p className="text-xs text-gray-400 italic">No additional emails configured.</p>}
+              {reportEmails.map(email => (
+                <div key={email} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                  <span className="text-xs font-mono text-gray-700">{email}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveEmail(email)}
+                    disabled={emailSaving}
+                    className="text-xs text-red-600 hover:text-red-800 disabled:opacity-50"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+            <form onSubmit={handleAddEmail} className="flex gap-2">
+              <input
+                type="email"
+                value={newEmail}
+                onChange={e => setNewEmail(e.target.value)}
+                placeholder="Add email address"
+                className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-trustiva-navy"
+              />
+              <button
+                type="submit"
+                disabled={emailSaving || !newEmail.trim()}
+                className="text-xs bg-trustiva-navy text-trustiva-lime font-semibold px-3 py-2 rounded-lg hover:bg-gray-800 transition disabled:opacity-60"
+              >
+                {emailSaving ? 'Saving...' : 'Add'}
+              </button>
+            </form>
           </div>
         )}
 

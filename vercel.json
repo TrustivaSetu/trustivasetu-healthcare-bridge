@@ -1,18 +1,8 @@
 {
-  "buildCommand": "npm run vercel-build",
-  "framework": "nextjs",
-  "regions": ["bom1"],
   "crons": [
-    { "path": "/api/cron/monthly-report", "schedule": "30 3 2 * *" }
-  ],
-  "headers": [
     {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, PATCH, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, x-los-api-key, x-webhook-secret" }
-      ]
+      "path": "/api/cron/monthly-report",
+      "schedule": "30 3 2 * *"
     }
   ]
 }
