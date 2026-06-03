@@ -112,13 +112,21 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json({ data: { ...user, designation: user?.employeeProfile?.designation ?? null } })
 }
 
+const PROTECTED_EMAILS = ['admin@trustivasetu.com']
+
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!hasPermission(session.user.role, 'USER_DELETE')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  if (params.id === session.user.id) return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 })
+  if (params.id === session.user.id) return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 })
 
-  await db.user.update({ where: { id: params.id }, data: { isActive: false } })
-  await db.auditLog.create({ data: { userId: session.user.id, action: 'DEACTIVATE', entity: 'User', entityId: params.id } })
+  const target = await db.user.findUnique({ where: { id: params.id }, select: { id: true, email: true } })
+  if (!target) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (PROTECTED_EMAILS.includes(target.email)) {
+    return NextResponse.json({ error: 'This account cannot be deleted' }, { status: 403 })
+  }
+
+  await db.user.delete({ where: { id: params.id } })
+  await db.auditLog.create({ data: { userId: session.user.id, action: 'DELETE', entity: 'User', entityId: params.id } })
   return NextResponse.json({ success: true })
 }

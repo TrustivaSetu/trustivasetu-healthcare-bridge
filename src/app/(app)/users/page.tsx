@@ -64,6 +64,15 @@ export default function UsersPage() {
   const isSuperAdmin = session?.role === 'SUPER_ADMIN'
   const canChangePasswords = session?.role === 'SUPER_ADMIN' || session?.role === 'ADMIN'
 
+  const PROTECTED_EMAIL = 'admin@trustivasetu.com'
+
+  async function handleDeleteUser(user: User) {
+    if (!confirm(`Are you sure you want to delete this user? This cannot be undone.`)) return
+    const res = await fetch(`/api/users/${user.id}`, { method: 'DELETE' })
+    if (res.ok) { toast.success(`${user.name} deleted`); fetchUsers() }
+    else { const d = await res.json(); toast.error(d.error ?? 'Failed to delete user') }
+  }
+
   const fetchUsers = useCallback(async () => {
     setLoading(true)
     const p = new URLSearchParams()
@@ -292,6 +301,14 @@ export default function UsersPage() {
                           >
                             {u.isActive ? 'Deactivate' : 'Activate'}
                           </button>
+                          {isSuperAdmin && u.id !== session?.id && u.email !== PROTECTED_EMAIL && (
+                            <button
+                              onClick={() => handleDeleteUser(u)}
+                              className="text-xs text-red-600 hover:text-red-800 font-medium border-l border-gray-200 pl-2"
+                            >
+                              Delete
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
