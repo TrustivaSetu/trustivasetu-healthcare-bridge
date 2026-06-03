@@ -25,7 +25,18 @@ export default function DashboardPage() {
     )
   }
 
-  const role = user?.role
+  // No tab session — redirect to login (covers new-tab / sessionStorage-cleared scenarios
+  // where the NextAuth cookie is still valid but there is no per-tab JWT)
+  if (!user || status === 'unauthenticated') {
+    router.replace('/lms/login')
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-trustiva-lime border-t-transparent" />
+      </div>
+    )
+  }
+
+  const role = user.role
 
   if (role === 'CLINIC_USER') return (
     <div className="flex h-screen items-center justify-center">
@@ -36,9 +47,11 @@ export default function DashboardPage() {
   if (role === 'REGIONAL_MANAGER') return <ManagerDashboard />
   if (role === 'TEAM_MEMBER') return <RMDashboard />
 
+  // Unexpected role — redirect rather than hanging
+  router.replace('/lms/login')
   return (
-    <div className="flex h-screen items-center justify-center text-gray-500">
-      Loading dashboard...
+    <div className="flex h-screen items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-trustiva-lime border-t-transparent" />
     </div>
   )
 }

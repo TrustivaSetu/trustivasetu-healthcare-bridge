@@ -58,7 +58,7 @@ interface SidebarProps {
 export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const { user: session } = useTabSession()
   const pathname = usePathname()
-  const { can } = usePermissions()
+  const { can, loading: permLoading } = usePermissions()
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [pendingApprovals, setPendingApprovals] = useState(0)
@@ -107,7 +107,10 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
     if (!item.roles.includes(role)) return false
     // SUPER_ADMIN always sees everything — no permission check
     if (role === 'SUPER_ADMIN') return true
-    // All other roles (including ADMIN) filtered by permissions
+    // While permissions are still loading from the DB, show all role-appropriate items
+    // so RM/TEAM_MEMBER don't see an empty sidebar during the fetch
+    if (permLoading) return true
+    // Permissions loaded — apply module gate
     if (item.module) return can(item.module, 'VIEW')
     return true
   })
