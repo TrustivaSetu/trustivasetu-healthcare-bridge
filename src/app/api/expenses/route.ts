@@ -36,19 +36,15 @@ export async function GET(req: NextRequest) {
   const isAdmin = session.user.role === 'SUPER_ADMIN' || session.user.role === 'ADMIN'
   const isManager = session.user.role === 'REGIONAL_MANAGER'
 
-  let whereUserId = session.user.id
-  if (userId && (isAdmin || isManager)) whereUserId = userId
-  else if (!userId && isAdmin && searchParams.get('all') === '1') {
-    whereUserId = '' // admin sees all — no userId filter
-  }
+  const showAll = searchParams.get('all') === '1'
 
   const where: Record<string, unknown> = {}
-  if (whereUserId) {
-    where.userId = whereUserId
-  } else if (isAdmin) {
-    // admin with all=1 — no userId filter
-  } else if (isManager) {
-    // regional manager sees direct reports' expenses
+  if (userId && (isAdmin || isManager)) {
+    where.userId = userId
+  } else if (isAdmin && showAll) {
+    // admin all view — no userId filter (sees everything)
+  } else if (isManager && showAll) {
+    // manager all view — direct reports' expenses only
     where.user = { reportingManagerId: session.user.id }
   } else {
     where.userId = session.user.id
