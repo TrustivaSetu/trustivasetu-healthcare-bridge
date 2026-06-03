@@ -49,10 +49,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     : ''
   const reasonLine = reason ? `<p style="font-size:14px;color:#dc2626;background:#fef2f2;padding:10px;border-radius:6px;margin-top:10px">Reason: ${reason}</p>` : ''
 
-  await sendEmail({
-    to: expense.user.email,
-    subject: `Your Expense Report has been ${statusLabel}`,
-    html: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f5;margin:0;padding:32px 0">
+  void (async () => {
+    try {
+      await sendEmail({
+        to: expense.user.email,
+        subject: `Your Expense Report has been ${statusLabel}`,
+        html: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f5;margin:0;padding:32px 0">
 <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;margin:0 auto">
   <tr><td style="background:#0F172A;padding:20px 32px;text-align:center"><span style="color:#A3E635;font-weight:bold;font-size:16px">Trustiva Setu LMS</span></td></tr>
   <tr><td style="padding:28px 32px">
@@ -62,7 +64,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     <p style="font-size:12px;color:#9ca3af;margin-top:20px">Log in to Trustiva Setu LMS to view full details.</p>
   </td></tr>
 </table></body></html>`,
-  })
+      })
+    } catch (e) {
+      console.error('[Expense Approval Email Error]', e)
+    }
+  })()
 
   return NextResponse.json({ data: updated })
 }

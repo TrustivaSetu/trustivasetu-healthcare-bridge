@@ -120,11 +120,17 @@ export async function PATCH(req: NextRequest) {
   })
 
   const dateStr = format(new Date(record.date), 'dd MMM yyyy')
-  await sendEmail({
-    to: record.user.email,
-    subject: `Attendance ${status === 'APPROVED' ? 'Approved' : 'Rejected'}`,
-    html: attendanceStatusHtml(status, record.user.name, dateStr, reason),
-  })
+  void (async () => {
+    try {
+      await sendEmail({
+        to: record.user.email,
+        subject: `Attendance ${status === 'APPROVED' ? 'Approved' : 'Rejected'}`,
+        html: attendanceStatusHtml(status, record.user.name, dateStr, reason),
+      })
+    } catch (e) {
+      console.error('[Attendance Approval Email Error]', e)
+    }
+  })()
 
   return NextResponse.json({ data: updated })
 }

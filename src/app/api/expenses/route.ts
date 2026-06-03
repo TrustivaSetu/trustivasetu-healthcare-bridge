@@ -38,13 +38,21 @@ export async function GET(req: NextRequest) {
 
   let whereUserId = session.user.id
   if (userId && (isAdmin || isManager)) whereUserId = userId
-  else if (!userId && (isAdmin || isManager) && searchParams.get('all') === '1') {
-    whereUserId = '' // will show all
+  else if (!userId && isAdmin && searchParams.get('all') === '1') {
+    whereUserId = '' // admin sees all — no userId filter
   }
 
   const where: Record<string, unknown> = {}
-  if (whereUserId) where.userId = whereUserId
-  else if (!isAdmin) where.userId = session.user.id // safety: non-admin always sees own only
+  if (whereUserId) {
+    where.userId = whereUserId
+  } else if (isAdmin) {
+    // admin with all=1 — no userId filter
+  } else if (isManager) {
+    // regional manager sees direct reports' expenses
+    where.user = { reportingManagerId: session.user.id }
+  } else {
+    where.userId = session.user.id
+  }
 
   if (status) where.status = status
   if (month) {
