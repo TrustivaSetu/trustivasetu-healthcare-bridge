@@ -2,23 +2,19 @@
 
 import { useState } from 'react'
 import { Sidebar } from '@/components/layout/Sidebar'
-import { ClinicSidebar } from '@/components/layout/ClinicSidebar'
 import { PermissionsProvider } from '@/contexts/PermissionsContext'
 import { InactivityGuard } from '@/components/InactivityGuard'
 import { CelebrationPopup } from '@/components/hr/CelebrationPopup'
 import { ComplianceFooter } from '@/components/layout/ComplianceFooter'
-import { useTabSession } from '@/contexts/TabSessionContext'
 import { cn } from '@/lib/utils'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
-  const { user } = useTabSession()
-  const isClinicUser = user?.role === 'CLINIC_USER'
 
   return (
     <PermissionsProvider>
-      {!isClinicUser && <InactivityGuard />}
-      {!isClinicUser && <CelebrationPopup />}
+      <InactivityGuard />
+      <CelebrationPopup />
       <div className="flex h-screen overflow-hidden bg-gray-50">
         {/* Mobile overlay */}
         {mobileOpen && (
@@ -30,10 +26,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           />
         )}
 
-        {isClinicUser
-          ? <ClinicSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
-          : <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
-        }
+        <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
         <div className="flex flex-1 flex-col overflow-hidden lg:pl-64">
           {/* Mobile top bar */}
