@@ -40,6 +40,11 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     return NextResponse.json({ error: 'Only Super Admin can delete lenders' }, { status: 403 })
   }
 
-  await db.lender.update({ where: { id: params.id }, data: { isActive: false } })
+  const lender = await db.lender.findUnique({ where: { id: params.id }, select: { id: true } })
+  if (!lender) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  // Hard delete: null out optional lenderId on leads first, then delete
+  await db.lead.updateMany({ where: { lenderId: params.id }, data: { lenderId: null } })
+  await db.lender.delete({ where: { id: params.id } })
   return NextResponse.json({ success: true })
 }

@@ -44,13 +44,13 @@ export default function ClinicsPage() {
   useEffect(() => { fetchClinics() }, [fetchClinics])
 
   async function handleDelete(clinic: { id: string; name: string }) {
-    if (!confirm(`Deactivate clinic "${clinic.name}"? It will be hidden from the system.`)) return
+    if (!confirm(`Permanently delete clinic "${clinic.name}"? This cannot be undone.`)) return
     const res = await fetch(`/api/clinics/${clinic.id}`, { method: 'DELETE' })
     if (res.ok) {
-      toast.success('Clinic deactivated')
+      toast.success('Clinic deleted')
       fetchClinics()
     } else {
-      toast.error('Failed to deactivate clinic')
+      toast.error('Failed to delete clinic')
     }
   }
 

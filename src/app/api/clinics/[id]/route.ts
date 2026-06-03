@@ -58,7 +58,13 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!hasPermission(session.user.role, 'CLINIC_DELETE')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  await db.clinic.update({ where: { id: params.id }, data: { isActive: false } })
+  const clinic = await db.clinic.findUnique({ where: { id: params.id }, select: { id: true } })
+  if (!clinic) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  // Hard delete: remove leads first (required FK), then targets, then clinic (ClinicScheme/UserClinic cascade)
+  await db.lead.deleteMany({ where: { clinicId: params.id } })
+  await db.target.deleteMany({ where: { clinicId: params.id } })
+  await db.clinic.delete({ where: { id: params.id } })
   await db.auditLog.create({ data: { userId: session.user.id, action: 'DELETE', entity: 'Clinic', entityId: params.id } })
   return NextResponse.json({ success: true })
 }
