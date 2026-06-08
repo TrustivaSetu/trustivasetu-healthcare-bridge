@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import { format, startOfMonth, endOfMonth, subMonths, getDaysInMonth, getDate } from 'date-fns'
+import { format, subMonths } from 'date-fns'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -9,12 +9,6 @@ export function cn(...inputs: ClassValue[]) {
 export function formatLakhs(value: number | null | undefined): string {
   if (value === null || value === undefined) return '—'
   return `₹${value.toFixed(2)}L`
-}
-
-export function formatCrores(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '—'
-  const crores = value / 100
-  return `₹${crores.toFixed(2)}Cr`
 }
 
 export function formatDate(date: string | Date | null | undefined): string {
@@ -44,6 +38,7 @@ export function getStatusColor(status: string): string {
     DISBURSED: 'bg-green-100 text-green-800',
     REJECTED: 'bg-red-100 text-red-800',
     CANCELLED: 'bg-gray-100 text-gray-800',
+    DOCS_PENDING: 'bg-orange-100 text-orange-800',
   }
   return map[status] ?? 'bg-gray-100 text-gray-800'
 }
@@ -68,28 +63,6 @@ export function getRoleLabel(role: string): string {
   return map[role] ?? role
 }
 
-export function getCurrentMonthRange() {
-  const now = new Date()
-  return { start: startOfMonth(now), end: endOfMonth(now) }
-}
-
-export function getPreviousMonthRange() {
-  const prev = subMonths(new Date(), 1)
-  return { start: startOfMonth(prev), end: endOfMonth(prev) }
-}
-
-export function calcRunRate(achieved: number, target: number) {
-  const now = new Date()
-  const daysElapsed = getDate(now)
-  const totalDays = getDaysInMonth(now)
-  const remaining = totalDays - daysElapsed
-
-  const current = daysElapsed > 0 ? (achieved / daysElapsed) * totalDays : 0
-  const required = remaining > 0 ? (target - achieved) / remaining : 0
-
-  return { current: Math.round(current * 100) / 100, required: Math.max(0, Math.round(required * 100) / 100) }
-}
-
 export function generateMonthOptions(count = 12): Array<{ value: string; label: string }> {
   return Array.from({ length: count }, (_, i) => {
     const date = subMonths(new Date(), i)
@@ -97,11 +70,3 @@ export function generateMonthOptions(count = 12): Array<{ value: string; label: 
   })
 }
 
-export function parseMonthParam(param: string | null): { year: number; month: number } {
-  if (!param) {
-    const now = new Date()
-    return { year: now.getFullYear(), month: now.getMonth() + 1 }
-  }
-  const [year, month] = param.split('-').map(Number)
-  return { year, month }
-}

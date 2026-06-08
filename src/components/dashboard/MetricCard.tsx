@@ -1,4 +1,4 @@
-import { cn, formatLakhs, formatPercent, getGrowthColor } from '@/lib/utils'
+import { cn, formatPercent, getGrowthColor } from '@/lib/utils'
 
 interface MetricCardProps {
   title: string
