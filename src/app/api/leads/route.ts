@@ -15,7 +15,6 @@ const createSchema = z.object({
   applicationDate: z.string().optional(),
   remarks: z.string().optional(),
   externalId: z.string().optional(),
-  motherName: z.string().optional(),
   treatmentName: z.string().optional(),
   status: z.string().optional(),
   approvedAmount: z.number().optional(),
@@ -113,7 +112,6 @@ export async function POST(req: NextRequest) {
       externalId: d.externalId,
       createdById: session.user.id,
       treatmentName: d.treatmentName,
-      motherName: d.motherName || null,
       treatmentCategory: d.treatmentCategory,
       rejectionReason: d.rejectionReason,
       status: d.status && VALID_STATUSES.includes(d.status)

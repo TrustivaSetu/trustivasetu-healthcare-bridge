@@ -56,7 +56,7 @@ interface Props {
     id: string; applicantName: string; phone: string; clinicId: string
     amount: number; status: string; approvedAmount: number; disbursedAmount: number
     applicationDate: string; remarks: string; treatmentName: string
-    motherName: string; lenderId: string
+    lenderId: string
   }>
   onSuccess: () => void
   onCancel: () => void
@@ -75,7 +75,6 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
   const [applicantName, setApplicantName] = useState(initial?.applicantName ?? '')
   const [phone, setPhone] = useState(initial?.phone ?? '')
   const [email, setEmail] = useState('')
-  const [motherName, setMotherName] = useState(initial?.motherName ?? '')
 
   // KYC
   const [panNumber, setPanNumber] = useState('')
@@ -253,7 +252,6 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
 
       const payload = {
         applicantName, phone, email: email || undefined,
-        motherName: motherName || undefined,
         amount: parseFloat(loanAmount),
         clinicId, lenderId: selectedOffer?.lenderId || undefined,
         treatmentName, applicationDate: format(new Date(), 'yyyy-MM-dd'),
@@ -284,7 +282,22 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
         body: JSON.stringify(payload),
       })
       if (!res.ok) { const e = await res.json(); throw new Error(e.error ?? 'Failed') }
-      toast.success('Lead successfully created! 🎉')
+
+      const created = await res.json()
+      const leadId = created.data?.id
+
+      if (!isEdit && leadId && process.env.NEXT_PUBLIC_TESTING_MODE === 'true') {
+        toast.success('Lead created! Auto-processing in 2–5 seconds... (Testing Mode)')
+        const delay = 2000 + Math.random() * 3000
+        setTimeout(async () => {
+          try {
+            await fetch(`/api/leads/${leadId}/auto-process`, { method: 'POST' })
+          } catch { /* fire-and-forget */ }
+        }, delay)
+      } else {
+        toast.success('Lead successfully created! 🎉')
+      }
+
       onSuccess()
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Failed')
@@ -325,7 +338,6 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
           <Field label="Phone Number *" value={phone}
             onChange={v => setPhone(v.replace(/\D/g, '').slice(0, 10))}
             placeholder="10-digit mobile number" maxLength={10} required />
-          <Field label="Mother Name" value={motherName} onChange={setMotherName} placeholder="Mother's full name" />
           <Field label="Email" value={email} onChange={setEmail} placeholder="patient@email.com" type="email" />
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
             <label className="flex items-start gap-3 cursor-pointer">

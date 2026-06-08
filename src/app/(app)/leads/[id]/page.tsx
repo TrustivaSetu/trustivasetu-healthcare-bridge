@@ -37,7 +37,6 @@ interface LeadDetail {
   applicantName: string
   phone: string | null
   email: string | null
-  motherName: string | null
   amount: number
   status: string
   approvedAmount: number | null
@@ -66,6 +65,10 @@ const STATUS_TRANSITIONS: Record<string, { label: string; next: string; color: s
   ],
   APPROVED: [
     { label: 'Disburse', next: 'DISBURSED', color: 'bg-green-600 hover:bg-green-700 text-white' },
+    { label: 'Reject', next: 'REJECTED', color: 'bg-red-50 border border-red-300 text-red-700 hover:bg-red-100' },
+  ],
+  DOCS_PENDING: [
+    { label: 'Approve', next: 'APPROVED', color: 'bg-blue-600 hover:bg-blue-700 text-white' },
     { label: 'Reject', next: 'REJECTED', color: 'bg-red-50 border border-red-300 text-red-700 hover:bg-red-100' },
   ],
 }
@@ -161,9 +164,6 @@ export default function LeadDetailPage() {
                   </div>
                   <div><dt className="text-gray-400 text-xs">Phone</dt><dd className="font-medium">{lead.phone ?? '—'}</dd></div>
                   <div><dt className="text-gray-400 text-xs">Email</dt><dd className="font-medium truncate">{lead.email ?? '—'}</dd></div>
-                  {lead.motherName && (
-                    <div className="col-span-2"><dt className="text-gray-400 text-xs">Mother's Name</dt><dd className="font-medium">{lead.motherName}</dd></div>
-                  )}
                   <div><dt className="text-gray-400 text-xs">Requested</dt><dd className="font-semibold text-gray-800">{formatLakhs(lead.amount)}</dd></div>
                   <div><dt className="text-gray-400 text-xs">Lender</dt><dd className="font-medium">{lead.lender?.name ?? '—'}</dd></div>
                   <div>

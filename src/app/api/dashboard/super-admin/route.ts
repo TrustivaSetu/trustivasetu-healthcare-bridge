@@ -12,6 +12,10 @@ export async function GET() {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  // Start of current ISO week (Monday)
+  const dayOfWeek = now.getDay(); // 0=Sun ... 6=Sat
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysToMonday);
 
   const [
     totalLeads,
@@ -26,6 +30,8 @@ export async function GET() {
     approvedNotDisbursed,
     mtdDisbAgg,
     lmtdDisbAgg,
+    thisWeekClinicsList,
+    thisMonthClinicsList,
   ] = await Promise.all([
     db.lead.count(),
     db.lead.count({ where: { status: "APPROVED" } }),
@@ -39,6 +45,16 @@ export async function GET() {
     db.lead.count({ where: { status: "APPROVED" } }),
     db.lead.aggregate({ _sum: { disbursedAmount: true }, where: { status: "DISBURSED", disbursalDate: { gte: startOfMonth } } }),
     db.lead.aggregate({ _sum: { disbursedAmount: true }, where: { status: "DISBURSED", disbursalDate: { gte: startOfLastMonth, lt: endOfLastMonth } } }),
+    db.clinic.findMany({
+      where: { isActive: true, onboardedAt: { gte: startOfWeek } },
+      select: { id: true, name: true, onboardedAt: true, isActive: true, region: { select: { name: true } } },
+      orderBy: { onboardedAt: 'desc' },
+    }),
+    db.clinic.findMany({
+      where: { isActive: true, onboardedAt: { gte: startOfMonth } },
+      select: { id: true, name: true, onboardedAt: true, isActive: true, region: { select: { name: true } } },
+      orderBy: { onboardedAt: 'desc' },
+    }),
   ]);
   const mtdDisbursalValue = mtdDisbAgg._sum.disbursedAmount ?? 0;
   const lmtdDisbursalValue = lmtdDisbAgg._sum.disbursedAmount ?? 0;
@@ -130,6 +146,9 @@ export async function GET() {
     take: 10,
   });
 
+  const mapClinicList = (list: typeof thisWeekClinicsList) =>
+    list.map(c => ({ id: c.id, name: c.name, onboardedAt: c.onboardedAt, status: c.isActive ? 'Active' : 'Inactive', region: c.region.name }))
+
   return NextResponse.json({
     kpi: {
       totalLeads,
@@ -145,7 +164,11 @@ export async function GET() {
       lastMonthLeads,
       mtdDisbursalValue,
       lmtdDisbursalValue,
+      thisWeekClinics: thisWeekClinicsList.length,
+      thisMonthClinics: thisMonthClinicsList.length,
     },
+    thisWeekClinicsList: mapClinicList(thisWeekClinicsList),
+    thisMonthClinicsList: mapClinicList(thisMonthClinicsList),
     chartData,
     regionWise,
     lenderWise,

@@ -8,6 +8,8 @@ import { CelebrationPopup } from '@/components/hr/CelebrationPopup'
 import { ComplianceFooter } from '@/components/layout/ComplianceFooter'
 import { cn } from '@/lib/utils'
 
+const isTestingMode = process.env.NEXT_PUBLIC_TESTING_MODE === 'true'
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -15,7 +17,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <PermissionsProvider>
       <InactivityGuard />
       <CelebrationPopup />
-      <div className="flex h-screen overflow-hidden bg-gray-50">
+      {isTestingMode && (
+        <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-400 text-amber-900 text-center text-xs font-bold py-1 tracking-wide shadow">
+          ⚠ TESTING MODE — Auto-random lead processing is active. Not for production use.
+        </div>
+      )}
+      <div className={cn('flex h-screen overflow-hidden bg-gray-50', isTestingMode && 'pt-6')}>
         {/* Mobile overlay */}
         {mobileOpen && (
           <button

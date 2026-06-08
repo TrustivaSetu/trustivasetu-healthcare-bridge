@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   BarChart,
   Bar,
@@ -12,6 +12,14 @@ import {
   Line,
   Legend,
 } from "recharts";
+
+interface ClinicListItem {
+  id: string;
+  name: string;
+  onboardedAt: string;
+  status: string;
+  region: string;
+}
 
 interface DashboardData {
   kpi: {
@@ -28,6 +36,8 @@ interface DashboardData {
     lastMonthLeads: number;
     mtdDisbursalValue: number;
     lmtdDisbursalValue: number;
+    thisWeekClinics: number;
+    thisMonthClinics: number;
   };
   chartData: { month: string; leads: number; approved: number; disbursed: number }[];
   regionWise: { name: string; leads: number; approved: number; disbursed: number }[];
@@ -46,6 +56,8 @@ interface DashboardData {
     onboardedAt: string;
     totalLeads: number;
   }[];
+  thisWeekClinicsList: ClinicListItem[];
+  thisMonthClinicsList: ClinicListItem[];
 }
 
 type TabKey = "overview" | "region" | "lender" | "rm" | "clinic";
@@ -58,10 +70,13 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "clinic", label: "Clinic Onboarding" },
 ];
 
+type ClinicModal = { title: string; list: ClinicListItem[] } | null;
+
 export default function SuperAdminDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const [clinicModal, setClinicModal] = useState<ClinicModal>(null);
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -162,7 +177,7 @@ export default function SuperAdminDashboard() {
         />
       </div>
 
-      {/* KPI Row 3 */}
+      {/* KPI Row 3 — Clinic counts + onboarding widgets */}
       <div className="grid grid-cols-2 gap-3">
         <KPICard label="Total Clinics" value={kpi.totalClinics} color="blue" />
         <KPICard
@@ -170,6 +185,26 @@ export default function SuperAdminDashboard() {
           value={kpi.onboardedClinics}
           color="green"
         />
+      </div>
+
+      {/* Onboarding widgets — This Week & This Month */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => setClinicModal({ title: "Hospitals Onboarded This Week", list: data!.thisWeekClinicsList })}
+          className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-left hover:bg-indigo-100 transition-colors"
+        >
+          <p className="text-xs font-medium text-indigo-600 opacity-80">This Week</p>
+          <p className="text-3xl font-bold text-indigo-700 mt-1">{kpi.thisWeekClinics}</p>
+          <p className="text-xs text-indigo-500 mt-1">hospitals onboarded ↗</p>
+        </button>
+        <button
+          onClick={() => setClinicModal({ title: "Hospitals Onboarded This Month", list: data!.thisMonthClinicsList })}
+          className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-left hover:bg-emerald-100 transition-colors"
+        >
+          <p className="text-xs font-medium text-emerald-600 opacity-80">This Month</p>
+          <p className="text-3xl font-bold text-emerald-700 mt-1">{kpi.thisMonthClinics}</p>
+          <p className="text-xs text-emerald-500 mt-1">hospitals onboarded ↗</p>
+        </button>
       </div>
 
       {/* Tabs */}
@@ -437,6 +472,71 @@ export default function SuperAdminDashboard() {
       )}
       </>
       )}
+
+      {clinicModal && (
+        <ClinicListModal
+          title={clinicModal.title}
+          list={clinicModal.list}
+          onClose={() => setClinicModal(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Clinic List Modal ────────────────────────────────
+
+function ClinicListModal({ title, list, onClose }: { title: string; list: ClinicListItem[]; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div
+        ref={ref}
+        className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[80vh] flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-bold text-gray-900">{title}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+        </div>
+        {list.length === 0 ? (
+          <p className="text-center text-gray-400 py-10 text-sm">No hospitals onboarded in this period.</p>
+        ) : (
+          <div className="overflow-y-auto flex-1">
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="bg-gray-50 border-b">
+                  <th className="px-3 py-2 font-semibold text-gray-600">#</th>
+                  <th className="px-3 py-2 font-semibold text-gray-600">Hospital Name</th>
+                  <th className="px-3 py-2 font-semibold text-gray-600">Region</th>
+                  <th className="px-3 py-2 font-semibold text-gray-600">Date Added</th>
+                  <th className="px-3 py-2 font-semibold text-gray-600">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((c, i) => (
+                  <tr key={c.id} className="border-b last:border-0 hover:bg-gray-50">
+                    <td className="px-3 py-2 text-gray-400">{i + 1}</td>
+                    <td className="px-3 py-2 font-medium text-gray-800">{c.name}</td>
+                    <td className="px-3 py-2 text-gray-600">{c.region}</td>
+                    <td className="px-3 py-2 text-gray-600 whitespace-nowrap">
+                      {new Date(c.onboardedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${c.status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                        {c.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="pt-4 border-t mt-4">
+          <p className="text-xs text-gray-400">{list.length} hospital{list.length !== 1 ? "s" : ""} found</p>
+        </div>
+      </div>
     </div>
   );
 }

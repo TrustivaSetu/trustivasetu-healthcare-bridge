@@ -189,7 +189,6 @@ export async function GET(req: NextRequest) {
           'Patient Name': fmt(l.applicantName),
           'Phone': fmt(l.phone),
           'Email': fmt(l.email),
-          'Mother Name': fmt(l.motherName),
           'Clinic': fmt(l.clinic?.name),
           'Clinic Code': fmt(l.clinic?.externalId),
           'Region': fmt(l.clinic?.region?.name),
