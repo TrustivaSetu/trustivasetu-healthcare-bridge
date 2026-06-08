@@ -5,6 +5,7 @@ import { useTabSession } from '@/contexts/TabSessionContext'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { format, getDaysInMonth, startOfMonth, getDay, addDays, parseISO } from 'date-fns'
+import { INDIA_HOLIDAYS_2025_26, type IndiaHoliday } from '@/lib/hr/india-holidays-2025-26'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -27,19 +28,33 @@ interface AttendanceRecord {
 
 interface Holiday { id: string; name: string; date: string }
 
+// ── Holiday classification (from static data) ──────────────────────────────────
+
+const MANDATORY_EXTRA_NAMES = ['Holika Dahan', 'Dhanteras', 'Bhai Dooj']
+
+function getStaticHoliday(dateStr: string): IndiaHoliday | null {
+  return INDIA_HOLIDAYS_2025_26.find(h => h.date === dateStr) ?? null
+}
+
+function classifyHoliday(h: IndiaHoliday): 'mandatory' | 'optional' {
+  if (h.type === 'gazetted') return 'mandatory'
+  if (MANDATORY_EXTRA_NAMES.some(n => h.name.includes(n))) return 'mandatory'
+  return 'optional'
+}
+
 // ── Color scheme ───────────────────────────────────────────────────────────────
 
-type DayStatus = 'PRESENT_FULL' | 'PRESENT_HALF' | 'OUTSTATION' | 'LEAVE' | 'ABSENT' | 'WEEKEND' | 'HOLIDAY' | 'FUTURE'
+type DayStatus = 'PRESENT_FULL' | 'PRESENT_HALF' | 'OUTSTATION' | 'LEAVE' | 'ABSENT' | 'WEEKEND' | 'HOLIDAY_MANDATORY' | 'HOLIDAY_OPTIONAL' | 'FUTURE'
 
 function getDayStatus(
   rec: AttendanceRecord | undefined,
   isWeekend: boolean,
-  isHoliday: boolean,
+  staticHoliday: IndiaHoliday | null,
   isPast: boolean,
   isToday: boolean,
 ): DayStatus {
   if (isWeekend) return 'WEEKEND'
-  if (isHoliday) return 'HOLIDAY'
+  if (staticHoliday) return classifyHoliday(staticHoliday) === 'mandatory' ? 'HOLIDAY_MANDATORY' : 'HOLIDAY_OPTIONAL'
   if (!isPast && !isToday) return 'FUTURE'
   if (!rec) return isPast || isToday ? 'ABSENT' : 'FUTURE'
   if (rec.attendanceType === 'PRESENT') return rec.workingType === 'HALF_DAY' ? 'PRESENT_HALF' : 'PRESENT_FULL'
@@ -48,14 +63,15 @@ function getDayStatus(
 }
 
 const STATUS_STYLE: Record<DayStatus, { bar: string; bg: string; label: string; labelColor: string }> = {
-  PRESENT_FULL: { bar: 'bg-green-500',  bg: 'bg-green-50',  label: 'Present',   labelColor: 'text-green-700' },
-  PRESENT_HALF: { bar: 'bg-yellow-400', bg: 'bg-yellow-50', label: 'Half Day',  labelColor: 'text-yellow-700' },
-  OUTSTATION:   { bar: 'bg-orange-500', bg: 'bg-orange-50', label: 'Outstation',labelColor: 'text-orange-700' },
-  LEAVE:        { bar: 'bg-blue-500',   bg: 'bg-blue-50',   label: 'Leave',     labelColor: 'text-blue-700' },
-  ABSENT:       { bar: 'bg-red-400',    bg: 'bg-red-50',    label: 'Absent',    labelColor: 'text-red-600' },
-  WEEKEND:      { bar: '',              bg: 'bg-gray-50',   label: 'Weekend',   labelColor: 'text-gray-400' },
-  HOLIDAY:      { bar: 'bg-amber-400',  bg: 'bg-amber-50',  label: 'Holiday',   labelColor: 'text-amber-700' },
-  FUTURE:       { bar: '',              bg: '',              label: '',          labelColor: '' },
+  PRESENT_FULL:     { bar: 'bg-green-500',  bg: 'bg-green-50',  label: 'Present',   labelColor: 'text-green-700' },
+  PRESENT_HALF:     { bar: 'bg-yellow-400', bg: 'bg-yellow-50', label: 'Half Day',  labelColor: 'text-yellow-700' },
+  OUTSTATION:       { bar: 'bg-orange-500', bg: 'bg-orange-50', label: 'Outstation',labelColor: 'text-orange-700' },
+  LEAVE:            { bar: 'bg-blue-500',   bg: 'bg-blue-50',   label: 'Leave',     labelColor: 'text-blue-700' },
+  ABSENT:           { bar: 'bg-red-400',    bg: 'bg-red-50',    label: 'Absent',    labelColor: 'text-red-600' },
+  WEEKEND:          { bar: '',              bg: 'bg-gray-50',   label: 'Weekend',   labelColor: 'text-gray-400' },
+  HOLIDAY_MANDATORY:{ bar: 'bg-red-500',   bg: 'bg-red-50',    label: 'Holiday',   labelColor: 'text-red-600' },
+  HOLIDAY_OPTIONAL: { bar: 'bg-yellow-400',bg: 'bg-amber-50',  label: 'Optional',  labelColor: 'text-amber-700' },
+  FUTURE:           { bar: '',              bg: '',              label: '',          labelColor: '' },
 }
 
 const LEAVE_LABELS: Record<string, string> = {
@@ -122,6 +138,9 @@ export default function AttendancePage() {
     reason: '',
   })
   const [submittingLeave, setSubmittingLeave] = useState(false)
+
+  // Holiday popup
+  const [holidayPopup, setHolidayPopup] = useState<{ holiday: IndiaHoliday; dateStr: string } | null>(null)
 
   const monthKey = `${viewDate.year}-${String(viewDate.month).padStart(2, '0')}`
 
@@ -325,6 +344,30 @@ export default function AttendancePage() {
   const approved  = records.filter(r => r.approvalStatus === 'APPROVED').length
   const pending   = records.filter(r => r.approvalStatus === 'PENDING').length
 
+  // ── Holiday stats (from static data) ─────────────────────────────────────────
+
+  const monthHolidays  = INDIA_HOLIDAYS_2025_26.filter(h => h.date.startsWith(monthKey))
+  const mandatoryHols  = monthHolidays.filter(h => classifyHoliday(h) === 'mandatory')
+  const optionalHols   = monthHolidays.filter(h => classifyHoliday(h) === 'optional')
+
+  const weekendCount = Array.from({ length: daysInMonth }, (_, i) => {
+    const dow = (firstDow + i) % 7
+    return dow === 0 || dow === 6 ? 1 : 0
+  }).reduce((a: number, b: number) => a + b, 0)
+  const workingDaysCount = Math.max(0, daysInMonth - weekendCount - mandatoryHols.length)
+
+  // Substitute holidays: mandatory holiday on Sunday → badge Monday (if in same month)
+  const substituteDates = new Set<string>()
+  mandatoryHols.forEach(h => {
+    const d = new Date(h.date + 'T00:00:00Z')
+    if (d.getUTCDay() === 0) {
+      const mon = new Date(h.date + 'T00:00:00Z')
+      mon.setUTCDate(mon.getUTCDate() + 1)
+      const monStr = mon.toISOString().split('T')[0]
+      if (monStr.startsWith(monthKey)) substituteDates.add(monStr)
+    }
+  })
+
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
@@ -415,7 +458,8 @@ export default function AttendancePage() {
       <div className="flex flex-wrap gap-x-4 gap-y-1.5">
         {([
           ['PRESENT_FULL', 'Present'], ['PRESENT_HALF', 'Half Day'], ['OUTSTATION', 'Outstation'],
-          ['LEAVE', 'Leave'], ['ABSENT', 'Absent'], ['HOLIDAY', 'Holiday'], ['WEEKEND', 'Weekend'],
+          ['LEAVE', 'Leave'], ['ABSENT', 'Absent'],
+          ['HOLIDAY_MANDATORY', 'Mandatory Holiday'], ['HOLIDAY_OPTIONAL', 'Optional Holiday'], ['WEEKEND', 'Weekend'],
         ] as [DayStatus, string][]).map(([key, label]) => (
           <div key={key} className="flex items-center gap-1.5">
             <div className={cn('w-2.5 h-2.5 rounded-sm', STATUS_STYLE[key].bar || 'bg-gray-200')} />
@@ -449,26 +493,30 @@ export default function AttendancePage() {
               const dateStr = `${viewDate.year}-${String(viewDate.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
               const dow = (firstDow + day - 1) % 7
               const isWeekend = dow === 0 || dow === 6
-              const isHoliday = holidayDates.has(dateStr)
               const rec = recordMap.get(dateStr)
               const isToday = isCurrentMonth && day === now.getDate()
               const isPast = isFutureMonth ? false : isCurrentMonth ? day < now.getDate() : true
               const isFuture = isFutureMonth || (isCurrentMonth && day > now.getDate())
-              const holiday = holidays.find(h => h.date.split('T')[0] === dateStr)
-              const status = getDayStatus(rec, isWeekend, isHoliday, isPast, isToday)
+              const staticHoliday = getStaticHoliday(dateStr)
+              const holidayClass = staticHoliday ? classifyHoliday(staticHoliday) : null
+              const isSubstitute = substituteDates.has(dateStr)
+              const status = getDayStatus(rec, isWeekend, staticHoliday, isPast, isToday)
               const style = STATUS_STYLE[status]
-              const isClickable = !isWeekend && !isFuture
+              const isClickable = !!staticHoliday || (!isWeekend && !isFuture)
 
               return (
                 <button
                   key={day}
                   disabled={!isClickable}
                   onClick={() => {
+                    if (staticHoliday) {
+                      setHolidayPopup({ holiday: staticHoliday, dateStr })
+                      return
+                    }
                     if (!isClickable) return
                     if (rec?.approvalStatus === 'APPROVED' && !isAdmin) {
                       toast.error('Locked — approved by manager'); return
                     }
-                    // Pre-fill punch form with this day
                     setPunch(p => ({
                       ...p,
                       date: dateStr,
@@ -504,14 +552,25 @@ export default function AttendancePage() {
 
                   {/* Label */}
                   <span className={cn('text-[9px] font-semibold leading-tight mt-0.5 truncate w-full', style.labelColor)}>
-                    {isHoliday && holiday ? holiday.name :
+                    {staticHoliday ? staticHoliday.name :
+                     isSubstitute ? 'Sub Holiday' :
                      status === 'OUTSTATION' && rec?.outstationCity ? rec.outstationCity :
                      status === 'LEAVE' ? (LEAVE_LABELS[rec?.leaveType ?? ''] ?? 'Leave') :
                      status !== 'FUTURE' && status !== 'WEEKEND' ? style.label : ''}
                   </span>
 
+                  {/* Optional badge */}
+                  {holidayClass === 'optional' && (
+                    <span className="text-[8px] font-bold text-amber-600 leading-none">tap to request</span>
+                  )}
+
+                  {/* Substitute holiday badge */}
+                  {isSubstitute && !staticHoliday && (
+                    <span className="text-[8px] font-bold text-orange-600 leading-none">Sub Hol</span>
+                  )}
+
                   {/* Approval badge */}
-                  {rec && !isWeekend && (
+                  {rec && !isWeekend && !staticHoliday && (
                     <span className={cn('text-[8px] font-bold leading-none',
                       rec.approvalStatus === 'APPROVED' ? 'text-green-600' :
                       rec.approvalStatus === 'REJECTED' ? 'text-red-600' : 'text-amber-500'
@@ -526,6 +585,56 @@ export default function AttendancePage() {
           </div>
         </div>
       )}
+
+      {/* Holiday summary widget */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
+          Holiday Summary — {format(new Date(viewDate.year, viewDate.month - 1), 'MMMM yyyy')}
+        </p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-xl p-3 text-center bg-red-50">
+            <p className="text-xl font-bold leading-none text-red-700">{mandatoryHols.length}</p>
+            <p className="text-[11px] font-medium mt-1 text-red-600">Mandatory Holidays</p>
+          </div>
+          <div className="rounded-xl p-3 text-center bg-amber-50">
+            <p className="text-xl font-bold leading-none text-amber-700">{optionalHols.length}</p>
+            <p className="text-[11px] font-medium mt-1 text-amber-600">Optional Holidays</p>
+          </div>
+          <div className="rounded-xl p-3 text-center bg-green-50">
+            <p className="text-xl font-bold leading-none text-green-700">{workingDaysCount}</p>
+            <p className="text-[11px] font-medium mt-1 text-green-600">Working Days</p>
+          </div>
+        </div>
+        {mandatoryHols.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {mandatoryHols.map(h => (
+              <button
+                key={h.date}
+                onClick={() => setHolidayPopup({ holiday: h, dateStr: h.date })}
+                className="text-[10px] px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-medium hover:bg-red-200 transition"
+              >
+                {h.name}
+              </button>
+            ))}
+          </div>
+        )}
+        {optionalHols.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {optionalHols.map(h => (
+              <button
+                key={h.date}
+                onClick={() => setHolidayPopup({ holiday: h, dateStr: h.date })}
+                className="text-[10px] px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full font-medium hover:bg-amber-200 transition"
+              >
+                {h.name}
+              </button>
+            ))}
+          </div>
+        )}
+        {monthHolidays.length === 0 && (
+          <p className="text-xs text-gray-400 text-center mt-2">No holidays this month</p>
+        )}
+      </div>
 
       {/* Monthly summary */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
@@ -728,6 +837,103 @@ export default function AttendancePage() {
           </div>
         </div>
       )}
+
+      {/* ── Holiday Detail Popup ────────────────────────────────────────────── */}
+      {holidayPopup && (() => {
+        const { holiday, dateStr } = holidayPopup
+        const hClass = classifyHoliday(holiday)
+        const d = new Date(dateStr + 'T00:00:00Z')
+        const dateLabel = d.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' })
+        const isSun = d.getUTCDay() === 0
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setHolidayPopup(null)}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+              <div className={cn(
+                'flex items-center gap-3 px-5 pt-5 pb-4 rounded-t-2xl',
+                hClass === 'mandatory' ? 'bg-red-50' : 'bg-amber-50'
+              )}>
+                <div className={cn('w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0',
+                  hClass === 'mandatory' ? 'bg-red-100' : 'bg-amber-100'
+                )}>
+                  {hClass === 'mandatory' ? '🔴' : '🟡'}
+                </div>
+                <div className="min-w-0">
+                  <p className={cn('font-bold text-sm leading-tight', hClass === 'mandatory' ? 'text-red-800' : 'text-amber-800')}>
+                    {holiday.name}
+                  </p>
+                  <p className={cn('text-xs mt-0.5', hClass === 'mandatory' ? 'text-red-600' : 'text-amber-600')}>
+                    {hClass === 'mandatory' ? 'Mandatory Holiday' : 'Optional Holiday'}
+                  </p>
+                </div>
+                <button onClick={() => setHolidayPopup(null)} className="ml-auto w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-white/60 text-lg flex-shrink-0">✕</button>
+              </div>
+
+              <div className="px-5 py-4 space-y-3">
+                <div className="flex items-start gap-2 text-sm">
+                  <span className="text-gray-400 w-20 flex-shrink-0 text-xs font-semibold pt-0.5">DATE</span>
+                  <span className="text-gray-800 font-medium">{dateLabel}</span>
+                </div>
+                {isSun && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-400 w-20 flex-shrink-0 text-xs font-semibold"></span>
+                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">⚠️ Falls on Sunday — substitute holiday may apply on Monday</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-400 w-20 flex-shrink-0 text-xs font-semibold">CATEGORY</span>
+                  <span className="text-gray-700">{holiday.religion}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-400 w-20 flex-shrink-0 text-xs font-semibold">TYPE</span>
+                  <span className={cn('text-xs px-2 py-0.5 rounded-full font-semibold',
+                    holiday.type === 'gazetted' ? 'bg-green-100 text-green-700' :
+                    holiday.type === 'restricted' ? 'bg-yellow-100 text-yellow-700' :
+                    holiday.type === 'festival' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                  )}>
+                    {holiday.type.charAt(0).toUpperCase() + holiday.type.slice(1)}
+                  </span>
+                </div>
+                {holiday.note && (
+                  <div className="flex items-start gap-2 text-sm">
+                    <span className="text-gray-400 w-20 flex-shrink-0 text-xs font-semibold pt-0.5">NOTE</span>
+                    <span className="text-gray-500 text-xs leading-relaxed">{holiday.note}</span>
+                  </div>
+                )}
+                {holiday.state && (
+                  <div className="flex items-start gap-2 text-sm">
+                    <span className="text-gray-400 w-20 flex-shrink-0 text-xs font-semibold pt-0.5">REGION</span>
+                    <span className="text-gray-500 text-xs">{holiday.state}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="px-5 pb-5 flex gap-3">
+                {hClass === 'optional' && (
+                  <button
+                    onClick={() => {
+                      setLeave(l => ({ ...l, fromDate: dateStr, toDate: dateStr, reason: `Optional Holiday: ${holiday.name}` }))
+                      setHolidayPopup(null)
+                      setShowLeave(true)
+                    }}
+                    className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-xl transition"
+                  >
+                    Request Optional Holiday →
+                  </button>
+                )}
+                <button
+                  onClick={() => setHolidayPopup(null)}
+                  className={cn(
+                    'py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition',
+                    hClass === 'optional' ? 'px-4' : 'flex-1'
+                  )}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── Apply Leave Modal ────────────────────────────────────────────────── */}
       {showLeave && (
