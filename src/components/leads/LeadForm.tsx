@@ -8,6 +8,9 @@ import { SmartOfferCard } from '@/components/leads/SmartOfferCard'
 import { SmartScoreMeter } from '@/components/leads/SmartScoreMeter'
 import { LoanSchemeSelector } from '@/components/leads/LoanSchemeSelector'
 
+// TODO: OTP verification disabled for testing — set TESTING_MODE = false before production
+const TESTING_MODE = true
+
 interface Clinic { id: string; name: string }
 
 interface LenderOffer {
@@ -120,6 +123,14 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
   useEffect(() => {
     fetch('/api/clinics?minimal=1').then(r => r.json()).then(d => setClinics(d.data ?? []))
   }, [])
+
+  // TODO: OTP verification disabled for testing — remove this useEffect before production
+  useEffect(() => {
+    if (TESTING_MODE && step === 2) {
+      setPhoneVerified(true)
+      setStep(3)
+    }
+  }, [step])
 
   async function verifyPAN() {
     if (panNumber.length !== 10) { toast.error('Enter a valid 10-character PAN number'); return }
@@ -309,7 +320,10 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
     5: 'Treatment & Scheme', 6: 'Smart Qualify', 7: 'Confirm',
     8: 'Income Verify', 9: 'Enhanced Decision', 10: 'Final Submit',
   }
-  const STEP_NUMS = wantsEnhancement ? [1,2,3,4,5,6,7,8,9,10] : [1,2,3,4,5,6,7]
+  // TODO: OTP verification disabled for testing — restore step 2 in both arrays before production
+  const STEP_NUMS = TESTING_MODE
+    ? (wantsEnhancement ? [1,3,4,5,6,7,8,9,10] : [1,3,4,5,6,7])
+    : (wantsEnhancement ? [1,2,3,4,5,6,7,8,9,10] : [1,2,3,4,5,6,7])
   const currentIdx = STEP_NUMS.indexOf(step)
   const progress = Math.round(((currentIdx + 1) / STEP_NUMS.length) * 100)
   const treatments = treatmentCategory ? TREATMENT_CATEGORIES[treatmentCategory] ?? [] : []
@@ -366,7 +380,14 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
               if (!consentGiven) {
                 toast.error('Patient consent is required before proceeding'); return
               }
-              setStep(2)
+              // TODO: OTP verification disabled for testing — remove this block and restore setStep(2) before production
+              if (TESTING_MODE) {
+                setPhoneVerified(true)
+                toast.success('Testing Mode: OTP step bypassed ⚡')
+                setStep(3)
+              } else {
+                setStep(2)
+              }
             }}
             onCancel={onCancel} nextLabel="Next: KYC →" />
         </div>
@@ -390,7 +411,7 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
                   onChange={e => setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="Enter 6-digit OTP"
                   maxLength={6}
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg text-sm font-mono text-center text-xl tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg text-sm font-mono text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
                 <button onClick={verifyOTP} disabled={loading || otpInput.length !== 6}
                   className="w-full py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-60">
@@ -525,7 +546,25 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
           <NavBtn onBack={() => setStep(4)}
             onNext={() => {
               if (!clinicId || !treatmentName || !loanAmount || !loanScheme) { toast.error('Clinic, treatment, amount and scheme are required'); return }
-              setStep(6); runSmartQualify()
+              if (TESTING_MODE) {
+                const amt = Math.min(parseFloat(loanAmount), 100000)
+                const mockOffer: LenderOffer = {
+                  rank: 1, lenderId: '', lenderName: 'Mock Lender (Testing)', lenderCode: 'TEST',
+                  approvedAmount: amt, interestRate: 14, tenure: loanScheme?.tenure ?? 12,
+                  emi: Math.round(amt / (loanScheme?.tenure ?? 12)), processingFee: 0,
+                  confidence: 'HIGH', tag: 'Best Match', instantApproval: true,
+                  requiresIncomeProof: false, decisionTime: 'Instant',
+                  message: '[Testing Mode] Not a real credit decision.',
+                }
+                setSmartScore({ score: 82, grade: 'A', signals: ['Testing Mode — Mock Data'], maxInstantAmount: amt })
+                setOffers([mockOffer])
+                setSelectedOffer(mockOffer)
+                setTotalLenders(3)
+                setTotalEligible(1)
+                setStep(6)
+              } else {
+                setStep(6); runSmartQualify()
+              }
             }}
             nextLabel="🚀 Get Smart Offers →" onCancel={onCancel} />
         </div>
@@ -535,6 +574,11 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
       {step === 6 && (
         <div className="space-y-4">
           <StepHeader icon="⚡" title="Smart Pre-Qualification" subtitle="No CIBIL hit — instant offers" />
+          {TESTING_MODE && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+              ⚠️ Testing Mode — Showing mock lender offer. Not a real credit decision.
+            </div>
+          )}
           {qualifying && (
             <div className="text-center py-10">
               <div className="relative mx-auto w-20 h-20 mb-4">
@@ -558,7 +602,7 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
             </div>
           )}
           {!qualifying && offers.map(offer => (
-            <SmartOfferCard key={offer.lenderId} offer={offer}
+            <SmartOfferCard key={offer.lenderId || String(offer.rank)} offer={offer}
               selected={selectedOffer?.lenderId === offer.lenderId}
               onSelect={() => setSelectedOffer(offer)} />
           ))}

@@ -1,9 +1,23 @@
 'use client'
 
+// TODO: OTP verification disabled for testing — set TESTING_MODE = false before production
+// Set to false to restore real OTP verification and credit engine
+const TESTING_MODE = true
+
 import { useState } from 'react'
 import { useLos } from '../LosProvider'
 import { btnPrimary, btnSecondary, Field, inputCls, selectCls } from '../ui'
 import type { LeadFormData } from '@/lib/los/types'
+
+type DecisionResult = 'APPROVED' | 'CONDITIONAL' | 'REJECTED' | null
+
+function getSalaryDecision(salaryStr: string): DecisionResult {
+  const s = parseInt(salaryStr, 10)
+  if (isNaN(s) || salaryStr === '') return null
+  if (s >= 50000) return 'APPROVED'
+  if (s >= 25000) return 'CONDITIONAL'
+  return 'REJECTED'
+}
 
 const emptyForm: LeadFormData = {
   enquiryType: '',
@@ -31,6 +45,8 @@ export function CreateLeadModule() {
   const [leadId, setLeadId] = useState<string | null>(null)
   const [otp, setOtp] = useState('')
   const [showOtp, setShowOtp] = useState(false)
+  const [showDecision, setShowDecision] = useState(false)
+  const [decisionSalary, setDecisionSalary] = useState('')
   const [employment, setEmployment] = useState({ companyName: '', salary: '', employmentType: 'Salaried' })
   const [coApp, setCoApp] = useState({ name: '', relation: '', income: '' })
 
@@ -44,11 +60,19 @@ export function CreateLeadModule() {
     form.financingRequired
 
   async function afterOtp() {
-    if (otp !== '123456') return alert('Demo OTP: 123456')
+    if (TESTING_MODE) {
+      if (otp !== '123456') return alert('Testing Mode: Use OTP 123456')
+    } else {
+      if (otp !== '123456') return alert('Invalid OTP. Please try again.')
+    }
     const lead = await createLead(form, session?.email ?? 'system', { status: 'OTP_VERIFIED' })
     setLeadId(lead.id)
     setShowOtp(false)
-    setStep(2)
+    if (TESTING_MODE) {
+      setShowDecision(true)
+    } else {
+      setStep(2)
+    }
   }
 
   async function saveAndAdvance(next: number, status?: Parameters<typeof setLeadStatus>[1]) {
@@ -118,11 +142,20 @@ export function CreateLeadModule() {
           </div>
           <button
             type="button"
-            disabled={!step1Ok}
+            disabled={!step1Ok || syncing}
             className={btnSecondary + ' w-full'}
-            onClick={() => setShowOtp(true)}
+            onClick={async () => {
+              if (TESTING_MODE) {
+                // TODO: OTP verification disabled for testing — re-enable before production (restore: setShowOtp(true))
+                const lead = await createLead(form, session?.email ?? 'system', { status: 'OTP_VERIFIED' })
+                setLeadId(lead.id)
+                setShowDecision(true)
+              } else {
+                setShowOtp(true)
+              }
+            }}
           >
-            Create Enquiry & Send OTP
+            {TESTING_MODE ? 'Create Enquiry (Testing — OTP skipped)' : 'Create Enquiry & Send OTP'}
           </button>
         </div>
       )}
@@ -138,6 +171,51 @@ export function CreateLeadModule() {
           </div>
         </div>
       )}
+
+      {showDecision && TESTING_MODE && (() => {
+        const decision = getSalaryDecision(decisionSalary)
+        const decisionMeta: Record<NonNullable<DecisionResult>, { label: string; icon: string; color: string; border: string }> = {
+          APPROVED:    { label: 'Approved',             icon: '✅', color: 'text-green-300', border: 'border-green-500/40' },
+          CONDITIONAL: { label: 'Conditional Approval', icon: '⚠️', color: 'text-yellow-300', border: 'border-yellow-500/40' },
+          REJECTED:    { label: 'Rejected',             icon: '❌', color: 'text-red-400',   border: 'border-red-500/40'   },
+        }
+        const meta = decision ? decisionMeta[decision] : null
+        return (
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
+            <h3 className="text-lg font-semibold">Salary Eligibility Check</h3>
+            <Field label="Monthly Salary (₹)" required>
+              <input
+                type="number"
+                className={inputCls}
+                placeholder="Enter monthly salary"
+                value={decisionSalary}
+                onChange={(e) => setDecisionSalary(e.target.value)}
+              />
+            </Field>
+
+            {meta && (
+              <div className={`rounded-xl border p-4 space-y-2 ${meta.border}`}>
+                <p className={`text-xl font-bold ${meta.color}`}>{meta.icon} {meta.label}</p>
+                <p className="text-sm text-gray-300">Salary entered: <span className="text-white font-medium">₹{parseInt(decisionSalary, 10).toLocaleString()}</span></p>
+                {decision === 'CONDITIONAL' && (
+                  <p className="text-sm text-yellow-300">Documentation required to proceed.</p>
+                )}
+                <p className="text-sm text-gray-400">Reason: Decision based on salary eligibility</p>
+                <p className="text-xs text-orange-400 mt-1">⚠️ Testing Mode — Not a real credit decision</p>
+              </div>
+            )}
+
+            <button
+              type="button"
+              className={btnPrimary}
+              disabled={!decision}
+              onClick={() => { setShowDecision(false); setStep(2) }}
+            >
+              Continue to Application
+            </button>
+          </div>
+        )
+      })()}
 
       {step === 2 && leadId && (
         <div className="bg-white/5 p-6 rounded-2xl border border-white/10 space-y-4">
