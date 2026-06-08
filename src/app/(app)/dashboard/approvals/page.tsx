@@ -5,6 +5,7 @@ import { useTabSession } from '@/contexts/TabSessionContext'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { INDIA_HOLIDAYS_2025_26, type IndiaHoliday } from '@/lib/hr/india-holidays-2025-26'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -42,6 +43,20 @@ interface ExpenseRecord {
 }
 
 type Tab = 'leaves' | 'attendance' | 'expenses'
+
+const MANDATORY_EXTRA_NAMES = ['Holika Dahan', 'Dhanteras', 'Bhai Dooj']
+
+function classifyHoliday(h: IndiaHoliday): 'mandatory' | 'optional' {
+  if (h.type === 'gazetted') return 'mandatory'
+  if (MANDATORY_EXTRA_NAMES.some(n => h.name.includes(n))) return 'mandatory'
+  return 'optional'
+}
+
+function getHolidaysInRange(fromDate: string, toDate: string) {
+  const from = fromDate.split('T')[0]
+  const to = toDate.split('T')[0]
+  return INDIA_HOLIDAYS_2025_26.filter(h => h.date >= from && h.date <= to)
+}
 
 const LEAVE_LABELS: Record<string, string> = {
   PL: 'Paid Leave', CL: 'Casual Leave', MEDICAL: 'Medical Leave', UNPLANNED: 'Unplanned Leave',
@@ -257,6 +272,9 @@ export default function ApprovalsPage() {
                     const from = format(new Date(leave.fromDate), 'dd MMM')
                     const to = format(new Date(leave.toDate), 'dd MMM yyyy')
                     const range = leave.fromDate.split('T')[0] === leave.toDate.split('T')[0] ? to : `${from} – ${to}`
+                    const rangeHols = getHolidaysInRange(leave.fromDate, leave.toDate)
+                    const mandatoryHols = rangeHols.filter(h => classifyHoliday(h) === 'mandatory')
+                    const optionalHols  = rangeHols.filter(h => classifyHoliday(h) === 'optional')
                     return (
                       <div key={leave.id} className="flex items-start gap-3 px-4 py-4">
                         <div className="flex-1 min-w-0">
@@ -265,6 +283,22 @@ export default function ApprovalsPage() {
                             {LEAVE_LABELS[leave.type] ?? leave.type} · {range}
                           </p>
                           <p className="text-xs text-gray-600 mt-1">{leave.reason}</p>
+                          {(mandatoryHols.length > 0 || optionalHols.length > 0) && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {mandatoryHols.map(h => (
+                                <span key={h.date} className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-600 text-[10px] font-semibold rounded-full border border-red-100">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
+                                  {h.name}
+                                </span>
+                              ))}
+                              {optionalHols.map(h => (
+                                <span key={h.date} className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-semibold rounded-full border border-amber-100">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 flex-shrink-0" />
+                                  {h.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                           <p className="text-[11px] text-gray-400 mt-0.5">Submitted {format(new Date(leave.createdAt), 'dd MMM')}</p>
                         </div>
                         <ActionButtons
