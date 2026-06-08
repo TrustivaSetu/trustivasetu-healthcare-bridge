@@ -11,12 +11,12 @@ export async function sendOtpSms(
   const templateId = process.env.MSG91_TEMPLATE_ID
 
   if (!authKey || !templateId) {
-    if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_OTP_BYPASS === 'true') {
-      console.log(`[SMS DEV] OTP for +91${phone}: ${otp}`)
+    if (process.env.ENABLE_OTP_BYPASS === 'true') {
+      console.log('[OTP] MSG91 not configured - bypass enabled')
       return { success: true }
     }
-    console.error('[SMS] MSG91_AUTH_KEY or MSG91_TEMPLATE_ID not configured')
-    return { success: false, error: 'SMS service not configured. Please contact support.' }
+    console.error('[OTP] MSG91 not configured: MSG91_AUTH_KEY or MSG91_TEMPLATE_ID missing')
+    return { success: false, error: 'OTP service is not configured.' }
   }
 
   try {
