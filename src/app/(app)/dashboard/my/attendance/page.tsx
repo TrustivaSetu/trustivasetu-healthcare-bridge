@@ -5,6 +5,7 @@ import { useTabSession } from '@/contexts/TabSessionContext'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { INDIA_HOLIDAYS_2025_26, type IndiaHoliday } from '@/lib/hr/india-holidays-2025-26'
 
 type AttendanceRecord = {
   id: string
@@ -20,6 +21,18 @@ type AttendanceRecord = {
 
 const LEAVE_LABELS: Record<string, string> = {
   PL: 'Paid Leave', CL: 'Casual Leave', MEDICAL: 'Medical Leave', UNPLANNED: 'Unplanned Leave',
+}
+
+const MANDATORY_EXTRA_NAMES = ['Holika Dahan', 'Dhanteras', 'Bhai Dooj']
+
+function getStaticHoliday(dateStr: string): IndiaHoliday | null {
+  return INDIA_HOLIDAYS_2025_26.find(h => h.date === dateStr) ?? null
+}
+
+function classifyHoliday(h: IndiaHoliday): 'mandatory' | 'optional' {
+  if (h.type === 'gazetted') return 'mandatory'
+  if (MANDATORY_EXTRA_NAMES.some(n => h.name.includes(n))) return 'mandatory'
+  return 'optional'
 }
 
 function getStatusLabel(rec: AttendanceRecord) {
@@ -59,6 +72,7 @@ export default function MyAttendancePage() {
   })
   const [locating, setLocating] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [holidayPopup, setHolidayPopup] = useState<{ holiday: IndiaHoliday; dateStr: string } | null>(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -72,6 +86,12 @@ export default function MyAttendancePage() {
 
   const todayRecord = records.find(r => r.date.split('T')[0] === today)
   const recent = [...records].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10)
+
+  const todayHoliday = getStaticHoliday(today)
+  const todayHolidayClass = todayHoliday ? classifyHoliday(todayHoliday) : null
+  const monthHolidays = INDIA_HOLIDAYS_2025_26.filter(h => h.date.startsWith(monthKey))
+  const mandatoryHols = monthHolidays.filter(h => classifyHoliday(h) === 'mandatory')
+  const optionalHols  = monthHolidays.filter(h => classifyHoliday(h) === 'optional')
 
   function captureGPS() {
     setLocating(true)
@@ -128,6 +148,32 @@ export default function MyAttendancePage() {
         <h1 className="text-xl font-bold text-gray-900">My Attendance</h1>
         <p className="text-sm text-gray-500">{format(now, 'EEEE, dd MMMM yyyy')}</p>
       </div>
+
+      {/* Today holiday banner */}
+      {todayHoliday && (
+        <button
+          onClick={() => setHolidayPopup({ holiday: todayHoliday, dateStr: today })}
+          className={cn(
+            'w-full text-left flex items-center gap-3 rounded-xl px-4 py-3 border transition hover:brightness-95',
+            todayHolidayClass === 'mandatory'
+              ? 'bg-red-50 border-red-200'
+              : 'bg-amber-50 border-amber-200'
+          )}
+        >
+          <span className="text-xl leading-none">{todayHolidayClass === 'mandatory' ? '🔴' : '🟡'}</span>
+          <div className="flex-1 min-w-0">
+            <p className={cn('font-semibold text-sm', todayHolidayClass === 'mandatory' ? 'text-red-800' : 'text-amber-800')}>
+              {todayHoliday.name}
+            </p>
+            <p className={cn('text-xs mt-0.5', todayHolidayClass === 'mandatory' ? 'text-red-600' : 'text-amber-600')}>
+              {todayHolidayClass === 'mandatory' ? 'Mandatory Holiday today' : 'Optional Holiday today — tap to request leave'}
+            </p>
+          </div>
+          <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      )}
 
       {/* Today's status banner */}
       {!todayRecord ? (
@@ -189,6 +235,47 @@ export default function MyAttendancePage() {
         </a>
       </div>
 
+      {/* Holiday summary */}
+      {monthHolidays.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+            <p className="text-sm font-bold text-gray-700">Holidays — {format(now, 'MMMM yyyy')}</p>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">{mandatoryHols.length} Mandatory</span>
+              <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">{optionalHols.length} Optional</span>
+            </div>
+          </div>
+          <div className="px-4 py-3 space-y-2">
+            {mandatoryHols.map(h => (
+              <button
+                key={h.date}
+                onClick={() => setHolidayPopup({ holiday: h, dateStr: h.date })}
+                className="w-full flex items-center gap-3 text-left hover:bg-gray-50 rounded-lg px-1 py-1 transition"
+              >
+                <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
+                <span className="text-xs font-medium text-gray-800 flex-1 truncate">{h.name}</span>
+                <span className="text-xs text-gray-400 flex-shrink-0">
+                  {new Date(h.date + 'T00:00:00Z').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', timeZone: 'UTC' })}
+                </span>
+              </button>
+            ))}
+            {optionalHols.map(h => (
+              <button
+                key={h.date}
+                onClick={() => setHolidayPopup({ holiday: h, dateStr: h.date })}
+                className="w-full flex items-center gap-3 text-left hover:bg-gray-50 rounded-lg px-1 py-1 transition"
+              >
+                <span className="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0" />
+                <span className="text-xs font-medium text-gray-800 flex-1 truncate">{h.name}</span>
+                <span className="text-xs text-gray-400 flex-shrink-0">
+                  {new Date(h.date + 'T00:00:00Z').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', timeZone: 'UTC' })}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Recent records */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100">
@@ -202,31 +289,130 @@ export default function MyAttendancePage() {
           <p className="text-center py-8 text-sm text-gray-400">No records this month</p>
         ) : (
           <div className="divide-y divide-gray-100">
-            {recent.map(rec => (
-              <div key={rec.id} className="flex items-center gap-3 px-4 py-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800">{format(new Date(rec.date), 'EEE, dd MMM')}</p>
-                  <p className="text-xs text-gray-500">
-                    {rec.timeIn ? `In: ${rec.timeIn}` : ''}
-                    {rec.locationName ? ` · 📍 ${rec.locationName}` : ''}
-                  </p>
+            {recent.map(rec => {
+              const recDateStr = rec.date.split('T')[0]
+              const recHoliday = getStaticHoliday(recDateStr)
+              const recHolClass = recHoliday ? classifyHoliday(recHoliday) : null
+              return (
+                <div key={rec.id} className="flex items-center gap-3 px-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-sm font-medium text-gray-800">{format(new Date(rec.date), 'EEE, dd MMM')}</p>
+                      {recHoliday && (
+                        <button
+                          onClick={() => setHolidayPopup({ holiday: recHoliday, dateStr: recDateStr })}
+                          className={cn(
+                            'text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
+                            recHolClass === 'mandatory' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
+                          )}
+                        >
+                          {recHoliday.name}
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      {rec.timeIn ? `In: ${rec.timeIn}` : ''}
+                      {rec.locationName ? ` · 📍 ${rec.locationName}` : ''}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', getStatusColor(rec))}>
+                      {getStatusLabel(rec)}
+                    </span>
+                    <span className={cn('text-[11px] font-bold',
+                      rec.approvalStatus === 'APPROVED' ? 'text-green-600' :
+                      rec.approvalStatus === 'REJECTED' ? 'text-red-500' : 'text-amber-500'
+                    )}>
+                      {rec.approvalStatus === 'APPROVED' ? '✓' : rec.approvalStatus === 'REJECTED' ? '✗' : '·'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', getStatusColor(rec))}>
-                    {getStatusLabel(rec)}
-                  </span>
-                  <span className={cn('text-[11px] font-bold',
-                    rec.approvalStatus === 'APPROVED' ? 'text-green-600' :
-                    rec.approvalStatus === 'REJECTED' ? 'text-red-500' : 'text-amber-500'
-                  )}>
-                    {rec.approvalStatus === 'APPROVED' ? '✓' : rec.approvalStatus === 'REJECTED' ? '✗' : '·'}
-                  </span>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
+
+      {/* Holiday Popup */}
+      {holidayPopup && (() => {
+        const { holiday, dateStr } = holidayPopup
+        const hClass = classifyHoliday(holiday)
+        const d = new Date(dateStr + 'T00:00:00Z')
+        const dateLabel = d.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' })
+        const isSun = d.getUTCDay() === 0
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setHolidayPopup(null)}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+              <div className={cn('flex items-center gap-3 px-5 pt-5 pb-4 rounded-t-2xl', hClass === 'mandatory' ? 'bg-red-50' : 'bg-amber-50')}>
+                <div className={cn('w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0', hClass === 'mandatory' ? 'bg-red-100' : 'bg-amber-100')}>
+                  {hClass === 'mandatory' ? '🔴' : '🟡'}
+                </div>
+                <div className="min-w-0">
+                  <p className={cn('font-bold text-sm leading-tight', hClass === 'mandatory' ? 'text-red-800' : 'text-amber-800')}>{holiday.name}</p>
+                  <p className={cn('text-xs mt-0.5', hClass === 'mandatory' ? 'text-red-600' : 'text-amber-600')}>
+                    {hClass === 'mandatory' ? 'Mandatory Holiday' : 'Optional Holiday'}
+                  </p>
+                </div>
+                <button onClick={() => setHolidayPopup(null)} className="ml-auto w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-white/60 text-lg flex-shrink-0">✕</button>
+              </div>
+              <div className="px-5 py-4 space-y-3">
+                <div className="flex items-start gap-2 text-sm">
+                  <span className="text-gray-400 w-20 flex-shrink-0 text-xs font-semibold pt-0.5">DATE</span>
+                  <span className="text-gray-800 font-medium">{dateLabel}</span>
+                </div>
+                {isSun && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-400 w-20 flex-shrink-0 text-xs font-semibold" />
+                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">⚠️ Falls on Sunday — substitute holiday may apply on Monday</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-400 w-20 flex-shrink-0 text-xs font-semibold">CATEGORY</span>
+                  <span className="text-gray-700">{holiday.religion}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-400 w-20 flex-shrink-0 text-xs font-semibold">TYPE</span>
+                  <span className={cn('text-xs px-2 py-0.5 rounded-full font-semibold',
+                    holiday.type === 'gazetted' ? 'bg-green-100 text-green-700' :
+                    holiday.type === 'restricted' ? 'bg-yellow-100 text-yellow-700' :
+                    holiday.type === 'festival' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                  )}>
+                    {holiday.type.charAt(0).toUpperCase() + holiday.type.slice(1)}
+                  </span>
+                </div>
+                {holiday.note && (
+                  <div className="flex items-start gap-2 text-sm">
+                    <span className="text-gray-400 w-20 flex-shrink-0 text-xs font-semibold pt-0.5">NOTE</span>
+                    <span className="text-gray-500 text-xs leading-relaxed">{holiday.note}</span>
+                  </div>
+                )}
+                {holiday.state && (
+                  <div className="flex items-start gap-2 text-sm">
+                    <span className="text-gray-400 w-20 flex-shrink-0 text-xs font-semibold pt-0.5">REGION</span>
+                    <span className="text-gray-500 text-xs">{holiday.state}</span>
+                  </div>
+                )}
+              </div>
+              <div className="px-5 pb-5 flex gap-3">
+                {hClass === 'optional' && (
+                  <a
+                    href="/hr/attendance"
+                    className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-xl transition text-center"
+                  >
+                    Request Optional Holiday →
+                  </a>
+                )}
+                <button
+                  onClick={() => setHolidayPopup(null)}
+                  className={cn('py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition', hClass === 'optional' ? 'px-4' : 'flex-1')}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Punch Modal */}
       {showPunch && (
