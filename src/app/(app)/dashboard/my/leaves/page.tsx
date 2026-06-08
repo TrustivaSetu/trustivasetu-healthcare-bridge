@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { INDIA_HOLIDAYS_2025_26, type IndiaHoliday } from '@/lib/hr/india-holidays-2025-26'
 
 type LeaveType = 'PL' | 'CL' | 'MEDICAL' | 'UNPLANNED'
 type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
@@ -31,6 +32,14 @@ const STATUS_STYLE: Record<ApprovalStatus, string> = {
   PENDING:  'bg-amber-100 text-amber-700',
   APPROVED: 'bg-green-100 text-green-700',
   REJECTED: 'bg-red-100 text-red-700',
+}
+
+const MANDATORY_EXTRA_NAMES = ['Holika Dahan', 'Dhanteras', 'Bhai Dooj']
+
+function classifyHoliday(h: IndiaHoliday): 'mandatory' | 'optional' {
+  if (h.type === 'gazetted') return 'mandatory'
+  if (MANDATORY_EXTRA_NAMES.some(n => h.name.includes(n))) return 'mandatory'
+  return 'optional'
 }
 
 function formatRange(from: string, to: string) {
@@ -86,6 +95,23 @@ export default function MyLeavesPage() {
 
   const pendingCount = leaves.filter(l => l.status === 'PENDING').length
 
+  // Upcoming holidays — next 60 days
+  const todayMs = new Date(today + 'T00:00:00Z').getTime()
+  const upcomingHolidays = INDIA_HOLIDAYS_2025_26.filter(h => {
+    const ms = new Date(h.date + 'T00:00:00Z').getTime()
+    return ms >= todayMs && ms <= todayMs + 60 * 24 * 60 * 60 * 1000
+  }).slice(0, 10)
+
+  // Holidays inside the currently selected date range (for modal preview)
+  const holidaysInRange = INDIA_HOLIDAYS_2025_26.filter(h => h.date >= form.fromDate && h.date <= form.toDate)
+  const mandatoryInRange = holidaysInRange.filter(h => classifyHoliday(h) === 'mandatory')
+  const optionalInRange  = holidaysInRange.filter(h => classifyHoliday(h) === 'optional')
+
+  function requestOptionalHoliday(h: IndiaHoliday) {
+    setForm({ type: 'CL', fromDate: h.date, toDate: h.date, reason: `Optional Holiday: ${h.name}` })
+    setShowForm(true)
+  }
+
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
@@ -108,6 +134,45 @@ export default function MyLeavesPage() {
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2 text-sm text-amber-800">
           <span className="text-base">⏳</span>
           {pendingCount} request{pendingCount > 1 ? 's' : ''} awaiting approval from your manager
+        </div>
+      )}
+
+      {/* Upcoming holidays */}
+      {upcomingHolidays.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <p className="text-sm font-bold text-gray-700">Upcoming Holidays <span className="text-gray-400 font-normal">(next 60 days)</span></p>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {upcomingHolidays.map(h => {
+              const hClass = classifyHoliday(h)
+              const d = new Date(h.date + 'T00:00:00Z')
+              const dayLabel = d.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', timeZone: 'UTC' })
+              const isSun = d.getUTCDay() === 0
+              return (
+                <div key={h.date} className="flex items-center gap-3 px-4 py-2.5">
+                  <span className={cn('w-2 h-2 rounded-full flex-shrink-0', hClass === 'mandatory' ? 'bg-red-500' : 'bg-yellow-400')} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">
+                      {h.name}
+                      {isSun && <span className="ml-1.5 text-[10px] text-orange-600 font-semibold">⚠️ Sun</span>}
+                    </p>
+                    <p className="text-xs text-gray-400">{dayLabel} · {hClass === 'mandatory' ? 'Mandatory' : 'Optional'} · {h.religion}</p>
+                  </div>
+                  {hClass === 'optional' ? (
+                    <button
+                      onClick={() => requestOptionalHoliday(h)}
+                      className="flex-shrink-0 text-xs font-semibold px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg transition"
+                    >
+                      Request
+                    </button>
+                  ) : (
+                    <span className="flex-shrink-0 text-xs font-semibold px-2.5 py-1 bg-red-100 text-red-600 rounded-lg">Off</span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 
@@ -206,6 +271,28 @@ export default function MyLeavesPage() {
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
                 </div>
               </div>
+
+              {/* Holidays in selected range */}
+              {(mandatoryInRange.length > 0 || optionalInRange.length > 0) && (
+                <div className="rounded-xl border overflow-hidden text-xs">
+                  {mandatoryInRange.length > 0 && (
+                    <div className="bg-red-50 border-b border-red-100 px-3 py-2">
+                      <p className="font-semibold text-red-700 mb-1">Mandatory holidays in this range — already off:</p>
+                      {mandatoryInRange.map(h => (
+                        <p key={h.date} className="text-red-600">• {h.name} ({new Date(h.date + 'T00:00:00Z').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', timeZone: 'UTC' })})</p>
+                      ))}
+                    </div>
+                  )}
+                  {optionalInRange.length > 0 && (
+                    <div className="bg-amber-50 px-3 py-2">
+                      <p className="font-semibold text-amber-700 mb-1">Optional holidays in this range:</p>
+                      {optionalInRange.map(h => (
+                        <p key={h.date} className="text-amber-600">• {h.name} ({new Date(h.date + 'T00:00:00Z').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', timeZone: 'UTC' })})</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Reason *</label>
