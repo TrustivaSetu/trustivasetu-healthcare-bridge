@@ -142,7 +142,7 @@ export default function HolidaysPage() {
           <div>
             <h1 className="text-xl font-bold text-gray-900">Indian Holidays & Festivals Calendar</h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              FY 2025–26 · {allHolidays.length} entries · Central Govt Gazetted + All religions + Regional
+              Jan 2026 – Mar 2027 · {allHolidays.length} entries · Central Govt Gazetted + All religions + Regional
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -289,7 +289,7 @@ export default function HolidaysPage() {
         <div id="holiday-print-area" className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           {/* Print header */}
           <div className="hidden print:block px-6 py-4 border-b">
-            <h1 className="text-lg font-bold">Indian Holidays & Festivals — FY 2025–26</h1>
+            <h1 className="text-lg font-bold">Indian Holidays & Festivals — Jan 2026 – Mar 2027</h1>
             <p className="text-sm text-gray-500">Central Govt Gazetted + All Religions + Regional · Printed {new Date().toLocaleDateString('en-IN')}</p>
           </div>
 
