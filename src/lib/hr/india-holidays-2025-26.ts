@@ -28,12 +28,12 @@ export function isSaturday(dateStr: string): boolean {
 }
 
 // ─── COMPREHENSIVE HOLIDAY LIST ──────────────────────────────────────────────
-// Covers: Jan 2026 – Mar 2027
+// Covers: Jan 2026 – Mar 2028
 // Islamic dates marked [approx] — subject to moon-sighting confirmation
 // Lunar Hindu/Jain dates calculated from standard Drik Panchang
 // ──────────────────────────────────────────────────────────────────────────────
 
-export const HOLIDAYS_PERIOD = 'Jan 2026 – Mar 2027'
+export const HOLIDAYS_PERIOD = 'Jan 2026 – Mar 2028'
 
 export const INDIA_HOLIDAYS_2025_26: IndiaHoliday[] = [
 
@@ -149,4 +149,88 @@ export const INDIA_HOLIDAYS_2025_26: IndiaHoliday[] = [
   { name: 'Gudi Padwa 2027', date: '2027-03-18', type: 'regional', religion: 'Hindu', state: 'Maharashtra', note: 'Marathi New Year [approx]' },
   { name: 'Holika Dahan 2027', date: '2027-03-21', type: 'festival', religion: 'Hindu', note: 'Eve of Holi; burning of Holika (evil) [falls on Sunday]' },
   { name: 'Holi 2027', date: '2027-03-22', type: 'gazetted', religion: 'Hindu', note: 'Festival of colours; Phalguna Purnima' },
+  { name: 'Good Friday 2027', date: '2027-03-26', type: 'gazetted', religion: 'Christian', note: 'Crucifixion of Jesus Christ; 2 days before Easter' },
+  { name: 'Easter Sunday 2027', date: '2027-03-28', type: 'restricted', religion: 'Christian', note: 'Resurrection of Jesus Christ [falls on Sunday]' },
+
+  // ── APRIL 2027 ──────────────────────────────────────────────────────────────
+
+  { name: 'Mahavir Jayanti 2027', date: '2027-04-14', type: 'gazetted', religion: 'Jain', note: 'Chaitra Shukla Trayodashi; birth anniversary of Tirthankara Mahavira' },
+  { name: 'Dr. Ambedkar Jayanti 2027', date: '2027-04-14', type: 'restricted', religion: 'Buddhist', note: '136th birth anniversary of Dr. B. R. Ambedkar; observed nationally' },
+  { name: 'Baisakhi 2027', date: '2027-04-14', type: 'regional', religion: 'Sikh', state: 'Punjab, Haryana', note: 'Sikh New Year; founding of Khalsa Panth 1699; harvest festival' },
+  { name: 'Vishu 2027', date: '2027-04-14', type: 'regional', religion: 'Hindu', state: 'Kerala', note: 'Malayalam New Year; first day of Medam; Vishukkani ritual' },
+  { name: 'Ram Navami 2027', date: '2027-04-16', type: 'restricted', religion: 'Hindu', note: 'Chaitra Shukla Navami; birth of Lord Rama' },
+  { name: 'Hanuman Jayanti 2027', date: '2027-04-17', type: 'restricted', religion: 'Hindu', note: 'Chaitra Purnima; birth of Lord Hanuman' },
+
+  // ── MAY 2027 ────────────────────────────────────────────────────────────────
+
+  { name: 'Akshaya Tritiya 2027', date: '2027-05-09', type: 'festival', religion: 'Hindu', note: 'Vaishakha Shukla Tritiya; auspicious day; gold purchase tradition [falls on Sunday]' },
+  { name: 'Buddha Purnima 2027 (Vesak)', date: '2027-05-20', type: 'gazetted', religion: 'Buddhist', note: 'Vaishakha Purnima; birth, enlightenment & Parinirvana of Gautama Buddha' },
+
+  // ── JUNE 2027 ───────────────────────────────────────────────────────────────
+
+  { name: 'Id-ul-Zuha (Bakrid / Eid-ul-Adha) 2027', date: '2027-06-17', type: 'gazetted', religion: 'Muslim', note: 'Feast of sacrifice; Ibrahim\'s devotion; Hajj culmination [approx — moon sighting]' },
+
+  // ── JULY 2027 ───────────────────────────────────────────────────────────────
+
+  { name: 'Guru Purnima 2027', date: '2027-07-01', type: 'festival', religion: 'Hindu', note: 'Ashadha Purnima; reverence for spiritual and academic teachers' },
+  { name: 'Rath Yatra 2027', date: '2027-07-06', type: 'regional', religion: 'Hindu', state: 'Odisha (Puri; national significance)', note: 'Ashadha Shukla Dwitiya; chariot procession of Lord Jagannath' },
+  { name: 'Muharram (Ashura) 2027', date: '2027-07-07', type: 'gazetted', religion: 'Muslim', note: 'Islamic New Year; 10th Muharram marks martyrdom of Imam Hussain [approx]' },
+
+  // ── AUGUST 2027 ─────────────────────────────────────────────────────────────
+
+  { name: 'Parsi New Year (Navroz) 2027', date: '2027-08-05', type: 'restricted', religion: 'Parsi', note: 'Shahenshahi calendar; Zoroastrian new year; celebrated in Maharashtra & Gujarat' },
+  { name: 'Independence Day 2027', date: '2027-08-15', type: 'gazetted', religion: 'National', note: '81st Independence Day; end of British rule 1947 [falls on Sunday]' },
+  { name: 'Janmashtami 2027', date: '2027-08-15', type: 'gazetted', religion: 'Hindu', note: 'Bhadrapada Krishna Ashtami; birth of Lord Krishna; midnight celebration [falls on Sunday]' },
+  { name: 'Raksha Bandhan 2027', date: '2027-08-22', type: 'restricted', religion: 'Hindu', note: 'Shravan Purnima; brother-sister bond; tying of sacred thread [falls on Sunday]' },
+  { name: 'Milad-un-Nabi (Eid-e-Milad) 2027', date: '2027-08-25', type: 'gazetted', religion: 'Muslim', note: '12th Rabi-ul-Awwal; birth anniversary of Prophet Muhammad [approx]' },
+  { name: 'Paryushana (Jain Shwetambar) 2027 — Begins', date: '2027-08-29', type: 'regional', religion: 'Jain', note: '8-day period of fasting & reflection [approx per Shwetambar panchang; falls on Sunday]' },
+
+  // ── SEPTEMBER 2027 ──────────────────────────────────────────────────────────
+
+  { name: 'Ganesh Chaturthi 2027', date: '2027-09-01', type: 'restricted', religion: 'Hindu', note: 'Bhadrapada Shukla Chaturthi; 10-day festival; major in Maharashtra, Karnataka, AP, Telangana' },
+  { name: 'Onam (Thiruvonam) 2027', date: '2027-09-13', type: 'regional', religion: 'Hindu', state: 'Kerala', note: 'Thiruvonam nakshatra; 10-day harvest festival; return of King Mahabali [approx]' },
+
+  // ── OCTOBER 2027 ────────────────────────────────────────────────────────────
+
+  { name: 'Gandhi Jayanti 2027', date: '2027-10-02', type: 'gazetted', religion: 'National', note: '158th birth anniversary of Mahatma Gandhi; International Day of Non-Violence (UN)' },
+  { name: 'Navratri (Sharad) 2027 — Begins', date: '2027-10-07', type: 'festival', religion: 'Hindu', note: 'Ashwin Shukla Pratipada; 9 nights of Durga worship; Garba & Dandiya' },
+  { name: 'Karwa Chauth 2027', date: '2027-10-12', type: 'regional', religion: 'Hindu', state: 'North India (Punjab, Haryana, UP, Rajasthan, Delhi)', note: 'Kartik Krishna Chaturthi; wives fast for husbands\' longevity; moonrise ritual' },
+  { name: 'Dussehra (Vijaya Dashami) 2027', date: '2027-10-16', type: 'gazetted', religion: 'Hindu', note: 'Ashwin Shukla Dashami; victory of Rama over Ravana; Ravan dahan' },
+  { name: 'Dhanteras (Dhanatrayodashi) 2027', date: '2027-10-22', type: 'festival', religion: 'Hindu', note: 'Kartik Krishna Trayodashi; first day of Diwali festival; purchase of gold/silver/utensils' },
+  { name: 'Diwali (Deepavali) 2027', date: '2027-10-24', type: 'gazetted', religion: 'Hindu', note: 'Kartik Amavasya; festival of lights; Lakshmi Puja; firecrackers [falls on Sunday]' },
+  { name: 'Bhai Dooj 2027', date: '2027-10-26', type: 'festival', religion: 'Hindu', note: 'Kartik Shukla Dwitiya; brother-sister celebration; Yama-Yamuna legend' },
+  { name: 'Chhath Puja 2027', date: '2027-10-28', type: 'regional', religion: 'Hindu', state: 'Bihar, Uttar Pradesh, Jharkhand, Delhi NCR', note: 'Kartik Shukla Shashthi; worship of Sun god; sunset & sunrise offerings from riverbanks' },
+  { name: 'Dev Uthani Ekadashi 2027', date: '2027-10-30', type: 'festival', religion: 'Hindu', note: 'Kartik Shukla Ekadashi; Lord Vishnu wakes from 4-month sleep; marriage season begins' },
+
+  // ── NOVEMBER 2027 ───────────────────────────────────────────────────────────
+
+  { name: 'Guru Nanak Jayanti 2027 (Gurpurab)', date: '2027-11-12', type: 'gazetted', religion: 'Sikh', note: 'Kartik Purnima; 558th birth anniversary of Guru Nanak Dev Ji; Nagar Kirtan processions' },
+
+  // ── DECEMBER 2027 ───────────────────────────────────────────────────────────
+
+  { name: 'Hornbill Festival 2027 — Opens', date: '2027-12-01', type: 'regional', religion: 'Regional', state: 'Nagaland (Kohima)', note: '10-day festival (Dec 1–10); tribal heritage celebration; all 16 Naga tribes participate' },
+  { name: 'Christmas 2027', date: '2027-12-25', type: 'gazetted', religion: 'Christian', note: 'Birth of Jesus Christ' },
+
+  // ── JANUARY 2028 ────────────────────────────────────────────────────────────
+
+  { name: "New Year's Day 2028", date: '2028-01-01', type: 'festival', religion: 'Regional', note: 'Optional / Regional' },
+  { name: 'Lohri 2028', date: '2028-01-13', type: 'regional', religion: 'Sikh', state: 'Punjab, Haryana', note: 'Jan 13 fixed annually; harvest festival marking end of winter' },
+  { name: 'Makar Sankranti 2028', date: '2028-01-14', type: 'restricted', religion: 'Hindu', note: 'Jan 14 fixed annually; sun enters Capricorn' },
+  { name: 'Pongal 2028', date: '2028-01-14', type: 'regional', religion: 'Hindu', state: 'Tamil Nadu', note: '4-day harvest festival; Jan 14 fixed' },
+  { name: 'Republic Day 2028', date: '2028-01-26', type: 'gazetted', religion: 'National', note: '79th Republic Day' },
+
+  // ── FEBRUARY 2028 ───────────────────────────────────────────────────────────
+
+  { name: 'Vasant Panchami (Saraswati Puja) 2028', date: '2028-02-02', type: 'restricted', religion: 'Hindu', note: 'Magha Shukla Panchami; goddess of learning' },
+  { name: 'Maha Shivratri 2028', date: '2028-02-07', type: 'restricted', religion: 'Hindu', note: 'Phalguna Krishna Chaturdashi; fast for Lord Shiva' },
+  { name: 'Shab-e-Barat 2028', date: '2028-02-12', type: 'restricted', religion: 'Muslim', note: '15th night of Sha\'ban; Night of Forgiveness [approx]' },
+
+  // ── MARCH 2028 ──────────────────────────────────────────────────────────────
+
+  { name: 'Chapchar Kut 2028', date: '2028-03-03', type: 'regional', religion: 'Regional', state: 'Mizoram', note: 'Spring festival; first Friday of March after jungle clearing' },
+  { name: 'Holika Dahan 2028', date: '2028-03-10', type: 'festival', religion: 'Hindu', note: 'Eve of Holi; burning of Holika (evil)' },
+  { name: 'Holi 2028', date: '2028-03-11', type: 'gazetted', religion: 'Hindu', note: 'Festival of colours; Phalguna Purnima [falls on Sunday]' },
+  { name: 'Ugadi 2028', date: '2028-03-26', type: 'regional', religion: 'Hindu', state: 'Andhra Pradesh, Telangana, Karnataka', note: 'Telugu & Kannada New Year [approx; falls on Sunday]' },
+  { name: 'Gudi Padwa 2028', date: '2028-03-26', type: 'regional', religion: 'Hindu', state: 'Maharashtra', note: 'Marathi New Year [approx; falls on Sunday]' },
+  { name: 'Id-ul-Fitr 2028 (Eid)', date: '2028-03-29', type: 'gazetted', religion: 'Muslim', note: 'End of Ramadan; festival of breaking fast [approx — moon sighting]' },
 ]

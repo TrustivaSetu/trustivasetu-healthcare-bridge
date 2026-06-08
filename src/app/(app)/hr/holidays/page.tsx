@@ -19,10 +19,11 @@ interface Filters {
   religion: string
   state: string
   month: string
+  year: string
   search: string
 }
 
-const EMPTY_FILTERS: Filters = { type: '', religion: '', state: '', month: '', search: '' }
+const EMPTY_FILTERS: Filters = { type: '', religion: '', state: '', month: '', year: '', search: '' }
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -93,6 +94,10 @@ export default function HolidaysPage() {
       if (filters.type && h.type !== filters.type) return false
       if (filters.religion && h.religion !== filters.religion) return false
       if (filters.state && !(h.state ?? '').toLowerCase().includes(filters.state.toLowerCase())) return false
+      if (filters.year) {
+        const year = new Date(h.date + 'T00:00:00Z').getUTCFullYear().toString()
+        if (year !== filters.year) return false
+      }
       if (filters.month) {
         const month = new Date(h.date + 'T00:00:00Z').getUTCMonth()
         if (month !== parseInt(filters.month)) return false
@@ -142,7 +147,7 @@ export default function HolidaysPage() {
           <div>
             <h1 className="text-xl font-bold text-gray-900">Indian Holidays & Festivals Calendar</h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              Jan 2026 – Mar 2027 · {allHolidays.length} entries · Central Govt Gazetted + All religions + Regional
+              Jan 2026 – Mar 2028 · {allHolidays.length} entries · Central Govt Gazetted + All religions + Regional
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -223,6 +228,19 @@ export default function HolidaysPage() {
               </div>
             </div>
 
+            {/* Year */}
+            <FilterSelect
+              label="Year"
+              value={filters.year}
+              onChange={v => update('year', v)}
+              options={[
+                { value: '2026', label: '2026' },
+                { value: '2027', label: '2027' },
+                { value: '2028', label: '2028' },
+              ]}
+              placeholder="All Years"
+            />
+
             {/* Type */}
             <FilterSelect
               label="Type"
@@ -289,7 +307,7 @@ export default function HolidaysPage() {
         <div id="holiday-print-area" className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           {/* Print header */}
           <div className="hidden print:block px-6 py-4 border-b">
-            <h1 className="text-lg font-bold">Indian Holidays & Festivals — Jan 2026 – Mar 2027</h1>
+            <h1 className="text-lg font-bold">Indian Holidays & Festivals — Jan 2026 – Mar 2028</h1>
             <p className="text-sm text-gray-500">Central Govt Gazetted + All Religions + Regional · Printed {new Date().toLocaleDateString('en-IN')}</p>
           </div>
 
