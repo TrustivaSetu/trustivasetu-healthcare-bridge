@@ -19,6 +19,11 @@ export default function ClinicDetailPage() {
   const [copied, setCopied] = useState<'id' | 'link' | null>(null)
   const [portalStatus, setPortalStatus] = useState<{ portalAccessSent: boolean; portalUser: { email: string; mustChangePassword: boolean } | null } | null>(null)
   const [portalLoading, setPortalLoading] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
+  const [showCredentials, setShowCredentials] = useState(false)
+  const [credentials, setCredentials] = useState<{ email: string; tempPassword: string } | null>(null)
+  const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null)
   const [reportSending, setReportSending] = useState(false)
   const [reportEmails, setReportEmails] = useState<string[]>([])
   const [newEmail, setNewEmail] = useState('')
@@ -58,17 +63,36 @@ export default function ClinicDetailPage() {
     }
   }, [id, canManageReportEmails])
 
-  async function handleCreatePortalAccess() {
+  function handleGrantAccess() {
+    setIsResetting(false)
+    setShowConfirmModal(true)
+  }
+
+  function handleResetAccess() {
+    setIsResetting(true)
+    setShowConfirmModal(true)
+  }
+
+  async function confirmPortalAccess() {
+    setShowConfirmModal(false)
     setPortalLoading(true)
     try {
       const res = await fetch(`/api/clinics/${id}/portal-access`, { method: 'POST' })
       const data = await res.json()
       if (!res.ok) { toast.error(data.error ?? 'Failed'); return }
-      toast.success(`Portal access sent to ${data.email}`)
-      // Refresh portal status
+      setCredentials({ email: data.email, tempPassword: data.tempPassword })
+      setShowCredentials(true)
+      toast.success('Portal access granted successfully')
       fetch(`/api/clinics/${id}/portal-access`).then(r => r.json()).then(d => setPortalStatus(d.data ?? null))
     } catch { toast.error('Something went wrong') }
     finally { setPortalLoading(false) }
+  }
+
+  function copyToClipboard(text: string, field: 'email' | 'password') {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedField(field)
+      setTimeout(() => setCopiedField(null), 2000)
+    })
   }
 
   async function saveReportEmails(emails: string[]) {
@@ -312,11 +336,14 @@ export default function ClinicDetailPage() {
                   )}
                   <button
                     type="button"
-                    onClick={handleCreatePortalAccess}
+                    onClick={handleResetAccess}
                     disabled={portalLoading}
                     className="mt-2 flex items-center gap-1.5 text-xs bg-orange-50 text-orange-700 border border-orange-200 px-3 py-2 rounded-lg hover:bg-orange-100 transition disabled:opacity-60"
                   >
-                    {portalLoading ? 'Sending...' : 'Reset & Resend Credentials'}
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    {portalLoading ? 'Resetting...' : 'Reset & Resend Credentials'}
                   </button>
                 </div>
               ) : (
@@ -326,11 +353,14 @@ export default function ClinicDetailPage() {
                   </p>
                   <button
                     type="button"
-                    onClick={handleCreatePortalAccess}
+                    onClick={handleGrantAccess}
                     disabled={portalLoading || !(data?.email)}
                     className="flex items-center gap-1.5 text-xs bg-trustiva-navy text-trustiva-lime font-semibold px-3 py-2 rounded-lg hover:bg-gray-800 transition disabled:opacity-60"
                   >
-                    {portalLoading ? 'Creating...' : '+ Create Portal Access'}
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                    </svg>
+                    {portalLoading ? 'Creating...' : 'Grant Portal Access'}
                   </button>
                   {!data?.email && <p className="text-xs text-red-500">Add an email to this clinic first</p>}
                 </div>
@@ -399,6 +429,150 @@ export default function ClinicDetailPage() {
                 {emailSaving ? 'Saving...' : 'Add'}
               </button>
             </form>
+          </div>
+        )}
+
+        {/* Confirm Portal Access Modal */}
+        {showConfirmModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-gray-800">
+                    {isResetting ? 'Reset Portal Access?' : 'Grant Portal Access?'}
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">{clinic.name as string}</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 mb-5">
+                {isResetting
+                  ? 'A new password will be generated and emailed to the clinic. The old password will stop working immediately.'
+                  : 'Login credentials will be created and emailed to the clinic. They must change the password on first login.'}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmModal(false)}
+                  className="flex-1 px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmPortalAccess}
+                  className="flex-1 px-4 py-2 text-sm bg-trustiva-navy text-trustiva-lime font-semibold rounded-lg hover:bg-gray-800 transition"
+                >
+                  {isResetting ? 'Yes, Reset' : 'Yes, Grant Access'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Credentials Modal */}
+        {showCredentials && credentials && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-base font-semibold text-gray-800">Portal Access Granted</h3>
+                </div>
+                <button type="button" onClick={() => setShowCredentials(false)} className="text-gray-400 hover:text-gray-600">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4 flex items-start gap-2">
+                <svg className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <p className="text-xs text-amber-700">
+                  <strong>Save these credentials now.</strong> The password will not be shown again. Credentials have also been emailed to the clinic.
+                </p>
+              </div>
+
+              <div className="space-y-3 mb-5">
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">Login Email</p>
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5">
+                    <span className="flex-1 text-sm font-mono text-gray-800 truncate">{credentials.email}</span>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(credentials.email, 'email')}
+                      className="shrink-0 flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium transition"
+                    >
+                      {copiedField === 'email' ? (
+                        <>
+                          <svg className="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          Copy
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">Temporary Password</p>
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5">
+                    <span className="flex-1 text-sm font-mono font-bold text-gray-800 tracking-wider">{credentials.tempPassword}</span>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(credentials.tempPassword, 'password')}
+                      className="shrink-0 flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium transition"
+                    >
+                      {copiedField === 'password' ? (
+                        <>
+                          <svg className="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          Copy
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-400 text-center mb-4">
+                Clinic will be prompted to change this password on first login.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setShowCredentials(false)}
+                className="w-full px-4 py-2.5 text-sm bg-trustiva-navy text-trustiva-lime font-semibold rounded-lg hover:bg-gray-800 transition"
+              >
+                Done
+              </button>
+            </div>
           </div>
         )}
 

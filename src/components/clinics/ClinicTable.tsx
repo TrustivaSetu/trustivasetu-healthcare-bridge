@@ -21,6 +21,7 @@ interface Clinic {
   disbursalGrowth: number
   onboardedAt: string
   businessPotential: number | null
+  portalAccessSent?: boolean
 }
 
 interface Props {
@@ -45,7 +46,7 @@ export function ClinicTable({ clinics, onEdit, onDelete, canDelete }: Props) {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              {['Clinic / Centre', 'Region', 'Assigned RM', 'Total Leads', 'MTD Leads', 'LMTD Leads', 'Lead Growth', 'MTD Disbursal', 'LMTD Disbursal', 'Disb Growth', 'Onboarded', 'Actions'].map(h => (
+              {['Clinic / Centre', 'Region', 'Assigned RM', 'Total Leads', 'MTD Leads', 'LMTD Leads', 'Lead Growth', 'MTD Disbursal', 'LMTD Disbursal', 'Disb Growth', 'Portal', 'Onboarded', 'Actions'].map(h => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -75,6 +76,18 @@ export function ClinicTable({ clinics, onEdit, onDelete, canDelete }: Props) {
                   <span className={cn('font-medium', getGrowthColor(clinic.disbursalGrowth))}>
                     {formatPercent(clinic.disbursalGrowth)}
                   </span>
+                </td>
+                <td className="px-4 py-3">
+                  {clinic.portalAccessSent ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                      Active
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                      None
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{formatDate(clinic.onboardedAt)}</td>
                 <td className="px-4 py-3">

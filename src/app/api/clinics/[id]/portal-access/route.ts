@@ -116,7 +116,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     },
   })
 
-  return NextResponse.json({ success: true, email: portalUser.email })
+  return NextResponse.json({ success: true, email: portalUser.email, tempPassword: plainPassword })
 }
 
 // Reset portal password with a custom password provided by admin

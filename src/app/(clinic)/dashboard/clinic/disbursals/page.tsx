@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { formatDate, formatLakhs } from '@/lib/utils'
-import * as XLSX from 'xlsx'
 import toast from 'react-hot-toast'
 
 interface Disbursal {
@@ -23,7 +22,10 @@ export default function ClinicDisbursalsPage() {
   const [totalAmount, setTotalAmount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
+  const [downloading, setDownloading] = useState(false)
   const pageSize = 20
+
+  const now = new Date()
 
   useEffect(() => {
     setLoading(true)
@@ -38,22 +40,26 @@ export default function ClinicDisbursalsPage() {
       .catch(() => setLoading(false))
   }, [page])
 
-  function exportExcel() {
-    const rows = disbursals.map(d => ({
-      'Patient Name': d.applicantName,
-      'Phone': d.phone ?? '',
-      'Applied Amount': d.amount,
-      'Approved Amount': d.approvedAmount ?? '',
-      'Disbursed Amount': d.disbursedAmount ?? '',
-      'UTR Number': d.utrNumber ?? '',
-      'Lender': d.lender?.name ?? '',
-      'Disbursal Date': d.disbursalDate ? formatDate(d.disbursalDate) : '',
-    }))
-    const wb = XLSX.utils.book_new()
-    const ws = XLSX.utils.json_to_sheet(rows)
-    XLSX.utils.book_append_sheet(wb, ws, 'Disbursals')
-    XLSX.writeFile(wb, 'disbursals.xlsx')
-    toast.success('Excel exported')
+  async function exportExcel() {
+    setDownloading(true)
+    try {
+      const month = now.getMonth() + 1
+      const year = now.getFullYear()
+      const res = await fetch(`/api/clinic/report?month=${month}&year=${year}`)
+      if (!res.ok) { toast.error('Failed to export'); return }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `disbursals-${year}-${String(month).padStart(2, '0')}.xlsx`
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success('Excel exported (current month — all records)')
+    } catch {
+      toast.error('Something went wrong')
+    } finally {
+      setDownloading(false)
+    }
   }
 
   const totalPages = Math.ceil(total / pageSize)
@@ -68,12 +74,22 @@ export default function ClinicDisbursalsPage() {
         <button
           type="button"
           onClick={exportExcel}
-          className="flex items-center gap-2 bg-[#07111f] text-[#bef264] font-semibold text-xs px-4 py-2.5 rounded-lg hover:bg-gray-800 transition"
+          disabled={downloading}
+          className="flex items-center gap-2 bg-[#07111f] text-[#bef264] font-semibold text-xs px-4 py-2.5 rounded-lg hover:bg-gray-800 transition disabled:opacity-60"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          Export Excel
+          {downloading ? (
+            <>
+              <div className="w-4 h-4 animate-spin rounded-full border-2 border-trustiva-lime border-t-transparent" />
+              Exporting...
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Export Excel
+            </>
+          )}
         </button>
       </div>
 
