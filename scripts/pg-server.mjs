@@ -22,13 +22,21 @@ const pg = new EmbeddedPostgres({
 })
 
 console.log('Starting embedded PostgreSQL on port 5432...')
-await pg.initialise()
-await pg.start()
 
-try {
-  await pg.createDatabase('trustiva_lms')
-  console.log('Created database trustiva_lms')
-} catch {
+// Only run initdb on first-time setup; skip if cluster already exists
+const alreadyInitialised = existsSync(join(pgData, 'PG_VERSION'))
+if (!alreadyInitialised) {
+  await pg.initialise()
+  await pg.start()
+  try {
+    await pg.createDatabase('trustiva_lms')
+    console.log('Created database trustiva_lms')
+  } catch {
+    console.log('Database trustiva_lms already exists')
+  }
+} else {
+  console.log('Existing cluster detected — skipping initdb')
+  await pg.start()
   console.log('Database trustiva_lms already exists')
 }
 

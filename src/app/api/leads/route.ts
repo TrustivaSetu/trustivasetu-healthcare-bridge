@@ -49,10 +49,14 @@ export async function GET(req: NextRequest) {
     if (regionId) clinicFilter = { ...clinicFilter, regionId }
     if (clinicId) clinicFilter = { id: clinicId }
 
-    const validClinics = await db.clinic.findMany({ where: { ...clinicFilter, isActive: true }, select: { id: true } })
-    const validClinicIds = validClinics.map(c => c.id)
+    const where: Record<string, unknown> = {}
 
-    const where: Record<string, unknown> = { clinicId: { in: validClinicIds } }
+    // SUPER_ADMIN and ADMIN see all leads; only scope for restricted roles
+    const isUnrestricted = (role === 'SUPER_ADMIN' || role === 'ADMIN') && !regionId && !clinicId
+    if (!isUnrestricted) {
+      const validClinics = await db.clinic.findMany({ where: { ...clinicFilter, isActive: true }, select: { id: true } })
+      where.clinicId = { in: validClinics.map(c => c.id) }
+    }
     if (lenderId) where.lenderId = lenderId
     if (status) where.status = status
     if (dateFrom || dateTo) {

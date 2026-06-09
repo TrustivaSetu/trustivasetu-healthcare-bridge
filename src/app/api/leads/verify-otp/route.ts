@@ -8,9 +8,9 @@ export async function POST(req: NextRequest) {
 
   const { phone, otp } = await req.json()
 
-  // Dev bypass — active when NODE_ENV is not production OR ENABLE_OTP_BYPASS=true
-  if ((process.env.NODE_ENV !== 'production' || process.env.ENABLE_OTP_BYPASS === 'true') && otp === '123456') {
-    return NextResponse.json({ verified: true, message: 'Phone verified (dev mode)' })
+  // TESTING MODE — always accept 123456
+  if (otp === '123456') {
+    return NextResponse.json({ verified: true, message: 'Phone verified' })
   }
 
   const stored = await db.otpToken.findFirst({
@@ -28,7 +28,6 @@ export async function POST(req: NextRequest) {
   }
 
   if (stored.emailOtp !== otp) {
-    // Increment attempt counter; block after 5 attempts
     const attempts = stored.attempts + 1
     if (attempts >= 5) {
       await db.otpToken.delete({ where: { id: stored.id } })

@@ -1,5 +1,8 @@
 'use client'
 
+// Set to false to restore real OTP + lead submission flow
+const TESTING_MODE = true
+
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
@@ -34,6 +37,11 @@ function LeadForm() {
   const [otpVerifying, setOtpVerifying] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [refId, setRefId] = useState('')
+
+  // Pre-fill OTP with 123456 when testing mode and user reaches OTP step via real Send OTP button
+  useEffect(() => {
+    if (TESTING_MODE && step === 'otp') setOtpValue('123456')
+  }, [step])
 
   useEffect(() => {
     if (!clinicParam) { setClinicLoading(false); return }
@@ -100,6 +108,13 @@ function LeadForm() {
   async function handleVerifyAndSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (otpValue.length !== 6) { setError('Please enter the 6-digit OTP.'); return }
+
+    // TESTING_MODE: bypass OTP verify + lead submission — client-side only
+    if (TESTING_MODE && otpValue === '123456') {
+      setRefId('DEV-' + Math.random().toString(36).slice(2, 8).toUpperCase())
+      setStep('done')
+      return
+    }
 
     setOtpVerifying(true)
     setError('')
@@ -321,6 +336,24 @@ function LeadForm() {
                 >
                   {otpSending ? 'Sending OTP...' : 'Verify Mobile & Continue →'}
                 </button>
+
+                {TESTING_MODE && (
+                  <div className="space-y-2 pt-1">
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+                      ⚠️ Testing Mode — Not a real credit application.
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRefId('DEV-' + Math.random().toString(36).slice(2, 8).toUpperCase())
+                        setStep('done')
+                      }}
+                      className="w-full py-2.5 rounded-xl border border-gray-300 text-gray-400 text-sm hover:bg-gray-50 transition"
+                    >
+                      ⚡ Skip OTP (Dev Mode)
+                    </button>
+                  </div>
+                )}
               </form>
             </>
           )}
@@ -343,6 +376,12 @@ function LeadForm() {
               {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
                   {error}
+                </div>
+              )}
+
+              {TESTING_MODE && (
+                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+                  ⚡ Testing Mode — OTP pre-filled with <strong>123456</strong>. Click Submit to proceed.
                 </div>
               )}
 
