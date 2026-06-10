@@ -22,6 +22,9 @@ interface Clinic {
   onboardedAt: string
   businessPotential: number | null
   portalAccessSent?: boolean
+  email?: string | null
+  portalEmailStatus?: string | null
+  lastPasswordGenAt?: string | null
 }
 
 interface Props {
@@ -29,9 +32,10 @@ interface Props {
   onEdit?: (clinic: Clinic) => void
   onDelete?: (clinic: Clinic) => void
   canDelete?: boolean
+  onGenerateCredentials?: (clinicId: string, clinicName: string) => void
 }
 
-export function ClinicTable({ clinics, onEdit, onDelete, canDelete }: Props) {
+export function ClinicTable({ clinics, onEdit, onDelete, canDelete, onGenerateCredentials }: Props) {
   if (clinics.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
@@ -78,16 +82,42 @@ export function ClinicTable({ clinics, onEdit, onDelete, canDelete }: Props) {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  {clinic.portalAccessSent ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                      Active
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-                      None
-                    </span>
-                  )}
+                  <div className="flex flex-col gap-1.5 min-w-[110px]">
+                    {clinic.portalEmailStatus === 'SENT' ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-green-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />Sent
+                      </span>
+                    ) : clinic.portalEmailStatus === 'FAILED' ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-red-600">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />Failed
+                      </span>
+                    ) : clinic.portalEmailStatus === 'NOT_SENT' ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-yellow-600">
+                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />Not Sent
+                      </span>
+                    ) : clinic.portalAccessSent ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-green-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />Active
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />None
+                      </span>
+                    )}
+                    {onGenerateCredentials && (
+                      <button
+                        onClick={() => onGenerateCredentials(clinic.id, clinic.name)}
+                        className={cn(
+                          'text-[11px] font-medium px-2 py-0.5 rounded border transition whitespace-nowrap',
+                          clinic.portalEmailStatus === 'SENT'
+                            ? 'text-gray-500 border-gray-200 bg-white hover:bg-gray-50'
+                            : 'text-orange-700 border-orange-200 bg-orange-50 hover:bg-orange-100'
+                        )}
+                      >
+                        🔑 {clinic.portalEmailStatus === 'SENT' ? 'Regen' : 'Generate'}
+                      </button>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{formatDate(clinic.onboardedAt)}</td>
                 <td className="px-4 py-3">

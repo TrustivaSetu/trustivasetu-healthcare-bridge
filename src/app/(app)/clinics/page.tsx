@@ -6,6 +6,7 @@ import { useTabSession } from '@/contexts/TabSessionContext'
 import { ClinicTable } from '@/components/clinics/ClinicTable'
 import { ClinicForm } from '@/components/clinics/ClinicForm'
 import { ClinicBulkUpload } from '@/components/clinics/ClinicBulkUpload'
+import { CredentialsModal } from '@/components/clinics/CredentialsModal'
 import { hasPermission } from '@/lib/permissions'
 import toast from 'react-hot-toast'
 
@@ -24,6 +25,10 @@ export default function ClinicsPage() {
 
   const canCreate = session && hasPermission(session?.role, 'CLINIC_CREATE')
   const canDelete = session && hasPermission(session?.role, 'CLINIC_DELETE')
+
+  type CredResult = { clinicName: string; email: string; plainPassword: string; emailSent: boolean; generatedAt: string; generatedBy: string }
+  const [genLoading, setGenLoading] = useState<string | null>(null)
+  const [credResult, setCredResult] = useState<CredResult | null>(null)
 
   useEffect(() => {
     fetch('/api/regions').then(r => r.json()).then(d => setRegions(d.data ?? []))
@@ -52,6 +57,19 @@ export default function ClinicsPage() {
     } else {
       toast.error('Failed to delete clinic')
     }
+  }
+
+  async function handleGenerateCredentials(clinicId: string, _clinicName: string) {
+    if (genLoading) return
+    setGenLoading(clinicId)
+    try {
+      const res = await fetch(`/api/clinics/${clinicId}/generate-credentials`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error ?? 'Failed to generate credentials'); return }
+      setCredResult(data)
+      fetchClinics()
+    } catch { toast.error('Something went wrong') }
+    finally { setGenLoading(null) }
   }
 
   async function handleExport() {
@@ -177,6 +195,7 @@ export default function ClinicsPage() {
             onEdit={canCreate ? (c) => { setEditClinic(c); setShowForm(true) } : undefined}
             onDelete={canDelete ? (handleDelete as unknown as Parameters<typeof ClinicTable>[0]['onDelete']) : undefined}
             canDelete={!!canDelete}
+            onGenerateCredentials={session?.role !== 'CLINIC_USER' ? handleGenerateCredentials : undefined}
           />
         )}
 
@@ -191,6 +210,10 @@ export default function ClinicsPage() {
           </div>
         )}
       </div>
+
+      {credResult && (
+        <CredentialsModal result={credResult} onClose={() => setCredResult(null)} />
+      )}
     </div>
   )
 }

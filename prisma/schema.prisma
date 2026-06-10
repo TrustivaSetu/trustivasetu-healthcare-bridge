@@ -100,8 +100,11 @@ model Clinic {
   businessPotential   Float?
   isActive            Boolean      @default(true)
   portalAccessSent    Boolean      @default(false)
-  portalAccessSentAt  DateTime?
-  reportEmails        String[]
+  portalAccessSentAt    DateTime?
+  portalEmailStatus     String?   // 'SENT' | 'FAILED' | 'NOT_SENT'
+  lastPasswordGenAt     DateTime?
+  lastPasswordGenById   String?
+  reportEmails          String[]
   onboardedAt         DateTime     @default(now())
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt

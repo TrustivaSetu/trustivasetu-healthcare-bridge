@@ -8,6 +8,7 @@ import { useTabSession } from '@/contexts/TabSessionContext'
 import toast from 'react-hot-toast'
 
 import { formatDate, formatLakhs, cn } from '@/lib/utils'
+import { CredentialsModal } from '@/components/clinics/CredentialsModal'
 
 export default function ClinicDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -28,6 +29,10 @@ export default function ClinicDetailPage() {
   const [reportEmails, setReportEmails] = useState<string[]>([])
   const [newEmail, setNewEmail] = useState('')
   const [emailSaving, setEmailSaving] = useState(false)
+
+  type CredResult = { clinicName: string; email: string; plainPassword: string; emailSent: boolean; generatedAt: string; generatedBy: string }
+  const [credResult, setCredResult] = useState<CredResult | null>(null)
+  const [genLoading, setGenLoading] = useState(false)
 
   const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN'
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
@@ -134,6 +139,19 @@ export default function ClinicDetailPage() {
       else toast.error(data.error ?? 'Failed to send report')
     } catch { toast.error('Something went wrong') }
     finally { setReportSending(false) }
+  }
+
+  async function handleGenerateCredentials() {
+    setGenLoading(true)
+    try {
+      const res = await fetch(`/api/clinics/${id}/generate-credentials`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error ?? 'Failed to generate credentials'); return }
+      setCredResult(data)
+      // Refresh portal status
+      fetch(`/api/clinics/${id}/portal-access`).then(r => r.json()).then(d => setPortalStatus(d.data ?? null))
+    } catch { toast.error('Something went wrong') }
+    finally { setGenLoading(false) }
   }
 
   const clinic = data as Record<string, unknown> | null
@@ -390,6 +408,31 @@ export default function ClinicDetailPage() {
           </div>
         )}
 
+        {/* Generate Portal Password — visible to all non-CLINIC_USER */}
+        {!isClinicUser && (
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 className="text-sm font-semibold text-gray-700 mb-1">Generate Portal Password</h3>
+            <p className="text-xs text-gray-500 mb-3">
+              Generate a fresh password if the clinic didn&apos;t receive their welcome email or needs a reset.
+              Password is shown once — you can share it via WhatsApp or call.
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={handleGenerateCredentials}
+                disabled={genLoading}
+                className="flex items-center gap-1.5 text-xs bg-amber-50 text-amber-800 border border-amber-300 px-3 py-2 rounded-lg hover:bg-amber-100 transition disabled:opacity-60 font-medium"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+                {genLoading ? 'Generating...' : '🔑 Generate New Password'}
+              </button>
+            </div>
+            {!data?.email && <p className="text-xs text-red-500 mt-2">Add an email to this clinic first</p>}
+          </div>
+        )}
+
         {/* Report Email Settings */}
         {canManageReportEmails && (
           <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -621,6 +664,10 @@ export default function ClinicDetailPage() {
           </div>
         </div>
       </div>
+
+      {credResult && (
+        <CredentialsModal result={credResult} onClose={() => setCredResult(null)} />
+      )}
     </div>
   )
 }

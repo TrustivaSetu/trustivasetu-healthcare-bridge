@@ -242,7 +242,7 @@ export async function POST(req: NextRequest) {
         ? await db.user.findUnique({ where: { id: creator.reportingManagerId }, select: { name: true, email: true } })
         : null
 
-      await Promise.allSettled([
+      const emailResults = await Promise.allSettled([
         sendEmail({
           to: clinic.email,
           subject: `Your Trustiva Setu Portal Access — ${clinic.name}`,
@@ -259,6 +259,11 @@ export async function POST(req: NextRequest) {
           html: clinicManagerEmailHtml({ clinicName: clinic.name, managerName: manager.name, creatorName: creator!.name, loginUrl }),
         }) : Promise.resolve(null),
       ])
+      const clinicEmailStatus = emailResults[0].status === 'fulfilled' ? 'SENT' : 'FAILED'
+      await db.clinic.update({ where: { id: clinic.id }, data: { portalEmailStatus: clinicEmailStatus } })
+    }
+    if (!clinic.email) {
+      await db.clinic.update({ where: { id: clinic.id }, data: { portalEmailStatus: 'NOT_SENT' } })
     }
 
     await db.auditLog.create({ data: { userId: session.user.id, action: 'CREATE', entity: 'Clinic', entityId: clinic.id } })
