@@ -1,0 +1,33 @@
+Starting embedded PostgreSQL on port 5432...
+Existing cluster detected — skipping initdb
+2026-06-09 05:04:15.980 IST [15828] LOG:  starting PostgreSQL 18.3 on x86_64-windows, compiled by msvc-19.44.35222, 64-bit
+
+2026-06-09 05:04:16.015 IST [15828] LOG:  listening on IPv6 address "::1", port 5432
+
+2026-06-09 05:04:16.015 IST [15828] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+
+2026-06-09 05:04:16.371 IST [12076] LOG:  database system was interrupted; last known up at 2026-06-08 22:05:24 IST
+
+2026-06-09 05:04:26.405 IST [12076] LOG:  syncing data directory (fsync), elapsed time: 10.03 s, current path: ./base/5/3600_vm
+
+2026-06-09 05:04:27.098 IST [12076] LOG:  database system was not properly shut down; automatic recovery in progress
+
+2026-06-09 05:04:27.124 IST [12076] LOG:  redo starts at 0/1EC6C18
+
+2026-06-09 05:04:27.125 IST [12076] LOG:  invalid record length at 0/1EC6D58: expected at least 24, got 0
+
+2026-06-09 05:04:27.125 IST [12076] LOG:  redo done at 0/1EC6D20 system usage: CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s
+
+2026-06-09 05:04:27.156 IST [300] LOG:  checkpoint starting: end-of-recovery immediate wait
+
+2026-06-09 05:04:27.198 IST [300] LOG:  checkpoint complete: wrote 0 buffers (0.0%), wrote 3 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.020 s, sync=0.006 s, total=0.043 s; sync files=2, longest=0.004 s, average=0.003 s; distance=0 kB, estimate=0 kB; lsn=0/1EC6D58, redo lsn=0/1EC6D58
+
+2026-06-09 05:04:27.244 IST [15828] LOG:  database system is ready to accept connections
+
+Database trustiva_lms already exists
+PostgreSQL ready.
+DATABASE_URL=postgresql://trustiva:trustiva@127.0.0.1:5432/trustiva_lms?schema=public
+Leave this process running. Press Ctrl+C to stop.
+2026-06-09 05:04:31.543 IST [6176] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+

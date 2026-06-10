@@ -1,0 +1,55 @@
+
+> trustiva-lms@0.1.0 dev
+> next dev -p 3000
+
+   ▲ Next.js 15.5.19
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.9:3000
+   - Environments: .env.development.local, .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 13.3s
+ ○ Compiling /apply ...
+Request timed out after 3000ms
+
+Retrying 1/3...
+Request timed out after 3000ms
+
+Retrying 1/3...
+Request timed out after 3000ms
+
+Retrying 1/3...
+Request timed out after 3000ms
+
+Retrying 1/3...
+Request timed out after 3000ms
+
+Retrying 1/3...
+Request timed out after 3000ms
+
+Retrying 2/3...
+ ✓ Compiled /apply in 132.4s (1681 modules)
+ GET /apply 200 in 336ms
+ GET /apply 200 in 630ms
+ ○ Compiling /api/auth/[...nextauth] ...
+ ✓ Compiled /api/auth/[...nextauth] in 22.3s (1912 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /apply 200 in 1961ms
+ GET /api/auth/session 200 in 26863ms
+ POST /api/auth/_log 200 in 2045ms
+ GET /api/auth/session 200 in 649ms
+ ✓ Compiled in 3.5s (1673 modules)
+ GET /apply 200 in 6229ms
+ ○ Compiling /api/auth/[...nextauth] ...
+ ✓ Compiled /api/auth/[...nextauth] in 5.2s (1115 modules)
+ GET /api/auth/session 200 in 16622ms
+ GET /apply 200 in 3724ms
+ GET /api/auth/session 200 in 451ms
+ ✓ Compiled in 9.5s (1673 modules)
+ GET /apply 200 in 7389ms
+ ○ Compiling /api/auth/[...nextauth] ...
+ ✓ Compiled /api/auth/[...nextauth] in 7.3s (1115 modules)
+ GET /api/auth/session 200 in 12288ms
+ GET /apply 200 in 11297ms
+ GET /api/auth/session 200 in 6157ms
+^C^C

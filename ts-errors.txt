@@ -1,0 +1,450 @@
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/admin/appointment-letters/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/admin/audit-logs/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/admin/lenders/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/admin/permissions/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/admin/regions/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/admin/targets/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/admin/webhooks/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/clinics/[id]/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/clinics/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/dashboard/approvals/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/dashboard/my/attendance/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/dashboard/my/expenses/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/dashboard/my/leaves/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/dashboard/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/dashboard/recycle-bin/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/expenses/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/hr/appointment-letter/[id]/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/hr/attendance/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/hr/directory/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/hr/holidays/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/hr/my-profile/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/hr/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/hr/payslip/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/hr/policies/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/hr/salary/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/leads/[id]/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/leads/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/reports/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(app)/users/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(clinic)/dashboard/clinic/change-password/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(clinic)/dashboard/clinic/disbursals/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(clinic)/dashboard/clinic/leads/[id]/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(clinic)/dashboard/clinic/leads/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(clinic)/dashboard/clinic/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(clinic)/dashboard/clinic/staff/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/(clinic)/layout.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/activity/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/admin/nuke-demo-data/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/approvals/pending-count/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/audit-logs/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/auth/[...nextauth]/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/auth/forgot-password/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/auth/reset-password/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/auth/tab-login/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/auth/tab-logout/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/auth/verify-reset-otp/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinic/change-password/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinic/dashboard/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinic/disbursals/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinic/leads/[id]/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinic/leads/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinic/report/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinic/staff/report/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinic/staff/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinics/[id]/portal-access/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinics/[id]/qr/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinics/[id]/report-emails/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinics/[id]/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinics/[id]/schemes/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinics/[id]/send-report/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinics/bulk-upload/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinics/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/clinics/template/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/cron/monthly-report/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/dashboard/export/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/dashboard/manager/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/dashboard/rm/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/dashboard/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/dashboard/super-admin/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/expenses/[id]/approve/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/expenses/[id]/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/expenses/[id]/submit/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/expenses/export/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/expenses/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/export/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/gst-verify/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/hospital-users/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/hr/appointment-letter/[id]/acknowledge/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/hr/appointment-letter/[id]/resend/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/hr/appointment-letter/[id]/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/hr/appointment-letter/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/hr/attendance/approve/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/hr/attendance/export/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/hr/attendance/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/hr/celebrations/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/hr/directory/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/hr/holidays/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/hr/payslip/[userId]/[yearMonth]/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/hr/photo/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/hr/policies/acknowledge/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/hr/profile/[userId]/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/hr/salary/[userId]/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/leads/[id]/auto-process/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/leads/[id]/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/leads/enhanced-decision/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/leads/lender-decision/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/leads/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/leads/send-otp/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/leads/smart-qualify/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/leads/verify-aadhaar/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/leads/verify-otp/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/leads/verify-pan/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/leaves/[id]/approve/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/leaves/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/lenders/[id]/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/lenders/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/los/db/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/los/sync/activity/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/los/sync/clinic/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/los/sync/commercial/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/los/sync/enquiry/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/los/sync/user/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/notifications/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/permissions/me/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/permissions/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/public/clinic/[clinicId]/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/public/lead/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/public/otp/send/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/public/otp/verify/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/recycle-bin/[id]/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/recycle-bin/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/regions/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/reports/download/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/reports/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/schemes/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/targets/[id]/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/targets/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/upload/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/users/[id]/change-password/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/users/[id]/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/users/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/webhooks/clinics/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/webhooks/events/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/webhooks/leads/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/webhooks/lenders/[id]/disbursal/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/webhooks/lenders/[id]/status/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/api/webhooks/users/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/chat/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/disclaimer/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/layout.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/lead/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/lms/forgot-password/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/lms/login/layout.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/lms/login/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/partner/leads/[id]/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/partner/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/privacy-policy/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/app/terms/page.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'
+error TS6053: File 'C:/trustiva-lms/.next/types/cache-life.d.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/types/**/*.ts' in 'C:/trustiva-lms/tsconfig.json'

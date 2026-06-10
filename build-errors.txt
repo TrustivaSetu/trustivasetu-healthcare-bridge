@@ -1,0 +1,187 @@
+
+> trustiva-lms@0.1.0 build
+> prisma generate && next build
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+✔ Generated Prisma Client (v5.22.0) to .\node_modules\@prisma\client in 2.89s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Curious about the SQL queries Prisma ORM generates? Optimize helps you enhance your visibility: https://pris.ly/tip-2-optimize
+
+   ▲ Next.js 15.5.19
+   - Environments: .env.production.local, .env.local, .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 118s
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/75) ...
+   Generating static pages (18/75) 
+   Generating static pages (37/75) 
+   Generating static pages (56/75) 
+ ✓ Generating static pages (75/75)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                         Size  First Load JS
+┌ ƒ /                                              380 B         103 kB
+├ ƒ /_not-found                                     1 kB         103 kB
+├ ƒ /admin/appointment-letters                    3.5 kB         127 kB
+├ ƒ /admin/audit-logs                             2.4 kB         117 kB
+├ ƒ /admin/lenders                               5.99 kB         113 kB
+├ ƒ /admin/permissions                           5.35 kB         125 kB
+├ ƒ /admin/regions                               2.38 kB         122 kB
+├ ƒ /admin/targets                               2.86 kB         123 kB
+├ ƒ /admin/webhooks                              2.53 kB         117 kB
+├ ƒ /api/activity                                  380 B         103 kB
+├ ƒ /api/admin/nuke-demo-data                      380 B         103 kB
+├ ƒ /api/approvals/pending-count                   380 B         103 kB
+├ ƒ /api/audit-logs                                380 B         103 kB
+├ ƒ /api/auth/[...nextauth]                        380 B         103 kB
+├ ƒ /api/auth/forgot-password                      380 B         103 kB
+├ ƒ /api/auth/reset-password                       380 B         103 kB
+├ ƒ /api/auth/tab-login                            380 B         103 kB
+├ ƒ /api/auth/tab-logout                           380 B         103 kB
+├ ƒ /api/auth/verify-reset-otp                     380 B         103 kB
+├ ƒ /api/clinic/change-password                    380 B         103 kB
+├ ƒ /api/clinic/dashboard                          380 B         103 kB
+├ ƒ /api/clinic/disbursals                         380 B         103 kB
+├ ƒ /api/clinic/leads                              380 B         103 kB
+├ ƒ /api/clinic/leads/[id]                         380 B         103 kB
+├ ƒ /api/clinic/report                             380 B         103 kB
+├ ƒ /api/clinic/staff                              380 B         103 kB
+├ ƒ /api/clinic/staff/report                       380 B         103 kB
+├ ƒ /api/clinics                                   380 B         103 kB
+├ ƒ /api/clinics/[id]                              380 B         103 kB
+├ ƒ /api/clinics/[id]/portal-access                380 B         103 kB
+├ ƒ /api/clinics/[id]/qr                           380 B         103 kB
+├ ƒ /api/clinics/[id]/report-emails                380 B         103 kB
+├ ƒ /api/clinics/[id]/schemes                      380 B         103 kB
+├ ƒ /api/clinics/[id]/send-report                  380 B         103 kB
+├ ƒ /api/clinics/bulk-upload                       380 B         103 kB
+├ ƒ /api/clinics/template                          380 B         103 kB
+├ ƒ /api/cron/monthly-report                       380 B         103 kB
+├ ƒ /api/dashboard                                 380 B         103 kB
+├ ƒ /api/dashboard/export                          380 B         103 kB
+├ ƒ /api/dashboard/manager                         380 B         103 kB
+├ ƒ /api/dashboard/rm                              380 B         103 kB
+├ ƒ /api/dashboard/super-admin                     380 B         103 kB
+├ ƒ /api/expenses                                  380 B         103 kB
+├ ƒ /api/expenses/[id]                             380 B         103 kB
+├ ƒ /api/expenses/[id]/approve                     380 B         103 kB
+├ ƒ /api/expenses/[id]/submit                      380 B         103 kB
+├ ƒ /api/expenses/export                           380 B         103 kB
+├ ƒ /api/export                                    380 B         103 kB
+├ ƒ /api/gst-verify                                380 B         103 kB
+├ ƒ /api/hospital-users                            380 B         103 kB
+├ ƒ /api/hr/appointment-letter                     380 B         103 kB
+├ ƒ /api/hr/appointment-letter/[id]                380 B         103 kB
+├ ƒ /api/hr/appointment-letter/[id]/acknowledge    380 B         103 kB
+├ ƒ /api/hr/appointment-letter/[id]/resend         380 B         103 kB
+├ ƒ /api/hr/attendance                             380 B         103 kB
+├ ƒ /api/hr/attendance/approve                     380 B         103 kB
+├ ƒ /api/hr/attendance/export                      380 B         103 kB
+├ ƒ /api/hr/celebrations                           380 B         103 kB
+├ ƒ /api/hr/directory                              380 B         103 kB
+├ ƒ /api/hr/holidays                               380 B         103 kB
+├ ƒ /api/hr/payslip/[userId]/[yearMonth]           380 B         103 kB
+├ ƒ /api/hr/photo                                  380 B         103 kB
+├ ƒ /api/hr/policies/acknowledge                   380 B         103 kB
+├ ƒ /api/hr/profile/[userId]                       380 B         103 kB
+├ ƒ /api/hr/salary/[userId]                        380 B         103 kB
+├ ƒ /api/leads                                     380 B         103 kB
+├ ƒ /api/leads/[id]                                380 B         103 kB
+├ ƒ /api/leads/[id]/auto-process                   380 B         103 kB
+├ ƒ /api/leads/enhanced-decision                   380 B         103 kB
+├ ƒ /api/leads/lender-decision                     380 B         103 kB
+├ ƒ /api/leads/send-otp                            380 B         103 kB
+├ ƒ /api/leads/smart-qualify                       380 B         103 kB
+├ ƒ /api/leads/verify-aadhaar                      380 B         103 kB
+├ ƒ /api/leads/verify-otp                          380 B         103 kB
+├ ƒ /api/leads/verify-pan                          380 B         103 kB
+├ ƒ /api/leaves                                    380 B         103 kB
+├ ƒ /api/leaves/[id]/approve                       380 B         103 kB
+├ ƒ /api/lenders                                   380 B         103 kB
+├ ƒ /api/lenders/[id]                              380 B         103 kB
+├ ƒ /api/los/db                                    380 B         103 kB
+├ ƒ /api/los/sync/activity                         380 B         103 kB
+├ ƒ /api/los/sync/clinic                           380 B         103 kB
+├ ƒ /api/los/sync/commercial                       380 B         103 kB
+├ ƒ /api/los/sync/enquiry                          380 B         103 kB
+├ ƒ /api/los/sync/user                             380 B         103 kB
+├ ƒ /api/notifications                             380 B         103 kB
+├ ƒ /api/permissions                               380 B         103 kB
+├ ƒ /api/permissions/me                            380 B         103 kB
+├ ƒ /api/public/clinic/[clinicId]                  380 B         103 kB
+├ ƒ /api/public/lead                               380 B         103 kB
+├ ƒ /api/public/otp/send                           380 B         103 kB
+├ ƒ /api/public/otp/verify                         380 B         103 kB
+├ ƒ /api/recycle-bin                               380 B         103 kB
+├ ƒ /api/recycle-bin/[id]                          380 B         103 kB
+├ ƒ /api/regions                                   380 B         103 kB
+├ ƒ /api/reports                                   380 B         103 kB
+├ ƒ /api/reports/download                          380 B         103 kB
+├ ƒ /api/schemes                                   380 B         103 kB
+├ ƒ /api/targets                                   380 B         103 kB
+├ ƒ /api/targets/[id]                              380 B         103 kB
+├ ƒ /api/upload                                    380 B         103 kB
+├ ƒ /api/users                                     380 B         103 kB
+├ ƒ /api/users/[id]                                380 B         103 kB
+├ ƒ /api/users/[id]/change-password                380 B         103 kB
+├ ƒ /api/webhooks/clinics                          380 B         103 kB
+├ ƒ /api/webhooks/events                           380 B         103 kB
+├ ƒ /api/webhooks/leads                            380 B         103 kB
+├ ƒ /api/webhooks/lenders/[id]/disbursal           380 B         103 kB
+├ ƒ /api/webhooks/lenders/[id]/status              380 B         103 kB
+├ ƒ /api/webhooks/users                            380 B         103 kB
+├ ƒ /chat                                        6.22 kB         109 kB
+├ ƒ /clinics                                     13.5 kB         137 kB
+├ ƒ /clinics/[id]                                5.62 kB         132 kB
+├ ƒ /dashboard                                    109 kB         212 kB
+├ ƒ /dashboard/approvals                         4.07 kB         128 kB
+├ ƒ /dashboard/clinic                               4 kB         124 kB
+├ ƒ /dashboard/clinic/change-password            2.15 kB         110 kB
+├ ƒ /dashboard/clinic/disbursals                 2.43 kB         122 kB
+├ ƒ /dashboard/clinic/leads                      2.15 kB         120 kB
+├ ƒ /dashboard/clinic/leads/[id]                 2.16 kB         120 kB
+├ ƒ /dashboard/clinic/staff                      3.48 kB         123 kB
+├ ƒ /dashboard/my/attendance                      6.1 kB         130 kB
+├ ƒ /dashboard/my/expenses                         380 B         103 kB
+├ ƒ /dashboard/my/leaves                            4 kB         127 kB
+├ ƒ /dashboard/recycle-bin                       1.81 kB         128 kB
+├ ƒ /disclaimer                                    380 B         103 kB
+├ ƒ /expenses                                    7.53 kB         127 kB
+├ ƒ /hr                                          3.37 kB         121 kB
+├ ƒ /hr/appointment-letter/[id]                  23.9 kB         144 kB
+├ ƒ /hr/attendance                                 11 kB         134 kB
+├ ƒ /hr/directory                                 2.2 kB         117 kB
+├ ƒ /hr/holidays                                 5.71 kB         112 kB
+├ ƒ /hr/my-profile                               5.34 kB         129 kB
+├ ƒ /hr/payslip                                   4.1 kB         119 kB
+├ ƒ /hr/policies                                 9.71 kB         133 kB
+├ ƒ /hr/salary                                   4.11 kB         124 kB
+├ ƒ /lead                                         3.8 kB         106 kB
+├ ƒ /leads                                        110 kB         234 kB
+├ ƒ /leads/[id]                                  4.53 kB         131 kB
+├ ƒ /lms/forgot-password                         2.98 kB         109 kB
+├ ƒ /lms/login                                   3.38 kB         115 kB
+├ ƒ /partner                                     11.1 kB         121 kB
+├ ƒ /partner/leads/[id]                          1.62 kB         112 kB
+├ ƒ /privacy-policy                                380 B         103 kB
+├ ƒ /reports                                     3.02 kB         110 kB
+├ ƒ /terms                                         380 B         103 kB
+└ ƒ /users                                       8.07 kB         128 kB
++ First Load JS shared by all                     102 kB
+  ├ chunks/1255-b8cf77ab14370e57.js                46 kB
+  ├ chunks/4bd1b696-100b9d70ed4e49c1.js          54.2 kB
+  └ other shared chunks (total)                  2.08 kB
+
+
+ƒ Middleware                                     57.2 kB
+
+ƒ  (Dynamic)  server-rendered on demand
+
