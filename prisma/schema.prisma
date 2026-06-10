@@ -298,6 +298,95 @@ enum LeaveType {
   UNPLANNED
 }
 
+model PatientEnquiry {
+  id                     String    @id @default(cuid())
+  source                 String    // 'WEBSITE_FORM' | 'INCOMPLETE_LEAD'
+  applicantName          String?
+  mobile                 String?
+  email                  String?
+  hospitalName           String?
+  clinicId               String?
+  treatmentName          String?
+  loanAmount             Float?
+  panNumber              String?
+  panVerified            Boolean   @default(false)
+  aadharNumber           String?
+  employmentType         String?
+  monthlyIncome          Float?
+  companyName            String?
+  currentHouseNo         String?
+  currentStreet          String?
+  currentLandmark        String?
+  currentPinCode         String?
+  currentCity            String?
+  currentState           String?
+  permanentSameAsCurrent Boolean   @default(false)
+  permanentPinCode       String?
+  permanentCity          String?
+  permanentState         String?
+  assignedRegion         String?
+  assignedRmId           String?
+  assignedManagerId      String?
+  assignedById           String?
+  assignedAt             DateTime?
+  status                 String    @default("NEW")
+  convertedLeadId        String?
+  notes                  String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@index([status])
+  @@index([assignedRmId])
+  @@index([assignedManagerId])
+  @@index([createdAt])
+}
+
+model ProviderEnquiry {
+  id                String    @id @default(cuid())
+  source            String    // 'WEBSITE_FORM' | 'MANUAL'
+  clinicName        String?
+  contactPerson     String?
+  mobile            String?
+  email             String?
+  address           String?
+  pinCode           String?
+  city              String?
+  state             String?
+  region            String?
+  treatmentTypes    String?
+  ifscCode          String?
+  bankName          String?
+  branchName        String?
+  accountNumber     String?
+  assignedRegion    String?
+  assignedRmId      String?
+  assignedManagerId String?
+  assignedById      String?
+  assignedAt        DateTime?
+  status            String    @default("NEW")
+  convertedClinicId String?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([status])
+  @@index([assignedRmId])
+  @@index([assignedManagerId])
+  @@index([createdAt])
+}
+
+model RegionMapping {
+  id                String   @id @default(cuid())
+  regionName        String   @unique
+  cities            String[]
+  pinCodes          String[]
+  states            String[]
+  assignedRmId      String?
+  assignedManagerId String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
 enum WorkingType {
   FULL_DAY
   HALF_DAY

@@ -105,5 +105,6 @@ export const config = {
     '/admin/:path*',
     '/hr/:path*',
     '/expenses/:path*',
+    '/enquiries/:path*',
   ],
 }
