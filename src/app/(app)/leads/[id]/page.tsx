@@ -12,6 +12,14 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { ErrorAlert } from '@/components/ui/ErrorAlert'
 import { formatDate, formatLakhs, getStatusColor, cn } from '@/lib/utils'
 
+interface AddressData {
+  houseNo?: string
+  street?: string
+  landmark?: string
+  pincode?: string
+  city?: string
+}
+
 interface LeadMeta {
   utrNumber?: string
   nachDone?: boolean
@@ -28,6 +36,8 @@ interface LeadMeta {
   processingFeePct?: number
   processingFeeAmount?: number
   downPayment?: number
+  currentAddress?: AddressData
+  permanentAddress?: AddressData
   [key: string]: unknown
 }
 
@@ -151,6 +161,24 @@ export default function LeadDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* Address Information */}
+            {lead.metadata?.currentAddress && (
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Address Information</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <AddressCard title="Current Address" address={lead.metadata.currentAddress} />
+                  <AddressCard
+                    title="Permanent Address"
+                    address={lead.metadata.permanentAddress}
+                    sameAs={
+                      lead.metadata.permanentAddress?.pincode === lead.metadata.currentAddress.pincode &&
+                      lead.metadata.permanentAddress?.houseNo === lead.metadata.currentAddress.houseNo
+                    }
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Main grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -301,6 +329,41 @@ export default function LeadDetailPage() {
           }}
           onCancel={() => setModal(null)}
         />
+      )}
+    </div>
+  )
+}
+
+function AddressCard({ title, address, sameAs }: { title: string; address?: AddressData; sameAs?: boolean }) {
+  const f = (v?: string) => v?.trim() || '—'
+  return (
+    <div>
+      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{title}</h3>
+      {sameAs ? (
+        <p className="text-sm text-gray-500 italic">Same as Current Address</p>
+      ) : (
+        <dl className="space-y-1.5 text-sm">
+          <div className="flex gap-2">
+            <dt className="text-gray-400 w-20 flex-shrink-0">House No.</dt>
+            <dd className="font-medium text-gray-800">{f(address?.houseNo)}</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="text-gray-400 w-20 flex-shrink-0">Street</dt>
+            <dd className="font-medium text-gray-800">{f(address?.street)}</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="text-gray-400 w-20 flex-shrink-0">Landmark</dt>
+            <dd className="font-medium text-gray-800">{f(address?.landmark)}</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="text-gray-400 w-20 flex-shrink-0">PIN Code</dt>
+            <dd className="font-medium text-gray-800 font-mono">{f(address?.pincode)}</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="text-gray-400 w-20 flex-shrink-0">City</dt>
+            <dd className="font-medium text-gray-800">{f(address?.city)}</dd>
+          </div>
+        </dl>
       )}
     </div>
   )
