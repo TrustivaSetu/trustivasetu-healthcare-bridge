@@ -34,6 +34,8 @@ export function LeadsPageContent() {
   const [sortBy, setSortBy] = useState('applicationDate')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [statusModal, setStatusModal] = useState<StatusModalState | null>(null)
+  const [deleteConfirmLead, setDeleteConfirmLead] = useState<{ id: string; applicantName: string } | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [lenderId, setLenderId] = useState('')
   const [regionId, setRegionId] = useState('')
   const [lenders, setLenders] = useState<{ id: string; name: string }[]>([])
@@ -41,8 +43,8 @@ export function LeadsPageContent() {
 
   const role = session?.role ?? ''
   const canCreate = ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'].includes(role)
-  const canEdit = ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER'].includes(role)
-  const canDelete = ['SUPER_ADMIN', 'ADMIN'].includes(role)
+  const canEdit = ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'].includes(role)
+  const canDelete = ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'].includes(role)
 
   const fetchLeads = useCallback(async () => {
     setLoading(true)
@@ -94,15 +96,27 @@ export function LeadsPageContent() {
     }
   }
 
-  async function handleDelete(lead: { id: string; applicantName: string }) {
-    if (!confirm(`Delete lead for "${lead.applicantName}"? This cannot be undone.`)) return
-    const res = await fetch(`/api/leads/${lead.id}`, { method: 'DELETE' })
-    if (res.ok) {
-      toast.success('Lead deleted')
-      fetchLeads()
-    } else {
-      const d = await res.json()
-      toast.error(d.error ?? 'Failed to delete lead')
+  function handleDelete(lead: { id: string; applicantName: string }) {
+    setDeleteConfirmLead(lead)
+  }
+
+  async function confirmDelete() {
+    if (!deleteConfirmLead) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/leads/${deleteConfirmLead.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.success('Lead deleted successfully')
+        setDeleteConfirmLead(null)
+        fetchLeads()
+      } else {
+        const d = await res.json()
+        toast.error(d.error ?? 'Something went wrong. Please try again.')
+      }
+    } catch {
+      toast.error('Something went wrong. Please try again.')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -306,6 +320,37 @@ export function LeadsPageContent() {
           onConfirm={confirmStatusUpdate}
           onCancel={() => setStatusModal(null)}
         />
+      )}
+
+      {deleteConfirmLead && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Delete Lead</h3>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Are you sure you want to delete <span className="font-medium text-gray-700">{deleteConfirmLead.applicantName}</span>?
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => setDeleteConfirmLead(null)} disabled={deleting}
+                className="flex-1 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 disabled:opacity-60">
+                Cancel
+              </button>
+              <button onClick={confirmDelete} disabled={deleting}
+                className="flex-1 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-60">
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

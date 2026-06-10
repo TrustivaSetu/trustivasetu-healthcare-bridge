@@ -4,27 +4,22 @@ import { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
-// ─── Mock helpers ───────────────────────────────────────────────────────────
-const PINCODE_MAP: Record<string, string> = {
-  '110001': 'New Delhi', '110002': 'New Delhi', '110003': 'New Delhi',
-  '400001': 'Mumbai', '400002': 'Mumbai', '400051': 'Mumbai',
-  '560001': 'Bengaluru', '560002': 'Bengaluru', '560010': 'Bengaluru',
-  '600001': 'Chennai', '600002': 'Chennai', '600017': 'Chennai',
-  '700001': 'Kolkata', '700002': 'Kolkata', '700012': 'Kolkata',
-  '500001': 'Hyderabad', '500002': 'Hyderabad', '500016': 'Hyderabad',
-  '380001': 'Ahmedabad', '380002': 'Ahmedabad', '380009': 'Ahmedabad',
-  '411001': 'Pune', '411002': 'Pune', '411007': 'Pune',
-  '302001': 'Jaipur', '302002': 'Jaipur', '302017': 'Jaipur',
-  '226001': 'Lucknow', '226002': 'Lucknow', '226010': 'Lucknow',
-  '800001': 'Patna', '800002': 'Patna', '800012': 'Patna',
-  '682001': 'Kochi', '682002': 'Kochi', '682011': 'Kochi',
-  '248001': 'Dehradun', '250001': 'Meerut', '201301': 'Noida',
-  '122001': 'Gurugram', '121001': 'Faridabad', '160001': 'Chandigarh',
-}
-
-function cityFromPin(pin: string): string {
-  if (pin.length === 6) return PINCODE_MAP[pin] ?? ''
-  return ''
+// ─── India Post pincode API ──────────────────────────────────────────────────
+async function fetchCityByPincode(pincode: string): Promise<{ city: string; state: string } | null> {
+  try {
+    const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`)
+    if (!res.ok) return null
+    const data = await res.json() as Array<{
+      Status: string
+      PostOffice: Array<{ District: string; State: string }> | null
+    }>
+    if (data[0]?.Status === 'Success' && data[0].PostOffice?.length) {
+      return { city: data[0].PostOffice[0].District, state: data[0].PostOffice[0].State }
+    }
+    return null
+  } catch {
+    return null
+  }
 }
 
 function calcOffer(amount: number) {
@@ -83,6 +78,8 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
   const [companyName, setCompanyName] = useState('')
   const [empPincode, setEmpPincode] = useState('')
   const [empCity, setEmpCity] = useState('')
+  const [empCityLoading, setEmpCityLoading] = useState(false)
+  const [empPincodeErr, setEmpPincodeErr] = useState('')
 
   // Step 3
   const [houseNo, setHouseNo] = useState('')
@@ -90,12 +87,16 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
   const [landmark, setLandmark] = useState('')
   const [pincode, setPincode] = useState('')
   const [city, setCity] = useState('')
+  const [cityLoading, setCityLoading] = useState(false)
+  const [pincodeErr, setPincodeErr] = useState('')
   const [sameAddress, setSameAddress] = useState(false)
   const [permHouseNo, setPermHouseNo] = useState('')
   const [permStreet, setPermStreet] = useState('')
   const [permLandmark, setPermLandmark] = useState('')
   const [permPincode, setPermPincode] = useState('')
   const [permCity, setPermCity] = useState('')
+  const [permCityLoading, setPermCityLoading] = useState(false)
+  const [permPincodeErr, setPermPincodeErr] = useState('')
 
   // Step 4
   const [step4Loading, setStep4Loading] = useState(true)
@@ -136,10 +137,33 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
 
-  // Pincode → city
-  useEffect(() => { setCity(cityFromPin(pincode)) }, [pincode])
-  useEffect(() => { setEmpCity(cityFromPin(empPincode)) }, [empPincode])
-  useEffect(() => { if (!sameAddress) setPermCity(cityFromPin(permPincode)) }, [permPincode, sameAddress])
+  // Pincode → city (India Post API)
+  useEffect(() => {
+    if (pincode.length !== 6) { setCity(''); setPincodeErr(''); return }
+    setCityLoading(true); setPincodeErr('')
+    fetchCityByPincode(pincode)
+      .then(r => { setCity(r ? r.city : ''); if (!r) setPincodeErr('Invalid PIN Code') })
+      .catch(() => { setCity(''); setPincodeErr('Could not fetch city') })
+      .finally(() => setCityLoading(false))
+  }, [pincode])
+
+  useEffect(() => {
+    if (empPincode.length !== 6) { setEmpCity(''); setEmpPincodeErr(''); return }
+    setEmpCityLoading(true); setEmpPincodeErr('')
+    fetchCityByPincode(empPincode)
+      .then(r => { setEmpCity(r ? r.city : ''); if (!r) setEmpPincodeErr('Invalid PIN Code') })
+      .catch(() => { setEmpCity(''); setEmpPincodeErr('Could not fetch city') })
+      .finally(() => setEmpCityLoading(false))
+  }, [empPincode])
+
+  useEffect(() => {
+    if (sameAddress || permPincode.length !== 6) { if (!sameAddress) { setPermCity(''); setPermPincodeErr('') } return }
+    setPermCityLoading(true); setPermPincodeErr('')
+    fetchCityByPincode(permPincode)
+      .then(r => { setPermCity(r ? r.city : ''); if (!r) setPermPincodeErr('Invalid PIN Code') })
+      .catch(() => { setPermCity(''); setPermPincodeErr('Could not fetch city') })
+      .finally(() => setPermCityLoading(false))
+  }, [permPincode, sameAddress])
 
   // Same address copy
   useEffect(() => {
@@ -503,10 +527,16 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
               <label className={lbl}>Employment PIN Code</label>
               <input value={empPincode} onChange={e => setEmpPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 placeholder="6-digit" maxLength={6} className={inp} />
+              {empPincodeErr && <p className={err}>{empPincodeErr}</p>}
             </div>
             <div>
               <label className={lbl}>City</label>
-              <input value={empCity} readOnly placeholder="Auto-filled" className={`${inp} bg-gray-50 text-gray-500`} />
+              <div className="relative">
+                <input value={empCityLoading ? '' : empCity} readOnly
+                  placeholder={empCityLoading ? 'Fetching...' : 'Auto-filled'}
+                  className={`${inp} bg-gray-50 text-gray-500`} />
+                {empCityLoading && <Spinner />}
+              </div>
             </div>
           </div>
 
@@ -548,10 +578,16 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
               <label className={lbl}>PIN Code</label>
               <input value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 placeholder="6-digit" maxLength={6} className={inp} />
+              {pincodeErr && <p className={err}>{pincodeErr}</p>}
             </div>
             <div>
               <label className={lbl}>City</label>
-              <input value={city} readOnly placeholder="Auto-filled" className={`${inp} bg-gray-50 text-gray-500`} />
+              <div className="relative">
+                <input value={cityLoading ? '' : city} readOnly
+                  placeholder={cityLoading ? 'Fetching...' : 'Auto-filled'}
+                  className={`${inp} bg-gray-50 text-gray-500`} />
+                {cityLoading && <Spinner />}
+              </div>
             </div>
           </div>
 
@@ -592,10 +628,16 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
                     <label className={lbl}>PIN Code</label>
                     <input value={permPincode} onChange={e => setPermPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       placeholder="6-digit" maxLength={6} className={inp} />
+                    {permPincodeErr && <p className={err}>{permPincodeErr}</p>}
                   </div>
                   <div>
                     <label className={lbl}>City</label>
-                    <input value={permCity} readOnly placeholder="Auto-filled" className={`${inp} bg-gray-50 text-gray-500`} />
+                    <div className="relative">
+                      <input value={permCityLoading ? '' : permCity} readOnly
+                        placeholder={permCityLoading ? 'Fetching...' : 'Auto-filled'}
+                        className={`${inp} bg-gray-50 text-gray-500`} />
+                      {permCityLoading && <Spinner />}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -833,3 +875,11 @@ const lbl = 'block text-sm font-medium text-gray-700 mb-1'
 const err = 'text-xs text-red-500 mt-1'
 const back = 'px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50'
 const next = 'flex-1 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition'
+
+function Spinner() {
+  return (
+    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+      <div className="animate-spin h-3.5 w-3.5 border-2 border-green-500 border-t-transparent rounded-full" />
+    </div>
+  )
+}
