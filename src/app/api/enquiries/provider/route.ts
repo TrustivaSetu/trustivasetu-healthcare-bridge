@@ -3,6 +3,16 @@ import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { autoAssignEnquiry } from '@/lib/enquiry-auto-assign'
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS })
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -44,10 +54,10 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    return NextResponse.json({ id: enquiry.id, status: enquiry.status }, { status: 201 })
+    return NextResponse.json({ id: enquiry.id, status: enquiry.status }, { status: 201, headers: CORS_HEADERS })
   } catch (e) {
     console.error('[POST /api/enquiries/provider]', e)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers: CORS_HEADERS })
   }
 }
 
