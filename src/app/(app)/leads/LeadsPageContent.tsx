@@ -248,7 +248,7 @@ export function LeadsPageContent() {
 
         {showForm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 overflow-y-auto max-h-[90vh]">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 overflow-y-auto max-h-[90vh]">
               <div className="flex justify-between items-center mb-5">
                 <h2 className="text-lg font-semibold text-gray-800">{editLead ? 'Edit Lead' : 'Add New Lead'}</h2>
                 <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
