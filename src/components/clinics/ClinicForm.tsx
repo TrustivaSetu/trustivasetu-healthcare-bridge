@@ -109,7 +109,7 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
   const [gstLoading, setGstLoading] = useState(false)
   const [ifscLoading, setIfscLoading] = useState(false)
   const [uploadLoading, setUploadLoading] = useState(false)
-  const [qrCode, setQrCode] = useState<string | null>(null)
+
   const [clinicCode, setClinicCode] = useState<string | null>(initial?.externalId ?? null)
   const [tab, setTab] = useState<'agreement' | 'basic' | 'gst' | 'banking' | 'schemes'>('agreement')
   const [agreementFile, setAgreementFile] = useState<File | null>(null)
@@ -201,24 +201,6 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
     }
   }
 
-  // QR Code Generate
-  function generateQR() {
-    if (!clinicCode) {
-      toast.error('Please save the clinic first, then generate the QR code')
-      return
-    }
-    const link = `https://lms.trustivasetu.com/apply?clinic=${clinicCode}`
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(link)}`
-    setQrCode(qrUrl)
-  }
-
-  function downloadQR() {
-    if (!qrCode) return
-    const a = document.createElement('a')
-    a.href = qrCode
-    a.download = `${clinicCode}-qr.png`
-    a.click()
-  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -467,41 +449,11 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
             </div>
           </div>
 
-          {/* Clinic Code + QR */}
+          {/* Clinic Code */}
           {clinicCode && (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-green-600 font-medium">Clinic Unique Code</p>
-                  <p className="text-xl font-bold text-green-800 font-mono">{clinicCode}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Link: https://lms.trustivasetu.com/apply?clinic={clinicCode}
-                  </p>
-                </div>
-                <button type="button" onClick={generateQR}
-                  className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700">
-                  📱 QR Generate
-                </button>
-              </div>
-              {qrCode && (
-                <div className="flex items-center gap-4">
-                  <img src={qrCode} alt="QR Code" className="w-24 h-24 rounded-lg border" />
-                  <div className="space-y-2">
-                    <button type="button" onClick={downloadQR}
-                      className="block px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700">
-                      ⬇ Download QR
-                    </button>
-                    <button type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(`https://lms.trustivasetu.com/apply?clinic=${clinicCode}`)
-                        toast.success('Link copied!')
-                      }}
-                      className="block px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200">
-                      📋 Copy Link
-                    </button>
-                  </div>
-                </div>
-              )}
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+              <p className="text-xs text-green-600 font-medium">Clinic Unique Code</p>
+              <p className="text-xl font-bold text-green-800 font-mono">{clinicCode}</p>
             </div>
           )}
 

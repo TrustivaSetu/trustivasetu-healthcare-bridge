@@ -4,6 +4,8 @@ import './globals.css'
 import { Providers } from './providers'
 import { CookieConsent } from '@/components/CookieConsent'
 
+export const dynamic = 'force-dynamic'
+
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
