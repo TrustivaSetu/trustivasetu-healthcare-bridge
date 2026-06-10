@@ -20,7 +20,6 @@ export async function GET(req: NextRequest) {
   const pending = searchParams.get('pending') === 'true'
   const all = searchParams.get('all') === '1'
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: Record<string, any> = {}
 
   if (all && isManager) {

@@ -10,7 +10,8 @@ function isAdmin(role: string) {
   return role === 'SUPER_ADMIN' || role === 'ADMIN'
 }
 
-export async function GET(req: NextRequest, { params }: { params: { userId: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ userId: string }> }) {
+  const params = await context.params
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!isAdmin(session.user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -21,7 +22,8 @@ export async function GET(req: NextRequest, { params }: { params: { userId: stri
   return NextResponse.json({ data: { ...salary, components: calculateSalary(salary.grossSalary, salary.tds) } })
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { userId: string } }) {
+export async function PUT(req: NextRequest, context: { params: Promise<{ userId: string }> }) {
+  const params = await context.params
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!isAdmin(session.user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

@@ -43,7 +43,7 @@ async function main() {
         isCustom: false,
       },
     })
-    console.log(`✅ Scheme ${s.name} seeded`)
+    console.warn(`✅ Scheme ${s.name} seeded`)
   }
   await db.$disconnect()
 }

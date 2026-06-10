@@ -17,7 +17,8 @@ function generatePassword(length = 12): string {
   return password.split('').sort(() => Math.random() - 0.5).join('')
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
@@ -38,7 +39,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ data: { clinic, portalUser } })
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
@@ -120,7 +122,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 }
 
 // Reset portal password with a custom password provided by admin
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {

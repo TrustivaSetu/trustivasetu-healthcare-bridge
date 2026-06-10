@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
-export async function GET(_req: NextRequest, { params }: { params: { clinicId: string } }) {
+export async function GET(_req: NextRequest, context: { params: Promise<{ clinicId: string }> }) {
+  const params = await context.params
   const { clinicId } = params
   if (!clinicId) return NextResponse.json({ error: 'Clinic ID required' }, { status: 400 })
 

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
 // Called by lenders to report approval/rejection decisions
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params
   try {
     const lender = await db.lender.findUnique({ where: { id: params.id } })
     if (!lender) return NextResponse.json({ error: 'Unknown lender' }, { status: 404 })
@@ -42,7 +43,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       updateData.rejectionReason = remarks ?? undefined
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await db.lead.update({ where: { id: leadId }, data: updateData as any })
     await db.webhookEvent.create({
       data: {

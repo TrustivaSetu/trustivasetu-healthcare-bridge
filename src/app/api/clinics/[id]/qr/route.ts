@@ -3,7 +3,8 @@ import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import QRCode from 'qrcode'
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

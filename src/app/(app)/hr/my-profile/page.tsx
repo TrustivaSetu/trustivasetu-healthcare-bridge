@@ -211,6 +211,7 @@ function ProfilePhoto({ userId, name, photoUrl, onUpdate }: { userId: string; na
   return (
     <div className="relative flex-shrink-0">
       {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt={name} className="w-20 h-20 rounded-full object-cover border-2 border-brand-200" />
       ) : (
         <div className="w-20 h-20 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 font-bold text-2xl border-2 border-brand-200">

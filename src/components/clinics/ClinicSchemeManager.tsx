@@ -53,6 +53,7 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
 
   useEffect(() => {
     fetchAll()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clinicId])
 
   async function fetchAll() {

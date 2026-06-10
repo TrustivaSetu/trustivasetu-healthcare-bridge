@@ -5,8 +5,9 @@ import { calculateSalary, calculateMonthlyPayable, getWorkingDaysInMonth } from 
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { userId: string; yearMonth: string } }
+  context: { params: Promise<{ userId: string; yearMonth: string }> }
 ) {
+  const params = await context.params
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

@@ -8,7 +8,8 @@ const updateSchema = z.object({
   disbursalTarget: z.number().min(0).optional(),
 })
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params
   const auth = await requirePermission('TARGET_MANAGE')
   if (auth.error) return auth.error
 
@@ -22,7 +23,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json({ data: target })
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params
   const auth = await requirePermission('TARGET_MANAGE')
   if (auth.error) return auth.error
 

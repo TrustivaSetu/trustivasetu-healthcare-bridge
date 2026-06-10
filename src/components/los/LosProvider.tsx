@@ -143,6 +143,7 @@ export function LosProvider({ children }: { children: ReactNode }) {
       }
       return lead
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [db, persist]
   )
 

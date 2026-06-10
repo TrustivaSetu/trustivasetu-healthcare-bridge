@@ -12,7 +12,7 @@ export async function sendOtpSms(
 
   if (!authKey || !templateId) {
     if (process.env.ENABLE_OTP_BYPASS === 'true') {
-      console.log('[OTP] MSG91 not configured - bypass enabled')
+      console.warn('[OTP] MSG91 not configured - bypass enabled')
       return { success: true }
     }
     console.error('[OTP] MSG91 not configured: MSG91_AUTH_KEY or MSG91_TEMPLATE_ID missing')

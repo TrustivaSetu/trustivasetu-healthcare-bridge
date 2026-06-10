@@ -18,7 +18,8 @@ const updateSchema = z.object({
   reportingManagerId: z.string().nullable().optional(),
 })
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!hasPermission(session.user.role, 'USER_READ') && session.user.id !== params.id)
@@ -62,7 +63,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   })
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!hasPermission(session.user.role, 'USER_UPDATE')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -118,7 +120,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 const PROTECTED_EMAILS = ['admin@trustivasetu.com']
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!hasPermission(session.user.role, 'USER_DELETE')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

@@ -4,7 +4,8 @@ import { db } from '@/lib/db'
 import { sendEmail } from '@/lib/email'
 import { COMPANY, ACK_EMAIL_RECIPIENTS, buildAcknowledgementEmailHtml } from '@/lib/hr/appointment-letter'
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

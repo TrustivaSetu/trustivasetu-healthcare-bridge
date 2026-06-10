@@ -175,6 +175,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
       <div className="flex-shrink-0 px-3 py-3 border-t border-white/10">
         <div className="flex items-center gap-2.5 px-2 py-1.5 mb-1">
           {photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={photoUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0 border border-white/20" />
           ) : (
             <div className="w-7 h-7 bg-trustiva-lime rounded-full flex items-center justify-center text-trustiva-navy text-xs font-bold flex-shrink-0">

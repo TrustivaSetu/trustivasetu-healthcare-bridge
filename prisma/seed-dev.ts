@@ -292,7 +292,7 @@ async function main() {
           applicantName,
           phone: `9${randInt(100000000, 999999999)}`,
           email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@gmail.com`,
-          motherName: `${rand(firstNames)} ${lastName}`,
+
           amount: loanAmount,
           status: spec.status,
           approvedAmount,
