@@ -24,40 +24,6 @@ export async function GET(req: NextRequest) {
     'alternate_phone',
   ]
 
-  const sampleRow = [
-    'Apollo Clinic - Sector 18',
-    '123 Sector 18, Noida, UP',
-    'Dr. Ramesh Sharma',
-    '9876543210',
-    'apollo.sec18@example.com',
-    '201301',
-    '09ABCDE1234F1Z5',
-    'ABCDE1234F',
-    '12345678901234',
-    'HDFC0001234',
-    'HDFC Bank - Noida Branch',
-    '50',
-    'Multi-Specialty Hospital',
-    '9876543211',
-  ]
-
-  const sampleRow2 = [
-    'Apollo Clinic - Sector 62',
-    '456 Sector 62, Noida, UP',
-    'Dr. Suresh Kumar',
-    '9876543212',
-    'apollo.sec62@example.com',
-    '201309',
-    '09ABCDE1234F1Z5',
-    'ABCDE1234F',
-    '12345678901234',
-    'HDFC0001234',
-    'HDFC Bank - Noida Branch',
-    '40',
-    'Multi-Specialty Hospital',
-    '9876543213',
-  ]
-
   const instructions = [
     ['INSTRUCTIONS - PLEASE READ CAREFULLY'],
     [''],
@@ -80,8 +46,8 @@ export async function GET(req: NextRequest) {
   wsInstructions['!cols'] = [{ wch: 80 }]
   XLSX.utils.book_append_sheet(wb, wsInstructions, 'Instructions')
 
-  // Data sheet
-  const wsData = XLSX.utils.aoa_to_sheet([headers, sampleRow, sampleRow2])
+  // Data sheet — headers only, no sample data
+  const wsData = XLSX.utils.aoa_to_sheet([headers])
   wsData['!cols'] = headers.map(() => ({ wch: 25 }))
   XLSX.utils.book_append_sheet(wb, wsData, 'Clinics Data')
 
