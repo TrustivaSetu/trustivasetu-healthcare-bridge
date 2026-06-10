@@ -6,7 +6,7 @@ import { checkRolePermission } from '@/lib/role-permissions'
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
-import { sendEmail, portalAccessEmailHtml } from '@/lib/email'
+import { sendEmail, portalAccessEmailHtml, clinicCreatorEmailHtml, clinicManagerEmailHtml } from '@/lib/email'
 
 function generateClinicCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -229,23 +229,36 @@ export async function POST(req: NextRequest) {
       return { clinic, portalUser }
     })
 
-    // Send welcome email outside transaction
+    // Send 3 emails in parallel outside transaction
     if (portalUser && plainPassword && clinic.email) {
       const loginUrl = `${process.env.NEXTAUTH_URL ?? 'https://lms.trustivasetu.com'}/lms/login`
-      try {
-        await sendEmail({
+      const [creator, ] = await Promise.all([
+        db.user.findUnique({
+          where: { id: session.user.id },
+          select: { name: true, email: true, reportingManagerId: true },
+        }),
+      ])
+      const manager = creator?.reportingManagerId
+        ? await db.user.findUnique({ where: { id: creator.reportingManagerId }, select: { name: true, email: true } })
+        : null
+
+      await Promise.allSettled([
+        sendEmail({
           to: clinic.email,
           subject: `Your Trustiva Setu Portal Access — ${clinic.name}`,
-          html: portalAccessEmailHtml({
-            clinicName: clinic.name,
-            email: portalUser.email,
-            password: plainPassword,
-            loginUrl,
-          }),
-        })
-      } catch (emailErr) {
-        console.error('[POST /api/clinics] Portal welcome email failed:', emailErr)
-      }
+          html: portalAccessEmailHtml({ clinicName: clinic.name, email: portalUser.email, password: plainPassword, loginUrl }),
+        }),
+        creator ? sendEmail({
+          to: creator.email,
+          subject: `Clinic Onboarded — ${clinic.name}`,
+          html: clinicCreatorEmailHtml({ clinicName: clinic.name, creatorName: creator.name, portalEmail: portalUser.email, password: plainPassword, loginUrl }),
+        }) : Promise.resolve(null),
+        manager ? sendEmail({
+          to: manager.email,
+          subject: `New Clinic Onboarded — ${clinic.name}`,
+          html: clinicManagerEmailHtml({ clinicName: clinic.name, managerName: manager.name, creatorName: creator!.name, loginUrl }),
+        }) : Promise.resolve(null),
+      ])
     }
 
     await db.auditLog.create({ data: { userId: session.user.id, action: 'CREATE', entity: 'Clinic', entityId: clinic.id } })

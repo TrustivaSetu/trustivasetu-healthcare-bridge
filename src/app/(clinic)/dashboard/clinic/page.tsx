@@ -1,49 +1,56 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useTabSession } from '@/contexts/TabSessionContext'
 import { useRouter } from 'next/navigation'
-import { formatLakhs } from '@/lib/utils'
-import toast from 'react-hot-toast'
+import { formatDate, formatLakhs, cn } from '@/lib/utils'
 
-type Tab = 'overall' | 'fortnight' | 'mtd'
-
-interface DashboardData {
+interface Stats {
   totalLeads: number
+  todayLeads: number
+  monthLeads: number
   approved: number
   disbursed: number
   rejected: number
-  pending: number
-  totalDisbursalAmount: number
-  approvalRate: number
-  avgCibil: number | null
-  avgFoir: number | null
+  pendingDisbursal: number
 }
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'overall', label: 'OVERALL' },
-  { key: 'fortnight', label: 'FORTNIGHT' },
-  { key: 'mtd', label: 'MTD' },
-]
+interface Lead {
+  id: string
+  applicantName: string
+  phone: string | null
+  amount: number
+  status: string
+  applicationDate: string
+  disbursalDate: string | null
+  treatmentName: string | null
+  lender: { name: string } | null
+}
 
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-]
+const STATUS_BADGE: Record<string, string> = {
+  PENDING: 'bg-yellow-100 text-yellow-800',
+  APPROVED: 'bg-blue-100 text-blue-800',
+  DISBURSED: 'bg-green-100 text-green-800',
+  REJECTED: 'bg-red-100 text-red-800',
+  CANCELLED: 'bg-gray-100 text-gray-800',
+  DOCS_PENDING: 'bg-purple-100 text-purple-800',
+}
+
+function calcFirstEmi(disbursalDate: string | null, status: string): string {
+  if (status !== 'DISBURSED' || !disbursalDate) return '—'
+  const d = new Date(disbursalDate)
+  d.setDate(d.getDate() + 45)
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
 
 export default function ClinicDashboard() {
   const { user, status } = useTabSession()
   const router = useRouter()
-  const [tab, setTab] = useState<Tab>('overall')
-  const [data, setData] = useState<DashboardData | null>(null)
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
 
-  const now = new Date()
-  const [reportMonth, setReportMonth] = useState(now.getMonth() + 1)
-  const [reportYear, setReportYear] = useState(now.getFullYear())
-  const [downloading, setDownloading] = useState(false)
-
-  // Enforce mustChangePassword redirect client-side
   useEffect(() => {
     if (status === 'authenticated' && user?.mustChangePassword) {
       router.replace('/dashboard/clinic/change-password')
@@ -51,36 +58,16 @@ export default function ClinicDashboard() {
   }, [status, user, router])
 
   useEffect(() => {
-    setLoading(true)
-    fetch(`/api/clinic/dashboard?tab=${tab}`)
-      .then(r => r.json())
-      .then(d => { setData(d.data); setLoading(false) })
-      .catch(() => setLoading(false))
-  }, [tab])
-
-  async function downloadReport(format: 'xlsx' | 'pdf') {
-    setDownloading(true)
-    try {
-      const res = await fetch(`/api/clinic/report?month=${reportMonth}&year=${reportYear}&format=${format}`)
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        toast.error(err.error ?? 'Failed to generate report')
-        return
-      }
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `report-${MONTHS[reportMonth - 1]}-${reportYear}.${format}`
-      a.click()
-      URL.revokeObjectURL(url)
-      toast.success(`${format.toUpperCase()} report downloaded`)
-    } catch {
-      toast.error('Something went wrong')
-    } finally {
-      setDownloading(false)
-    }
-  }
+    Promise.all([
+      fetch('/api/clinic/dashboard').then(r => r.json()),
+      fetch('/api/clinic/leads?pageSize=10').then(r => r.json()),
+    ])
+      .then(([statsRes, leadsRes]) => {
+        setStats(statsRes.data ?? null)
+        setLeads(leadsRes.data ?? [])
+      })
+      .finally(() => setLoading(false))
+  }, [])
 
   if (status === 'loading') {
     return <div className="flex h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-trustiva-lime border-t-transparent" /></div>
@@ -89,111 +76,87 @@ export default function ClinicDashboard() {
   return (
     <div className="flex flex-col min-h-full">
       <div className="px-6 py-4 border-b border-gray-200 bg-white">
-        <h1 className="text-lg font-bold text-gray-900">Clinic Dashboard</h1>
+        <h1 className="text-lg font-bold text-gray-900">Dashboard</h1>
         <p className="text-sm text-gray-500">{user?.name}</p>
       </div>
 
       <div className="flex-1 p-6 space-y-6">
-        {/* Tabs */}
-        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
-          {TABS.map(t => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setTab(t.key)}
-              className={`px-5 py-2 rounded-lg text-xs font-semibold transition-all ${tab === t.key ? 'bg-white text-trustiva-navy shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
         {loading ? (
           <div className="flex justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-4 border-trustiva-lime border-t-transparent" /></div>
-        ) : data ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            <MetricCard label="Total Leads" value={data.totalLeads} color="blue" />
-            <MetricCard label="Approved Leads" value={data.approved} color="green" />
-            <MetricCard label="Disbursed Leads" value={data.disbursed} color="emerald" />
-            <MetricCard label="Rejected Leads" value={data.rejected} color="red" />
-            <MetricCard label="Pending Leads" value={data.pending} color="yellow" />
-            <MetricCard label="Total Disbursals" value={formatLakhs(data.totalDisbursalAmount)} color="purple" isRupee />
-            <MetricCard label="Approval Rate" value={`${data.approvalRate}%`} color="indigo" />
-            <MetricCard label="Avg CIBIL Score" value={data.avgCibil ?? '—'} color="cyan" />
-            <MetricCard label="Avg FOIR" value={data.avgFoir != null ? `${data.avgFoir}%` : '—'} color="orange" />
-          </div>
+        ) : stats ? (
+          <>
+            {/* Row 1: Volume */}
+            <div className="grid grid-cols-3 gap-4">
+              <StatCard label="Total Leads" value={stats.totalLeads} color="blue" />
+              <StatCard label="Today" value={stats.todayLeads} color="indigo" />
+              <StatCard label="This Month" value={stats.monthLeads} color="violet" />
+            </div>
+
+            {/* Row 2: Status */}
+            <div className="grid grid-cols-3 gap-4">
+              <StatCard label="Approved" value={stats.approved} color="green" />
+              <StatCard label="Disbursed" value={stats.disbursed} color="emerald" />
+              <StatCard label="Rejected" value={stats.rejected} color="red" />
+            </div>
+
+            {/* Row 3: Pending Disbursal alert */}
+            {stats.pendingDisbursal > 0 && (
+              <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-5 py-4">
+                <div className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0 animate-pulse" />
+                <p className="text-sm font-medium text-amber-800">
+                  <span className="font-bold">{stats.pendingDisbursal}</span> lead{stats.pendingDisbursal > 1 ? 's' : ''} approved but pending disbursal
+                </p>
+              </div>
+            )}
+          </>
         ) : (
           <p className="text-center text-gray-500 py-16">No data available</p>
         )}
 
-        {/* Download Monthly Report */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <h2 className="text-sm font-semibold text-gray-800">Download Monthly Report</h2>
+        {/* Recent Leads table */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-gray-800">Recent Leads</h2>
+            <Link href="/dashboard/clinic/leads" className="text-xs text-blue-600 hover:text-blue-800 font-medium">View all →</Link>
           </div>
-          <p className="text-xs text-gray-500 mb-4">
-            Excel report with 3 sheets — Summary, All Leads, and Disbursals for the selected month.
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-gray-600">Month</label>
-              <select
-                value={reportMonth}
-                onChange={e => setReportMonth(Number(e.target.value))}
-                className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-trustiva-navy"
-              >
-                {MONTHS.map((m, i) => (
-                  <option key={m} value={i + 1}>{m}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-gray-600">Year</label>
-              <select
-                value={reportYear}
-                onChange={e => setReportYear(Number(e.target.value))}
-                className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-trustiva-navy"
-              >
-                {[now.getFullYear() - 1, now.getFullYear()].map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => downloadReport('xlsx')}
-                disabled={downloading}
-                className="flex items-center gap-1.5 bg-[#07111f] text-[#bef264] font-semibold text-sm px-3 py-2 rounded-lg hover:bg-gray-800 transition disabled:opacity-60"
-              >
-                {downloading ? (
-                  <div className="w-4 h-4 animate-spin rounded-full border-2 border-trustiva-lime border-t-transparent" />
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                )}
-                Excel
-              </button>
-              <button
-                type="button"
-                onClick={() => downloadReport('pdf')}
-                disabled={downloading}
-                className="flex items-center gap-1.5 bg-red-600 text-white font-semibold text-sm px-3 py-2 rounded-lg hover:bg-red-700 transition disabled:opacity-60"
-              >
-                {downloading ? (
-                  <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                )}
-                PDF
-              </button>
-            </div>
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            {loading ? (
+              <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-4 border-trustiva-lime border-t-transparent" /></div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-100 text-xs">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      {['Lead ID', 'Patient Name', 'Phone', 'Loan Amount', 'Treatment', 'Status', 'Lender', 'Applied On', 'First EMI Date'].map(h => (
+                        <th key={h} className="px-3 py-3 text-left font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {leads.map(l => (
+                      <tr key={l.id} className="hover:bg-gray-50">
+                        <td className="px-3 py-2.5 font-mono text-gray-500 whitespace-nowrap">{l.id.slice(-8).toUpperCase()}</td>
+                        <td className="px-3 py-2.5 font-medium text-gray-800 whitespace-nowrap">
+                          <Link href={`/dashboard/clinic/leads/${l.id}`} className="hover:text-blue-600">{l.applicantName}</Link>
+                        </td>
+                        <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap">{l.phone ?? '—'}</td>
+                        <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap">{formatLakhs(l.amount)}</td>
+                        <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap max-w-[120px] truncate">{l.treatmentName ?? '—'}</td>
+                        <td className="px-3 py-2.5 whitespace-nowrap">
+                          <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', STATUS_BADGE[l.status] ?? 'bg-gray-100 text-gray-700')}>
+                            {l.status}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap">{l.lender?.name ?? '—'}</td>
+                        <td className="px-3 py-2.5 text-gray-500 whitespace-nowrap">{formatDate(l.applicationDate)}</td>
+                        <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap">{calcFirstEmi(l.disbursalDate, l.status)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {leads.length === 0 && <p className="text-center text-sm text-gray-400 py-8">No leads yet</p>}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -201,22 +164,17 @@ export default function ClinicDashboard() {
   )
 }
 
-const COLOR_MAP: Record<string, string> = {
-  blue: 'bg-blue-50 text-blue-700 border-blue-100',
-  green: 'bg-green-50 text-green-700 border-green-100',
-  emerald: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-  red: 'bg-red-50 text-red-700 border-red-100',
-  yellow: 'bg-yellow-50 text-yellow-700 border-yellow-100',
-  purple: 'bg-purple-50 text-purple-700 border-purple-100',
-  indigo: 'bg-indigo-50 text-indigo-700 border-indigo-100',
-  cyan: 'bg-cyan-50 text-cyan-700 border-cyan-100',
-  orange: 'bg-orange-50 text-orange-700 border-orange-100',
-}
-
-function MetricCard({ label, value, color, isRupee }: { label: string; value: string | number; color: string; isRupee?: boolean }) {
-  const cls = COLOR_MAP[color] ?? 'bg-gray-50 text-gray-700 border-gray-100'
+function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
+  const colorMap: Record<string, string> = {
+    blue: 'bg-blue-50 text-blue-700 border-blue-100',
+    indigo: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+    violet: 'bg-violet-50 text-violet-700 border-violet-100',
+    green: 'bg-green-50 text-green-700 border-green-100',
+    emerald: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    red: 'bg-red-50 text-red-700 border-red-100',
+  }
   return (
-    <div className={`rounded-xl border p-5 ${cls}`}>
+    <div className={`rounded-xl border p-5 ${colorMap[color] ?? 'bg-gray-50 text-gray-700 border-gray-100'}`}>
       <p className="text-xs font-medium opacity-70 mb-1">{label}</p>
       <p className="text-2xl font-bold">{value}</p>
     </div>

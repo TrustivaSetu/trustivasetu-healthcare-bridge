@@ -4,7 +4,7 @@ import { db } from '@/lib/db'
 import { hasPermission } from '@/lib/permissions'
 import * as XLSX from 'xlsx'
 import bcrypt from 'bcryptjs'
-import { sendEmail, portalAccessEmailHtml } from '@/lib/email'
+import { sendEmail, portalAccessEmailHtml, clinicCreatorEmailHtml, clinicManagerEmailHtml } from '@/lib/email'
 
 function generateClinicCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -73,6 +73,15 @@ export async function POST(req: NextRequest) {
     } = { success: [], failed: [], usersCreated: 0, emailsSent: 0 }
 
     const loginUrl = `${process.env.NEXTAUTH_URL ?? 'https://lms.trustivasetu.com'}/lms/login`
+
+    // Look up creator + manager once before processing rows
+    const creator = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { name: true, email: true, reportingManagerId: true },
+    })
+    const manager = creator?.reportingManagerId
+      ? await db.user.findUnique({ where: { id: creator.reportingManagerId }, select: { name: true, email: true } })
+      : null
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i]
@@ -172,23 +181,25 @@ export async function POST(req: NextRequest) {
 
         if (portalUserEmail) {
           results.usersCreated++
-          // Send welcome email (don't fail the row if email fails)
           if (plainPassword) {
-            try {
-              await sendEmail({
+            await Promise.allSettled([
+              sendEmail({
                 to: email,
                 subject: `Your Trustiva Setu Portal Access — ${name}`,
-                html: portalAccessEmailHtml({
-                  clinicName: name,
-                  email: portalUserEmail,
-                  password: plainPassword,
-                  loginUrl,
-                }),
-              })
-              results.emailsSent++
-            } catch (emailErr) {
-              console.error(`[bulk-upload] Email failed for ${name}:`, emailErr)
-            }
+                html: portalAccessEmailHtml({ clinicName: name, email: portalUserEmail, password: plainPassword, loginUrl }),
+              }),
+              creator ? sendEmail({
+                to: creator.email,
+                subject: `Clinic Onboarded — ${name}`,
+                html: clinicCreatorEmailHtml({ clinicName: name, creatorName: creator.name, portalEmail: portalUserEmail, password: plainPassword, loginUrl }),
+              }) : Promise.resolve(null),
+              manager ? sendEmail({
+                to: manager.email,
+                subject: `New Clinic Onboarded — ${name}`,
+                html: clinicManagerEmailHtml({ clinicName: name, managerName: manager.name, creatorName: creator!.name, loginUrl }),
+              }) : Promise.resolve(null),
+            ])
+            results.emailsSent++
           }
         }
       } catch (e: unknown) {
