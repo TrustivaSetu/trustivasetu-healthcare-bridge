@@ -225,6 +225,36 @@ export default function LeadDetailPage() {
                     <dd className="font-medium">{lead.createdBy?.name ?? '—'}</dd>
                   </div>
                 </dl>
+                {(lead.metadata?.panNumber || lead.metadata?.employmentType || lead.metadata?.monthlyIncome) && (
+                  <div className="pt-3 border-t border-gray-100 space-y-2.5">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">KYC & Employment</p>
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                      {lead.metadata?.panNumber && (
+                        <div>
+                          <dt className="text-gray-400 text-xs">PAN No.</dt>
+                          <dd className="font-medium font-mono text-gray-800">
+                            {lead.metadata.panNumber}
+                            {lead.metadata.panVerified && (
+                              <span className="ml-1.5 text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-sans">✓ Verified</span>
+                            )}
+                          </dd>
+                        </div>
+                      )}
+                      {lead.metadata?.employmentType && (
+                        <div>
+                          <dt className="text-gray-400 text-xs">Employment</dt>
+                          <dd className="font-medium">{String(lead.metadata.employmentType)}</dd>
+                        </div>
+                      )}
+                      {lead.metadata?.monthlyIncome && (
+                        <div>
+                          <dt className="text-gray-400 text-xs">Monthly Income</dt>
+                          <dd className="font-medium">₹{Number(lead.metadata.monthlyIncome).toLocaleString('en-IN')}</dd>
+                        </div>
+                      )}
+                    </dl>
+                  </div>
+                )}
                 {lead.remarks && (
                   <div className="pt-3 border-t border-gray-100">
                     <p className="text-xs text-gray-400 mb-1">Remarks</p>

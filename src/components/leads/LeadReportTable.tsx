@@ -3,6 +3,15 @@
 import { formatDate, formatLakhs, cn, getStatusColor } from '@/lib/utils'
 import * as XLSX from 'xlsx'
 
+interface AddressEntry {
+  houseNo?: string
+  street?: string
+  landmark?: string
+  pincode?: string
+  city?: string
+  state?: string
+}
+
 interface LeadMeta {
   address?: string
   pincode?: string
@@ -16,6 +25,11 @@ interface LeadMeta {
   agreementSigned?: boolean | string
   nachDone?: boolean | string
   utrDetails?: string
+  currentAddress?: AddressEntry
+  permanentAddress?: AddressEntry
+  companyName?: string
+  empPincode?: string
+  empCity?: string
   [key: string]: unknown
 }
 
@@ -203,16 +217,26 @@ export function LeadReportTable({ leads, sortBy, sortOrder, onSort }: Props) {
 
 export function exportLeadReport(leads: ReportLead[]) {
   const rows = leads.map(lead => {
-    const meta = lead.metadata ?? {}
+    const meta = (lead.metadata ?? {}) as LeadMeta
+    const ca = meta.currentAddress ?? {}
+    const pa = meta.permanentAddress ?? {}
+
+    const addressStr = [ca.houseNo, ca.street, ca.landmark, ca.city, ca.state]
+      .filter(Boolean).join(', ')
+
+    const isSame = !!(ca.pincode && pa.pincode && ca.pincode === pa.pincode && ca.houseNo === pa.houseNo)
+    const permSameAs = ca.pincode ? (isSame ? 'Yes' : (pa.pincode ? 'No' : '')) : ''
+
     return {
+      // Existing 29 columns — order and names unchanged
       'Lead ID': lead.id.slice(-8).toUpperCase(),
       'Customer Name': lead.applicantName,
       'Contact No.': lead.phone ?? '',
       'Mail ID': lead.email ?? '',
-      'Address': String(meta.address ?? ''),
-      'PIN Code': String(meta.pincode ?? ''),
-      'Company Address': String(meta.companyAddress ?? ''),
-      'Company PIN': String(meta.officePincode ?? ''),
+      'Address': addressStr,
+      'PIN Code': ca.pincode ?? '',
+      'Company Address': meta.companyName ?? '',
+      'Company PIN': meta.empPincode ?? '',
       'Date Punched': formatDate(lead.applicationDate),
       'Time Punched': formatTime(lead.applicationDate),
       'Aadhar No.': String(meta.aadhaarNumber ?? ''),
@@ -234,11 +258,61 @@ export function exportLeadReport(leads: ReportLead[]) {
       'Clinic': lead.clinic.name,
       'Region': lead.clinic.region.name,
       'Lender': lead.lender?.name ?? '',
+      // New columns 30–44
+      'Current House No.': ca.houseNo ?? '',
+      'Current Street': ca.street ?? '',
+      'Current Landmark': ca.landmark ?? '',
+      'Current PIN Code': ca.pincode ?? '',
+      'Current City': ca.city ?? '',
+      'Current State': ca.state ?? '',
+      'Perm. Same as Current': permSameAs,
+      'Perm. House No.': isSame ? '' : (pa.houseNo ?? ''),
+      'Perm. Street': isSame ? '' : (pa.street ?? ''),
+      'Perm. PIN Code': isSame ? '' : (pa.pincode ?? ''),
+      'Perm. City': isSame ? '' : (pa.city ?? ''),
+      'Perm. State': isSame ? '' : (pa.state ?? ''),
+      'Employment PIN': meta.empPincode ?? '',
+      'Employment City': meta.empCity ?? '',
+      'Company Name': meta.companyName ?? '',
     }
   })
 
   const ws = XLSX.utils.json_to_sheet(rows)
+  const headers = Object.keys(rows[0] ?? {})
+  const colCount = headers.length
+  const rowCount = rows.length
+
+  // Header row: bold, green background, white text
+  for (let c = 0; c < colCount; c++) {
+    const addr = XLSX.utils.encode_cell({ r: 0, c })
+    if (!ws[addr]) continue
+    ws[addr].s = {
+      font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 10 },
+      fill: { patternType: 'solid', fgColor: { rgb: '16A34A' } },
+      alignment: { horizontal: 'center', vertical: 'center' },
+    }
+  }
+
+  // Data rows: alternating white / light gray
+  for (let r = 1; r <= rowCount; r++) {
+    const bgRgb = r % 2 === 0 ? 'F9FAFB' : 'FFFFFF'
+    for (let c = 0; c < colCount; c++) {
+      const addr = XLSX.utils.encode_cell({ r, c })
+      if (!ws[addr]) ws[addr] = { t: 's', v: '' }
+      ws[addr].s = { fill: { patternType: 'solid', fgColor: { rgb: bgRgb } } }
+    }
+  }
+
+  // Auto-fit column widths
+  ws['!cols'] = headers.map(h => {
+    const maxLen = rows.reduce((mx, row) => {
+      const v = row[h as keyof typeof row]
+      return Math.max(mx, v != null ? String(v).length : 0)
+    }, h.length)
+    return { wch: Math.min(Math.max(maxLen + 2, 10), 45) }
+  })
+
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Lead Report')
-  XLSX.writeFile(wb, `lead-report-${new Date().toISOString().slice(0, 10)}.xlsx`)
+  XLSX.writeFile(wb, `lead-report-${new Date().toISOString().slice(0, 10)}.xlsx`, { cellStyles: true })
 }
