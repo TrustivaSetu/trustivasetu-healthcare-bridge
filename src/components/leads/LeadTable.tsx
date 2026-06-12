@@ -44,7 +44,7 @@ export function LeadTable({ leads, onEdit, onStatusUpdate, onDelete, canEdit, ca
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              {['Applicant', 'Clinic', 'Region', 'Lender', 'Applied Amt', 'Status', 'Approved Amt', 'Disbursed Amt', 'Applied On', 'Disbursal Date', 'Actions'].map(h => (
+              {['Lead ID', 'Applicant', 'Clinic', 'Region', 'Lender', 'Applied Amt', 'Status', 'Approved Amt', 'Disbursed Amt', 'Applied On', 'Disbursal Date', 'Actions'].map(h => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -52,6 +52,11 @@ export function LeadTable({ leads, onEdit, onStatusUpdate, onDelete, canEdit, ca
           <tbody className="bg-white divide-y divide-gray-100">
             {leads.map(lead => (
               <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-3">
+                  <span className="text-xs font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                    {lead.id.slice(-8).toUpperCase()}
+                  </span>
+                </td>
                 <td className="px-4 py-3">
                   <Link href={`/leads/${lead.id}`} className="text-sm font-medium text-brand-700 hover:text-brand-900 hover:underline">
                     {lead.applicantName}
@@ -74,11 +79,11 @@ export function LeadTable({ leads, onEdit, onStatusUpdate, onDelete, canEdit, ca
                 <td className="px-4 py-3">
                   {canEdit && (
                     <div className="flex items-center gap-2 flex-wrap">
-                      {onEdit && (
+                      {onEdit && !['DISBURSED', 'REJECTED', 'CANCELLED'].includes(lead.status) && (
                         <button onClick={() => onEdit(lead)}
                           className="text-xs text-brand-600 hover:text-brand-800 font-medium">Edit</button>
                       )}
-                      {onStatusUpdate && lead.status === 'PENDING' && (
+                      {onStatusUpdate && (lead.status === 'PENDING' || lead.status === 'DOCS_PENDING') && (
                         <>
                           <button onClick={() => onStatusUpdate(lead, 'APPROVED')}
                             className="text-xs text-blue-600 hover:text-blue-800 font-medium">Approve</button>

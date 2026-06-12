@@ -23,9 +23,14 @@ export async function GET(req: NextRequest) {
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
     const status = searchParams.get('status')
+    const lenderId = searchParams.get('lenderId')
+    const clinicIdFilter = searchParams.get('clinicId')
+    const search = searchParams.get('search')
 
-    const where: Record<string, unknown> = { clinicId: { in: clinicIdList } }
+    const where: Record<string, unknown> = { clinicId: clinicIdFilter ? clinicIdFilter : { in: clinicIdList } }
     if (status) where.status = status
+    if (lenderId) where.lenderId = lenderId
+    if (search) where.applicantName = { contains: search, mode: 'insensitive' }
     if (dateFrom || dateTo) {
       where.applicationDate = {}
       if (dateFrom) (where.applicationDate as Record<string, unknown>).gte = new Date(dateFrom)
@@ -35,7 +40,7 @@ export async function GET(req: NextRequest) {
     const leads = await db.lead.findMany({
       where,
       include: {
-        clinic: { select: { name: true, region: { select: { name: true } } } },
+        clinic: { select: { name: true, region: { select: { name: true } }, assignedRM: { select: { name: true } } } },
         lender: { select: { name: true } },
         createdBy: { select: { name: true } },
       },
@@ -43,15 +48,18 @@ export async function GET(req: NextRequest) {
     })
 
     const rows = leads.map(l => ({
-      'External ID': l.externalId ?? '',
+      'Lead ID': l.id.slice(-8).toUpperCase(),
       'Applicant Name': l.applicantName,
       'Phone': l.phone ?? '',
       'Email': l.email ?? '',
       'Clinic': l.clinic.name,
       'Region': l.clinic.region.name,
+      'RM': l.clinic.assignedRM?.name ?? '',
       'Lender': l.lender?.name ?? '',
       'Applied Amount (₹L)': l.amount,
       'Status': l.status,
+      'Agreement Signed': l.agreementSigned ? 'Yes' : 'No',
+      'NACH Done': l.nachStatus === 'DONE' ? 'Yes' : 'No',
       'Approved Amount (₹L)': l.approvedAmount ?? '',
       'Disbursed Amount (₹L)': l.disbursedAmount ?? '',
       'Application Date': format(new Date(l.applicationDate), 'dd/MM/yyyy'),

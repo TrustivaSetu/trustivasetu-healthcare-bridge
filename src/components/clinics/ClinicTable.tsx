@@ -82,18 +82,18 @@ export function ClinicTable({ clinics, onEdit, onDelete, canDelete, onGenerateCr
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex flex-col gap-1.5 min-w-[110px]">
+                  <div className="flex flex-col gap-1.5 min-w-[130px]">
                     {clinic.portalEmailStatus === 'SENT' ? (
                       <span className="inline-flex items-center gap-1 text-xs text-green-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />Sent
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />Active — Email Sent
                       </span>
-                    ) : clinic.portalEmailStatus === 'FAILED' ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-red-600">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />Failed
+                    ) : clinic.portalEmailStatus === 'FAILED' && clinic.portalAccessSent ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-amber-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />Active — Email Failed
                       </span>
-                    ) : clinic.portalEmailStatus === 'NOT_SENT' ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-yellow-600">
-                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />Not Sent
+                    ) : clinic.portalEmailStatus === 'NOT_SENT' && clinic.portalAccessSent ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-amber-600">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />Active — No Email
                       </span>
                     ) : clinic.portalAccessSent ? (
                       <span className="inline-flex items-center gap-1 text-xs text-green-700">
@@ -101,7 +101,7 @@ export function ClinicTable({ clinics, onEdit, onDelete, canDelete, onGenerateCr
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-xs text-gray-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />None
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />Not Set Up
                       </span>
                     )}
                     {onGenerateCredentials && (

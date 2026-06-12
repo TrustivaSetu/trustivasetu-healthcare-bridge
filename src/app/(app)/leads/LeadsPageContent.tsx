@@ -10,7 +10,23 @@ import { LeadReportTable, exportLeadReport, type ReportLead } from '@/components
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
-const STATUSES = ['', 'PENDING', 'APPROVED', 'DISBURSED', 'REJECTED', 'CANCELLED']
+const STATUSES = [
+  '', 'PENDING', 'DOCS_PENDING', 'KYC_PENDING', 'KYC_APPROVED',
+  'MARKUP_PENDING', 'PROCESSING', 'APPROVED', 'DISBURSED', 'REJECTED', 'CANCELLED',
+]
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Pending',
+  DOCS_PENDING: 'Docs Pending',
+  KYC_PENDING: 'KYC Pending',
+  KYC_APPROVED: 'KYC Approved',
+  MARKUP_PENDING: 'Markup Pending',
+  PROCESSING: 'Processing',
+  APPROVED: 'Approved',
+  DISBURSED: 'Disbursed',
+  REJECTED: 'Rejected',
+  CANCELLED: 'Cancelled',
+}
 
 interface StatusModalState {
   lead: { id: string; applicantName: string; amount: number; approvedAmount: number | null }
@@ -38,8 +54,13 @@ export function LeadsPageContent() {
   const [deleting, setDeleting] = useState(false)
   const [lenderId, setLenderId] = useState('')
   const [regionId, setRegionId] = useState('')
+  const [clinicId, setClinicId] = useState('')
+  const [rmId, setRmId] = useState('')
+  const [leadIdSearch, setLeadIdSearch] = useState('')
   const [lenders, setLenders] = useState<{ id: string; name: string }[]>([])
   const [regions, setRegions] = useState<{ id: string; name: string }[]>([])
+  const [clinics, setClinics] = useState<{ id: string; name: string }[]>([])
+  const [rms, setRms] = useState<{ id: string; name: string }[]>([])
 
   const role = session?.role ?? ''
   const canCreate = ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'].includes(role)
@@ -51,11 +72,14 @@ export function LeadsPageContent() {
     try {
       const p = new URLSearchParams({ page: String(page), pageSize: '20' })
       if (search) p.set('search', search)
+      if (leadIdSearch) p.set('leadId', leadIdSearch)
       if (status) p.set('status', status)
       if (dateFrom) p.set('dateFrom', dateFrom)
       if (dateTo) p.set('dateTo', dateTo)
       if (lenderId) p.set('lenderId', lenderId)
       if (regionId) p.set('regionId', regionId)
+      if (clinicId) p.set('clinicId', clinicId)
+      if (rmId) p.set('rmId', rmId)
       const res = await fetch(`/api/leads?${p}`)
       if (!res.ok) throw new Error('Failed to load leads')
       const data = await res.json()
@@ -66,13 +90,21 @@ export function LeadsPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [page, search, status, dateFrom, dateTo, lenderId, regionId])
+  }, [page, search, leadIdSearch, status, dateFrom, dateTo, lenderId, regionId, clinicId, rmId])
 
   useEffect(() => { fetchLeads() }, [fetchLeads])
 
   useEffect(() => {
     fetch('/api/lenders').then(r => r.json()).then(d => setLenders(d.data ?? []))
     fetch('/api/regions').then(r => r.json()).then(d => setRegions(d.data ?? []))
+    fetch('/api/clinics?minimal=1&pageSize=200').then(r => r.json()).then(d => setClinics(d.data ?? []))
+    Promise.all([
+      fetch('/api/users?role=TEAM_MEMBER&minimal=1').then(r => r.json()),
+      fetch('/api/users?role=REGIONAL_MANAGER&minimal=1').then(r => r.json()),
+    ]).then(([tm, rm]) => {
+      const combined = [...(tm.data ?? []), ...(rm.data ?? [])].sort((a, b) => a.name.localeCompare(b.name))
+      setRms(combined)
+    })
   }, [])
 
   function handleStatusUpdate(lead: { id: string; applicantName: string; amount: number; approvedAmount: number | null }, newStatus: string) {
@@ -125,6 +157,10 @@ export function LeadsPageContent() {
     if (status) p.set('status', status)
     if (dateFrom) p.set('dateFrom', dateFrom)
     if (dateTo) p.set('dateTo', dateTo)
+    if (lenderId) p.set('lenderId', lenderId)
+    if (regionId) p.set('regionId', regionId)
+    if (clinicId) p.set('clinicId', clinicId)
+    if (search) p.set('search', search)
     const res = await fetch(`/api/export?${p}`)
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
@@ -189,16 +225,22 @@ export function LeadsPageContent() {
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-600">Search</label>
-              <input type="text" placeholder="Applicant name..." value={search}
+              <label className="text-xs font-medium text-gray-600">Lead ID</label>
+              <input type="text" placeholder="e.g. ABC12345" value={leadIdSearch}
+                onChange={e => { setLeadIdSearch(e.target.value.toUpperCase()); setPage(1) }}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 w-28 font-mono" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-600">Patient Name</label>
+              <input type="text" placeholder="Patient name..." value={search}
                 onChange={e => { setSearch(e.target.value); setPage(1) }}
-                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 w-48" />
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 w-40" />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-gray-600">Status</label>
               <select value={status} onChange={e => { setStatus(e.target.value); setPage(1) }}
                 className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 bg-white">
-                {STATUSES.map(s => <option key={s} value={s}>{s || 'All Statuses'}</option>)}
+                {STATUSES.map(s => <option key={s} value={s}>{s ? (STATUS_LABELS[s] ?? s) : 'All Statuses'}</option>)}
               </select>
             </div>
             <div className="flex flex-col gap-1">
@@ -211,6 +253,16 @@ export function LeadsPageContent() {
               <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
                 className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400" />
             </div>
+            {clinics.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-600">Clinic</label>
+                <select value={clinicId} onChange={e => { setClinicId(e.target.value); setPage(1) }}
+                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 bg-white w-40">
+                  <option value="">All Clinics</option>
+                  {clinics.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+            )}
             {regions.length > 0 && (
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-gray-600">Region</label>
@@ -218,6 +270,16 @@ export function LeadsPageContent() {
                   className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 bg-white">
                   <option value="">All Regions</option>
                   {regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
+              </div>
+            )}
+            {rms.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-600">RM</label>
+                <select value={rmId} onChange={e => { setRmId(e.target.value); setPage(1) }}
+                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 bg-white w-36">
+                  <option value="">All RMs</option>
+                  {rms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
               </div>
             )}

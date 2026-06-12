@@ -44,6 +44,8 @@ model User {
   tabSessions          TabSession[]
   leaveRequests        LeaveRequest[]
   approvedLeaveRequests LeaveRequest[]       @relation("LeaveApprovals")
+  createdTasks         LeadTask[]            @relation("TaskCreatedBy")
+  uploadedAgreements   LeadAgreement[]       @relation("AgreementUploadedBy")
 }
 
 model TabSession {
@@ -165,6 +167,8 @@ model Lead {
   clinic          Clinic     @relation(fields: [clinicId], references: [id])
   createdBy       User?      @relation("LeadCreatedBy", fields: [createdById], references: [id])
   lender          Lender?    @relation(fields: [lenderId], references: [id])
+  tasks           LeadTask[]
+  agreements      LeadAgreement[]
 
   @@index([clinicId])
   @@index([lenderId])
@@ -256,11 +260,22 @@ enum UserRole {
 
 enum LeadStatus {
   PENDING
+  DOCS_PENDING
+  KYC_PENDING
+  KYC_APPROVED
+  MARKUP_PENDING
+  PROCESSING
   APPROVED
   REJECTED
   DISBURSED
   CANCELLED
-  DOCS_PENDING
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  PROCESSED
 }
 
 enum NotificationType {
@@ -643,4 +658,38 @@ model RecycleBin {
 
   @@index([entityType])
   @@index([deletedAt])
+}
+
+model LeadTask {
+  id          String     @id @default(cuid())
+  leadId      String
+  lead        Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      TaskStatus @default(PENDING)
+  dueDate     DateTime?
+  createdById String?
+  createdBy   User?      @relation("TaskCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([leadId])
+  @@index([status])
+}
+
+model LeadAgreement {
+  id           String   @id @default(cuid())
+  leadId       String
+  lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  version      Int      @default(1)
+  agreementUrl String
+  fileName     String?
+  uploadedById String?
+  uploadedBy   User?    @relation("AgreementUploadedBy", fields: [uploadedById], references: [id])
+  isActive     Boolean  @default(true)
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  @@index([leadId])
+  @@index([isActive])
 }

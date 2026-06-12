@@ -5,10 +5,11 @@ import toast from 'react-hot-toast'
 import { ClinicSchemeManager } from '@/components/clinics/ClinicSchemeManager'
 
 interface Region { id: string; name: string }
-interface RM { id: string; name: string }
+interface RM { id: string; name: string; role?: string }
 
 interface ClinicFormData {
   name: string
+  brandName: string
   address: string
   accountNumber: string
   contactPerson: string
@@ -29,7 +30,6 @@ interface ClinicFormData {
   alternatePhone: string
   agreementUrl: string
   // Extended fields
-  ownerAadharNumber: string
   contactPersonEmail: string
   targetLeadsFTD: string
   targetDisbursalsFTD: string
@@ -76,6 +76,7 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
 
   const [form, setForm] = useState<ClinicFormData>({
     name: initial?.name ?? '',
+    brandName: (meta.brandName as string) ?? '',
     address: initial?.address ?? '',
     accountNumber: initial?.accountNumber ?? '',
     contactPerson: initial?.contactPerson ?? '',
@@ -95,7 +96,6 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
     contactPersonDesignation: meta.contactPersonDesignation ?? '',
     alternatePhone: meta.alternatePhone ?? '',
     agreementUrl: meta.agreementUrl ?? '',
-    ownerAadharNumber: meta.ownerAadharNumber ?? '',
     contactPersonEmail: meta.contactPersonEmail ?? '',
     targetLeadsFTD: meta.targetLeadsFTD ?? '',
     targetDisbursalsFTD: meta.targetDisbursalsFTD ?? '',
@@ -117,7 +117,12 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
   useEffect(() => {
     Promise.all([
       fetch('/api/regions').then(r => r.json()),
-      fetch('/api/users?role=TEAM_MEMBER&minimal=1').then(r => r.json()),
+      Promise.all([
+        fetch('/api/users?role=TEAM_MEMBER&minimal=1').then(r => r.json()),
+        fetch('/api/users?role=REGIONAL_MANAGER&minimal=1').then(r => r.json()),
+      ]).then(([tm, rm]) => ({
+        data: [...(tm.data ?? []), ...(rm.data ?? [])].sort((a: RM, b: RM) => a.name.localeCompare(b.name)),
+      })),
     ]).then(([r, u]) => {
       setRegions(r.data ?? [])
       setRms(u.data ?? [])
@@ -246,6 +251,7 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
         assignedRMId: form.assignedRMId || undefined,
         hospitalType: form.hospitalType || undefined,
         metadata: {
+          brandName: form.brandName,
           gstNumber: form.gstNumber,
           panNumber: form.panNumber,
           ifscCode: form.ifscCode,
@@ -256,7 +262,6 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
           contactPersonDesignation: form.contactPersonDesignation,
           alternatePhone: form.alternatePhone,
           agreementUrl: form.agreementUrl,
-          ownerAadharNumber: form.ownerAadharNumber,
           contactPersonEmail: form.contactPersonEmail,
           targetLeadsFTD: form.targetLeadsFTD,
           targetDisbursalsFTD: form.targetDisbursalsFTD,
@@ -397,8 +402,11 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
       {tab === 'basic' && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
+            <div>
               <Field label="Clinic / Hospital Name *" value={form.name} onChange={v => update('name', v)} required />
+            </div>
+            <div>
+              <Field label="Brand Name" value={form.brandName} onChange={v => update('brandName', v)} />
             </div>
 
             <div>
@@ -555,10 +563,10 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
               onChange={v => update('panNumber', v.toUpperCase())} />
             <Field label="Udyam / MSME Number" value={form.udyamNumber}
               onChange={v => update('udyamNumber', v.toUpperCase())} />
-            <Field label="Owner's Aadhar Number" value={form.ownerAadharNumber}
-              onChange={v => update('ownerAadharNumber', v)} />
-            <Field label="Signing Authority" value={form.signingAuthority}
-              onChange={v => update('signingAuthority', v)} />
+            <div className="col-span-2">
+              <Field label="Signing Authority" value={form.signingAuthority}
+                onChange={v => update('signingAuthority', v)} />
+            </div>
           </div>
 
           {/* Auto-fill result */}

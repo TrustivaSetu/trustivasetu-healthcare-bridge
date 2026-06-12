@@ -185,7 +185,7 @@ export async function GET(req: NextRequest) {
       const rows = leads.map(l => {
         const meta = (l.metadata ?? {}) as Record<string, unknown>
         return {
-          'Lead ID': fmt(l.id),
+          'Lead ID': l.id.slice(-8).toUpperCase(),
           'Patient Name': fmt(l.applicantName),
           'Phone': fmt(l.phone),
           'Email': fmt(l.email),
@@ -193,15 +193,23 @@ export async function GET(req: NextRequest) {
           'Clinic Code': fmt(l.clinic?.externalId),
           'Region': fmt(l.clinic?.region?.name),
           'RM Name': fmt(l.clinic?.assignedRM?.name),
-          'Treatment Category': fmt(meta.treatmentCategory),
+          'Treatment Category': fmt(meta.treatmentCategory ?? l.treatmentCategory),
           'Treatment Name': fmt(l.treatmentName),
           'Employment Type': fmt(meta.employmentType),
           'Monthly Income': fmt(meta.monthlyIncome),
+          'PAN': fmt(meta.panNumber),
           'Pincode': fmt(meta.pincode),
           'Loan Amount': l.amount,
           'Approved Amount': fmt(l.approvedAmount),
           'Disbursed Amount': fmt(l.disbursedAmount),
-          'Status': fmt(l.status),
+          'Status': ({
+            PENDING: 'Pending', DOCS_PENDING: 'Docs Pending', KYC_PENDING: 'KYC Pending',
+            KYC_APPROVED: 'KYC Approved', MARKUP_PENDING: 'Markup Pending', PROCESSING: 'Processing',
+            APPROVED: 'Approved', DISBURSED: 'Disbursed', REJECTED: 'Rejected', CANCELLED: 'Cancelled',
+          }[l.status] ?? l.status),
+          'Agreement Signed': l.agreementSigned ? 'Yes' : 'No',
+          'NACH Done': l.nachStatus === 'DONE' ? 'Yes' : 'No',
+          'UTR Number': fmt(l.utrNumber),
           'Lender': fmt(l.lender?.name),
           'Scheme Type': fmt(meta.schemeType),
           'Tenure': fmt(meta.tenure),
@@ -209,12 +217,10 @@ export async function GET(req: NextRequest) {
           'Processing Fee %': fmt(meta.processingFeePct),
           'Processing Fee Amt': fmt(meta.processingFeeAmount),
           'Downpayment': fmt(meta.downPayment),
-          'PAN': fmt(meta.panNumber),
-          'PAN Verified': fmt(meta.panVerified),
-          'Aadhaar Verified': fmt(meta.aadhaarVerified),
           'Application Date': fmt(l.applicationDate),
           'Approval Date': fmt(l.approvalDate),
           'Disbursal Date': fmt(l.disbursalDate),
+          'Rejection Reason': fmt(l.rejectionReason ?? (l.status === 'REJECTED' ? l.remarks : null)),
           'Remarks': fmt(l.remarks),
           'Created By': fmt(l.createdBy?.name),
         }
@@ -242,7 +248,7 @@ export async function GET(req: NextRequest) {
       const rows = leads.map(l => {
         const meta = (l.metadata ?? {}) as Record<string, unknown>
         return {
-          'Lead ID': fmt(l.id),
+          'Lead ID': l.id.slice(-8).toUpperCase(),
           'Patient Name': fmt(l.applicantName),
           'Phone': fmt(l.phone),
           'Clinic': fmt(l.clinic?.name),

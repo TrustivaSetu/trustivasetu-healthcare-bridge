@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { autoAssignEnquiry } from '@/lib/enquiry-auto-assign'
+import { sendEmail, enquiryNotificationHtml } from '@/lib/email'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -83,6 +84,33 @@ export async function POST(req: NextRequest) {
         status: 'NEW',
       },
     })
+
+    // Fire-and-forget notifications to assigned RM and manager
+    const lmsUrl = process.env.NEXTAUTH_URL ?? 'https://lms.trustivasetu.com'
+    const notifyIds = [enquiry.assignedRmId, enquiry.assignedManagerId].filter(Boolean) as string[]
+    if (notifyIds.length > 0) {
+      db.user.findMany({ where: { id: { in: notifyIds }, email: { not: undefined } }, select: { id: true, name: true, email: true } })
+        .then(recipients => {
+          recipients.forEach(r => {
+            if (!r.email) return
+            sendEmail({
+              to: r.email,
+              subject: `New Patient Enquiry Assigned — ${enquiry.applicantName ?? 'Unknown'}`,
+              html: enquiryNotificationHtml({
+                type: 'patient',
+                recipientName: r.name,
+                enquiryId: enquiry.id,
+                applicantOrClinic: enquiry.applicantName ?? '',
+                mobile: enquiry.mobile ?? '',
+                region: enquiry.assignedRegion ?? '',
+                source: enquiry.source,
+                lmsUrl,
+              }),
+            }).catch(err => console.error('[enquiry-notify]', err))
+          })
+        })
+        .catch(err => console.error('[enquiry-notify-fetch]', err))
+    }
 
     return NextResponse.json({ id: enquiry.id, status: enquiry.status }, { status: 201, headers: CORS_HEADERS })
   } catch (e) {

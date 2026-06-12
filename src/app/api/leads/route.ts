@@ -35,8 +35,10 @@ export async function GET(req: NextRequest) {
   const clinicId = searchParams.get('clinicId')
   const regionId = searchParams.get('regionId')
   const lenderId = searchParams.get('lenderId')
+  const rmId = searchParams.get('rmId')
   const status = searchParams.get('status')
   const search = searchParams.get('search')
+  const leadId = searchParams.get('leadId')
   const dateFrom = searchParams.get('dateFrom')
   const dateTo = searchParams.get('dateTo')
   const page = parseInt(searchParams.get('page') ?? '1')
@@ -47,18 +49,20 @@ export async function GET(req: NextRequest) {
   try {
     let clinicFilter = buildClinicFilter(role, regionIds, clinicIds)
     if (regionId) clinicFilter = { ...clinicFilter, regionId }
+    if (rmId) clinicFilter = { ...clinicFilter, assignedRMId: rmId }
     if (clinicId) clinicFilter = { id: clinicId }
 
     const where: Record<string, unknown> = {}
 
     // SUPER_ADMIN and ADMIN see all leads; only scope for restricted roles
-    const isUnrestricted = (role === 'SUPER_ADMIN' || role === 'ADMIN') && !regionId && !clinicId
+    const isUnrestricted = (role === 'SUPER_ADMIN' || role === 'ADMIN') && !regionId && !clinicId && !rmId
     if (!isUnrestricted) {
       const validClinics = await db.clinic.findMany({ where: { ...clinicFilter, isActive: true }, select: { id: true } })
       where.clinicId = { in: validClinics.map(c => c.id) }
     }
     if (lenderId) where.lenderId = lenderId
     if (status) where.status = status
+    if (leadId) where.id = { endsWith: leadId.toLowerCase() }
     if (dateFrom || dateTo) {
       where.applicationDate = {}
       if (dateFrom) (where.applicationDate as Record<string, unknown>).gte = new Date(dateFrom)

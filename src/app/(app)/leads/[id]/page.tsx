@@ -10,7 +10,7 @@ import { useTabSession } from '@/contexts/TabSessionContext'
 
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { ErrorAlert } from '@/components/ui/ErrorAlert'
-import { formatDate, formatLakhs, getStatusColor, cn } from '@/lib/utils'
+import { formatDate, formatLakhs, getStatusColor, getTaskStatusColor, cn } from '@/lib/utils'
 
 interface AddressData {
   houseNo?: string
@@ -67,20 +67,73 @@ interface LeadDetail {
   createdBy: { id: string; name: string } | null
 }
 
+interface LeadTask {
+  id: string
+  title: string
+  description: string | null
+  status: string
+  dueDate: string | null
+  createdBy: { id: string; name: string } | null
+  createdAt: string
+  updatedAt: string
+}
+
+interface LeadAgreement {
+  id: string
+  version: number
+  agreementUrl: string
+  fileName: string | null
+  isActive: boolean
+  notes: string | null
+  uploadedBy: { id: string; name: string } | null
+  createdAt: string
+}
+
 const STATUS_TRANSITIONS: Record<string, { label: string; next: string; color: string }[]> = {
   PENDING: [
+    { label: 'Collect Docs', next: 'DOCS_PENDING', color: 'bg-orange-500 hover:bg-orange-600 text-white' },
     { label: 'Approve', next: 'APPROVED', color: 'bg-blue-600 hover:bg-blue-700 text-white' },
     { label: 'Reject', next: 'REJECTED', color: 'bg-red-50 border border-red-300 text-red-700 hover:bg-red-100' },
     { label: 'Cancel', next: 'CANCELLED', color: 'bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200' },
+  ],
+  DOCS_PENDING: [
+    { label: 'Start KYC', next: 'KYC_PENDING', color: 'bg-purple-600 hover:bg-purple-700 text-white' },
+    { label: 'Approve', next: 'APPROVED', color: 'bg-blue-600 hover:bg-blue-700 text-white' },
+    { label: 'Reject', next: 'REJECTED', color: 'bg-red-50 border border-red-300 text-red-700 hover:bg-red-100' },
+  ],
+  KYC_PENDING: [
+    { label: 'KYC Approved', next: 'KYC_APPROVED', color: 'bg-violet-600 hover:bg-violet-700 text-white' },
+    { label: 'Reject', next: 'REJECTED', color: 'bg-red-50 border border-red-300 text-red-700 hover:bg-red-100' },
+  ],
+  KYC_APPROVED: [
+    { label: 'Send for Markup', next: 'MARKUP_PENDING', color: 'bg-sky-600 hover:bg-sky-700 text-white' },
+    { label: 'Reject', next: 'REJECTED', color: 'bg-red-50 border border-red-300 text-red-700 hover:bg-red-100' },
+  ],
+  MARKUP_PENDING: [
+    { label: 'Send to Lender', next: 'PROCESSING', color: 'bg-cyan-600 hover:bg-cyan-700 text-white' },
+    { label: 'Reject', next: 'REJECTED', color: 'bg-red-50 border border-red-300 text-red-700 hover:bg-red-100' },
+  ],
+  PROCESSING: [
+    { label: 'Approve', next: 'APPROVED', color: 'bg-blue-600 hover:bg-blue-700 text-white' },
+    { label: 'Reject', next: 'REJECTED', color: 'bg-red-50 border border-red-300 text-red-700 hover:bg-red-100' },
   ],
   APPROVED: [
     { label: 'Disburse', next: 'DISBURSED', color: 'bg-green-600 hover:bg-green-700 text-white' },
     { label: 'Reject', next: 'REJECTED', color: 'bg-red-50 border border-red-300 text-red-700 hover:bg-red-100' },
   ],
-  DOCS_PENDING: [
-    { label: 'Approve', next: 'APPROVED', color: 'bg-blue-600 hover:bg-blue-700 text-white' },
-    { label: 'Reject', next: 'REJECTED', color: 'bg-red-50 border border-red-300 text-red-700 hover:bg-red-100' },
-  ],
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Pending',
+  DOCS_PENDING: 'Docs Pending',
+  KYC_PENDING: 'KYC Pending',
+  KYC_APPROVED: 'KYC Approved',
+  MARKUP_PENDING: 'Markup Pending',
+  PROCESSING: 'Processing',
+  APPROVED: 'Approved',
+  DISBURSED: 'Disbursed',
+  REJECTED: 'Rejected',
+  CANCELLED: 'Cancelled',
 }
 
 const CAN_TAKE_ACTION = ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER']
@@ -93,7 +146,10 @@ export default function LeadDetailPage() {
   const [lead, setLead] = useState<LeadDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [modal, setModal] = useState<{ type: 'status'; next: string } | { type: 'ops' } | null>(null)
+  const [modal, setModal] = useState<{ type: 'status'; next: string } | { type: 'ops' } | { type: 'task' } | { type: 'agreement' } | null>(null)
+  const [tasks, setTasks] = useState<LeadTask[]>([])
+  const [agreements, setAgreements] = useState<LeadAgreement[]>([])
+  const [uploading, setUploading] = useState(false)
 
   const canAct = CAN_TAKE_ACTION.includes(session?.role ?? '')
   const actions = lead ? STATUS_TRANSITIONS[lead.status] ?? [] : []
@@ -112,7 +168,19 @@ export default function LeadDetailPage() {
     }
   }, [params.id])
 
+  const fetchTasks = useCallback(async () => {
+    const res = await fetch(`/api/leads/${params.id}/tasks`)
+    if (res.ok) { const j = await res.json(); setTasks(j.data ?? []) }
+  }, [params.id])
+
+  const fetchAgreements = useCallback(async () => {
+    const res = await fetch(`/api/leads/${params.id}/agreements`)
+    if (res.ok) { const j = await res.json(); setAgreements(j.data ?? []) }
+  }, [params.id])
+
   useEffect(() => { fetchLead() }, [fetchLead])
+  useEffect(() => { fetchTasks() }, [fetchTasks])
+  useEffect(() => { fetchAgreements() }, [fetchAgreements])
 
   async function patchLead(data: Record<string, unknown>) {
     const res = await fetch(`/api/leads/${params.id}`, {
@@ -146,7 +214,10 @@ export default function LeadDetailPage() {
             <div className="flex items-center justify-between flex-wrap gap-3 bg-white rounded-xl border border-gray-200 px-5 py-4">
               <div className="flex items-center gap-3">
                 <span className={cn('px-3 py-1 rounded-full text-sm font-semibold', getStatusColor(lead.status))}>
-                  {lead.status}
+                  {STATUS_LABELS[lead.status] ?? lead.status}
+                </span>
+                <span className="text-xs text-gray-400 font-mono bg-gray-100 px-2 py-0.5 rounded">
+                  {lead.id.slice(-8).toUpperCase()}
                 </span>
                 {lead.externalId && <span className="text-xs text-gray-400 font-mono">{lead.externalId}</span>}
               </div>
@@ -320,6 +391,148 @@ export default function LeadDetailPage() {
                 </div>
               </div>
             </div>
+
+            {/* Tasks Section */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Tasks</h2>
+                {canAct && (
+                  <button onClick={() => setModal({ type: 'task' })}
+                    className="text-xs text-brand-600 hover:text-brand-800 font-semibold flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Task
+                  </button>
+                )}
+              </div>
+              {tasks.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">No tasks yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {tasks.map(task => (
+                    <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 hover:border-gray-200 bg-gray-50">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium text-gray-800">{task.title}</span>
+                          <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', getTaskStatusColor(task.status))}>
+                            {task.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                        {task.description && <p className="text-xs text-gray-500 mt-0.5">{task.description}</p>}
+                        <p className="text-xs text-gray-400 mt-1">
+                          {task.createdBy?.name ?? 'System'} · {formatDate(task.createdAt)}
+                          {task.dueDate && ` · Due ${formatDate(task.dueDate)}`}
+                        </p>
+                      </div>
+                      {canAct && (
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <select
+                            value={task.status}
+                            onChange={async (e) => {
+                              const res = await fetch(`/api/leads/${params.id}/tasks`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ taskId: task.id, status: e.target.value }),
+                              })
+                              if (res.ok) { fetchTasks(); toast.success('Task updated') }
+                              else toast.error('Failed to update task')
+                            }}
+                            className="text-xs border border-gray-200 rounded px-1.5 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-brand-400">
+                            <option value="PENDING">Pending</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="DONE">Done</option>
+                            <option value="PROCESSED">Processed</option>
+                          </select>
+                          <button
+                            onClick={async () => {
+                              const res = await fetch(`/api/leads/${params.id}/tasks?taskId=${task.id}`, { method: 'DELETE' })
+                              if (res.ok) { fetchTasks(); toast.success('Task removed') }
+                              else toast.error('Failed to remove task')
+                            }}
+                            className="text-gray-300 hover:text-red-500 transition">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Agreements Section */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                  Agreements
+                  {agreements.length > 0 && (
+                    <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-normal">
+                      v{agreements[0]?.version ?? 1} current
+                    </span>
+                  )}
+                </h2>
+                {canAct && (
+                  <button onClick={() => setModal({ type: 'agreement' })}
+                    className="text-xs text-brand-600 hover:text-brand-800 font-semibold flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    {agreements.length === 0 ? 'Upload Agreement' : 'Re-Upload'}
+                  </button>
+                )}
+              </div>
+              {agreements.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">No agreement uploaded</p>
+              ) : (
+                <div className="space-y-2">
+                  {agreements.map(ag => (
+                    <div key={ag.id} className={cn(
+                      'flex items-center gap-3 p-3 rounded-lg border',
+                      ag.isActive ? 'border-green-200 bg-green-50' : 'border-gray-100 bg-gray-50 opacity-70'
+                    )}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-800">
+                            Version {ag.version}
+                          </span>
+                          {ag.isActive && (
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Active</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {ag.uploadedBy?.name ?? 'Unknown'} · {formatDate(ag.createdAt)}
+                          {ag.fileName && ` · ${ag.fileName}`}
+                        </p>
+                        {ag.notes && <p className="text-xs text-gray-400 mt-0.5 italic">{ag.notes}</p>}
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <a href={ag.agreementUrl} target="_blank" rel="noopener noreferrer"
+                          className="text-xs text-brand-600 hover:text-brand-800 font-medium">
+                          View
+                        </a>
+                        {canAct && (
+                          <button
+                            onClick={async () => {
+                              if (!confirm('Delete this agreement version?')) return
+                              const res = await fetch(`/api/leads/${params.id}/agreements?agreementId=${ag.id}`, { method: 'DELETE' })
+                              if (res.ok) { fetchAgreements(); fetchLead(); toast.success('Agreement version removed') }
+                              else toast.error('Failed to remove')
+                            }}
+                            className="text-gray-300 hover:text-red-500 transition">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
@@ -357,6 +570,26 @@ export default function LeadDetailPage() {
               toast.error(e instanceof Error ? e.message : 'Failed')
             }
           }}
+          onCancel={() => setModal(null)}
+        />
+      )}
+
+      {/* Add task modal */}
+      {modal?.type === 'task' && lead && (
+        <TaskModal
+          leadId={lead.id}
+          onConfirm={() => { setModal(null); fetchTasks() }}
+          onCancel={() => setModal(null)}
+        />
+      )}
+
+      {/* Upload agreement modal */}
+      {modal?.type === 'agreement' && lead && (
+        <AgreementUploadModal
+          leadId={lead.id}
+          uploading={uploading}
+          setUploading={setUploading}
+          onConfirm={() => { setModal(null); fetchAgreements(); fetchLead() }}
           onCancel={() => setModal(null)}
         />
       )}
@@ -577,6 +810,144 @@ function OpsModal({ lead, onConfirm, onCancel }: {
           <button onClick={submit} disabled={saving}
             className="flex-1 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-60">
             {saving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TaskModal({ leadId, onConfirm, onCancel }: {
+  leadId: string
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [dueDate, setDueDate] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function submit() {
+    if (!title.trim()) { toast.error('Title is required'); return }
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/leads/${leadId}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description: description || undefined, dueDate: dueDate || undefined }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error ?? 'Failed')
+      toast.success('Task added')
+      onConfirm()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+        <h3 className="text-base font-bold text-gray-900">Add Task</h3>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+          <input value={title} onChange={e => setTitle(e.target.value)}
+            placeholder="Task title..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2}
+            placeholder="Additional details..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+          <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+
+        <div className="flex gap-2 pt-1">
+          <button onClick={onCancel} className="flex-1 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+          <button onClick={submit} disabled={saving}
+            className="flex-1 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-60">
+            {saving ? 'Saving...' : 'Add Task'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AgreementUploadModal({ leadId, uploading, setUploading, onConfirm, onCancel }: {
+  leadId: string
+  uploading: boolean
+  setUploading: (v: boolean) => void
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  const [file, setFile] = useState<File | null>(null)
+  const [notes, setNotes] = useState('')
+
+  async function submit() {
+    if (!file) { toast.error('Please select a file'); return }
+    setUploading(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      form.append('folder', 'lead-agreements')
+      const uploadRes = await fetch('/api/upload', { method: 'POST', body: form })
+      if (!uploadRes.ok) throw new Error('File upload failed')
+      const { url } = await uploadRes.json()
+
+      const res = await fetch(`/api/leads/${leadId}/agreements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agreementUrl: url, fileName: file.name, notes: notes || undefined }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error ?? 'Failed')
+      toast.success('Agreement uploaded successfully')
+      onConfirm()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+        <h3 className="text-base font-bold text-gray-900">Upload Agreement</h3>
+        <p className="text-sm text-gray-500">Uploading a new agreement will create a new version and archive the previous one.</p>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Agreement File *</label>
+          <input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+            onChange={e => setFile(e.target.files?.[0] ?? null)}
+            className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <input value={notes} onChange={e => setNotes(e.target.value)}
+            placeholder="e.g. Re-signed after amendment..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+
+        <div className="flex gap-2 pt-1">
+          <button onClick={onCancel} disabled={uploading} className="flex-1 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 disabled:opacity-50">
+            Cancel
+          </button>
+          <button onClick={submit} disabled={uploading || !file}
+            className="flex-1 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-60">
+            {uploading ? 'Uploading...' : 'Upload'}
           </button>
         </div>
       </div>

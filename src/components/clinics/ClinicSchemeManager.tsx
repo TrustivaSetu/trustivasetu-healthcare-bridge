@@ -375,8 +375,18 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
             )}
           </div>
 
+          {!selectedTemplateId && (
+            <p className="text-xs text-red-600 font-medium">
+              ⚠️ Please select a scheme above before saving
+            </p>
+          )}
+          {selectedTemplateId && (!subventionPct || parseFloat(subventionPct) <= 0) && (
+            <p className="text-xs text-red-600 font-medium">
+              ⚠️ Please enter a valid subvention % (must be greater than 0)
+            </p>
+          )}
           <div className="flex gap-2">
-            <button onClick={addScheme} disabled={saving || !selectedTemplateId || !subventionPct}
+            <button onClick={addScheme} disabled={saving || !selectedTemplateId || !subventionPct || parseFloat(subventionPct) <= 0}
               className="flex-1 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60">
               {saving ? 'Saving...' : '✅ Add Scheme'}
             </button>

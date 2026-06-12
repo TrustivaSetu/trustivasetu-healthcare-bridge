@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTabSession } from '@/contexts/TabSessionContext'
 import { formatDate, cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import * as XLSX from 'xlsx'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -161,6 +162,7 @@ function PatientTab({ userRole: _userRole }: { userRole: string }) {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -207,6 +209,49 @@ function PatientTab({ userRole: _userRole }: { userRole: string }) {
   }, [fetchEnquiries])
 
   const totalPages = Math.ceil(total / pageSize)
+
+  async function handleExport() {
+    setExporting(true)
+    try {
+      const params = new URLSearchParams({ page: '1', pageSize: '9999' })
+      if (search) params.set('search', search)
+      if (statusFilter) params.set('status', statusFilter)
+      if (sourceFilter) params.set('source', sourceFilter)
+      if (regionFilter) params.set('region', regionFilter)
+      if (dateFrom) params.set('dateFrom', dateFrom)
+      if (dateTo) params.set('dateTo', dateTo)
+      if (showConverted) params.set('showConverted', '1')
+      const res = await fetch(`/api/enquiries/patient?${params}`)
+      const json = await res.json()
+      const rows = (json.data ?? []).map((e: PatientEnquiry) => ({
+        'Name': e.applicantName ?? '',
+        'Mobile': e.mobile ?? '',
+        'Email': e.email ?? '',
+        'Hospital': e.hospitalName ?? '',
+        'Treatment': e.treatmentName ?? '',
+        'Loan Amount': e.loanAmount ?? '',
+        'PAN': e.panNumber ?? '',
+        'Employment': e.employmentType ?? '',
+        'Monthly Income': e.monthlyIncome ?? '',
+        'Region': e.assignedRegion ?? '',
+        'Assigned RM': e.assignedRmName ?? '',
+        'Source': e.source,
+        'Status': e.status,
+        'Converted Lead ID': e.convertedLeadId ? e.convertedLeadId.slice(-8).toUpperCase() : '',
+        'Created At': formatDate(e.createdAt),
+      }))
+      const ws = XLSX.utils.json_to_sheet(rows)
+      ws['!cols'] = Object.keys(rows[0] ?? {}).map(() => ({ wch: 20 }))
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Patient Enquiries')
+      XLSX.writeFile(wb, `patient-enquiries-${new Date().toISOString().slice(0, 10)}.xlsx`)
+      toast.success(`Exported ${rows.length} records`)
+    } catch {
+      toast.error('Export failed')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <div>
@@ -267,6 +312,16 @@ function PatientTab({ userRole: _userRole }: { userRole: string }) {
           />
           Show converted
         </label>
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="ml-auto px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg disabled:opacity-60 transition flex items-center gap-1.5"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          {exporting ? 'Exporting...' : 'Download'}
+        </button>
       </div>
 
       {/* Table */}
@@ -683,6 +738,7 @@ function ProviderTab({ userRole: _userRole }: { userRole: string }) {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -729,6 +785,52 @@ function ProviderTab({ userRole: _userRole }: { userRole: string }) {
   }, [fetchEnquiries])
 
   const totalPages = Math.ceil(total / pageSize)
+
+  async function handleExport() {
+    setExporting(true)
+    try {
+      const params = new URLSearchParams({ page: '1', pageSize: '9999' })
+      if (search) params.set('search', search)
+      if (statusFilter) params.set('status', statusFilter)
+      if (sourceFilter) params.set('source', sourceFilter)
+      if (regionFilter) params.set('region', regionFilter)
+      if (dateFrom) params.set('dateFrom', dateFrom)
+      if (dateTo) params.set('dateTo', dateTo)
+      if (showConverted) params.set('showConverted', '1')
+      const res = await fetch(`/api/enquiries/provider?${params}`)
+      const json = await res.json()
+      const rows = (json.data ?? []).map((e: ProviderEnquiry) => ({
+        'Clinic Name': e.clinicName ?? '',
+        'Contact Person': e.contactPerson ?? '',
+        'Mobile': e.mobile ?? '',
+        'Email': e.email ?? '',
+        'Address': e.address ?? '',
+        'City': e.city ?? '',
+        'State': e.state ?? '',
+        'PIN Code': e.pinCode ?? '',
+        'Treatment Types': e.treatmentTypes ?? '',
+        'IFSC Code': e.ifscCode ?? '',
+        'Bank Name': e.bankName ?? '',
+        'Account Number': e.accountNumber ?? '',
+        'Region': e.assignedRegion ?? e.region ?? '',
+        'Assigned RM': e.assignedRmName ?? '',
+        'Source': e.source,
+        'Status': e.status,
+        'Converted Clinic ID': e.convertedClinicId ?? '',
+        'Created At': formatDate(e.createdAt),
+      }))
+      const ws = XLSX.utils.json_to_sheet(rows)
+      ws['!cols'] = Object.keys(rows[0] ?? {}).map(() => ({ wch: 20 }))
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Provider Enquiries')
+      XLSX.writeFile(wb, `provider-enquiries-${new Date().toISOString().slice(0, 10)}.xlsx`)
+      toast.success(`Exported ${rows.length} records`)
+    } catch {
+      toast.error('Export failed')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <div>
@@ -789,6 +891,16 @@ function ProviderTab({ userRole: _userRole }: { userRole: string }) {
           />
           Show converted
         </label>
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="ml-auto px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg disabled:opacity-60 transition flex items-center gap-1.5"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          {exporting ? 'Exporting...' : 'Download'}
+        </button>
       </div>
 
       {/* Table */}

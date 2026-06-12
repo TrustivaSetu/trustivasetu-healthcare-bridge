@@ -164,6 +164,38 @@ export function clinicManagerEmailHtml(opts: {
   `)
 }
 
+export function enquiryNotificationHtml(opts: {
+  type: 'patient' | 'provider'
+  recipientName: string
+  enquiryId: string
+  applicantOrClinic: string
+  mobile: string
+  region: string
+  source: string
+  lmsUrl: string
+}) {
+  const { type, recipientName, enquiryId, applicantOrClinic, mobile, region, source, lmsUrl } = opts
+  const label = type === 'patient' ? 'Patient Enquiry' : 'Provider Enquiry'
+  const nameLabel = type === 'patient' ? 'Applicant' : 'Clinic'
+  return layout(`New ${label} Assigned — ${BRAND.name}`, `
+    <h2 style="margin:0 0 8px;color:#111827;font-size:20px;">New ${label} Assigned to You</h2>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Hi <strong>${recipientName}</strong>, a new enquiry has been assigned to you on Trustiva Setu LMS.</p>
+    <div style="background:#f3f4f6;border-radius:10px;padding:20px;margin-bottom:24px;">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr><td style="padding:6px 0;color:#6b7280;width:120px;">Enquiry ID</td><td style="padding:6px 0;font-weight:600;font-family:monospace;color:#111827;">${enquiryId.slice(-8).toUpperCase()}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">${nameLabel}</td><td style="padding:6px 0;font-weight:600;color:#111827;">${applicantOrClinic || '—'}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Mobile</td><td style="padding:6px 0;font-weight:600;color:#111827;">${mobile || '—'}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Region</td><td style="padding:6px 0;font-weight:600;color:#111827;">${region || 'Unassigned'}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Source</td><td style="padding:6px 0;font-weight:600;color:#111827;">${source}</td></tr>
+      </table>
+    </div>
+    <div style="text-align:center;margin:20px 0;">
+      <a href="${lmsUrl}/enquiries" style="display:inline-block;background:#0F172A;color:#A3E635;font-weight:bold;font-size:14px;padding:12px 32px;border-radius:8px;text-decoration:none;">View Enquiry →</a>
+    </div>
+    <p style="font-size:13px;color:#9ca3af;margin:0;">Please review and take action within 24 hours of receiving this notification.</p>
+  `)
+}
+
 export function attendanceStatusHtml(status: 'APPROVED' | 'REJECTED', emp: string, date: string, reason?: string) {
   const isApproved = status === 'APPROVED'
   return layout(`Attendance ${isApproved ? 'Approved' : 'Rejected'}`, `
