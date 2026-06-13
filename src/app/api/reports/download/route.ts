@@ -43,10 +43,26 @@ function getDateRange(preset: string, from?: string, to?: string) {
 
 function fmt(val: unknown): string {
   if (val === null || val === undefined) return ''
-  if (val instanceof Date) return val.toLocaleDateString('en-IN')
+  if (val instanceof Date) return val.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })
   if (typeof val === 'boolean') return val ? 'Yes' : 'No'
   if (typeof val === 'number') return String(val)
   return String(val)
+}
+
+function fmtDt(val: unknown): string {
+  if (val === null || val === undefined) return ''
+  if (val instanceof Date) return val.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
+  return String(val)
+}
+
+function fmtLeadId(leadNumber: number | null | undefined): string {
+  if (!leadNumber) return ''
+  return `TS-${leadNumber.toString().padStart(6, '0')}`
+}
+
+function fmtAppId(applicationNumber: number | null | undefined): string {
+  if (!applicationNumber) return ''
+  return `APP-${applicationNumber.toString().padStart(6, '0')}`
 }
 
 function toSheet(data: Record<string, unknown>[]): XLSX.WorkSheet {
@@ -185,7 +201,8 @@ export async function GET(req: NextRequest) {
       const rows = leads.map(l => {
         const meta = (l.metadata ?? {}) as Record<string, unknown>
         return {
-          'Lead ID': l.id.slice(-8).toUpperCase(),
+          'Lead ID': fmtLeadId(l.leadNumber),
+          'Application ID': fmtAppId(l.applicationNumber),
           'Patient Name': fmt(l.applicantName),
           'Phone': fmt(l.phone),
           'Email': fmt(l.email),
@@ -217,9 +234,11 @@ export async function GET(req: NextRequest) {
           'Processing Fee %': fmt(meta.processingFeePct),
           'Processing Fee Amt': fmt(meta.processingFeeAmount),
           'Downpayment': fmt(meta.downPayment),
-          'Application Date': fmt(l.applicationDate),
+          'Lead Created': fmtDt(l.createdAt),
+          'Application Date': fmtDt(l.applicationDate),
+          'Application Created': fmtDt(l.applicationCreatedAt),
           'Approval Date': fmt(l.approvalDate),
-          'Disbursal Date': fmt(l.disbursalDate),
+          'Disbursal Date': fmtDt(l.disbursalDate),
           'Rejection Reason': fmt(l.rejectionReason ?? (l.status === 'REJECTED' ? l.remarks : null)),
           'Remarks': fmt(l.remarks),
           'Created By': fmt(l.createdBy?.name),
@@ -248,7 +267,8 @@ export async function GET(req: NextRequest) {
       const rows = leads.map(l => {
         const meta = (l.metadata ?? {}) as Record<string, unknown>
         return {
-          'Lead ID': l.id.slice(-8).toUpperCase(),
+          'Lead ID': fmtLeadId(l.leadNumber),
+          'Application ID': fmtAppId(l.applicationNumber),
           'Patient Name': fmt(l.applicantName),
           'Phone': fmt(l.phone),
           'Channel Partner': fmt(l.clinic?.name),
@@ -265,8 +285,8 @@ export async function GET(req: NextRequest) {
           'Processing Fee Amt': fmt(meta.processingFeeAmount),
           'Downpayment': fmt(meta.downPayment),
           'Treatment': fmt(l.treatmentName),
-          'Disbursal Date': fmt(l.disbursalDate),
-          'Application Date': fmt(l.applicationDate),
+          'Application Date': fmtDt(l.applicationDate),
+          'Disbursal Date': fmtDt(l.disbursalDate),
         }
       })
 

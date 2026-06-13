@@ -3,6 +3,7 @@ import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { buildClinicFilter, hasPermission } from '@/lib/permissions'
 import { checkRolePermission } from '@/lib/role-permissions'
+import { sendEmail, leadPunchedEmailHtml } from '@/lib/email'
 import { z } from 'zod'
 
 const createSchema = z.object({
@@ -69,7 +70,16 @@ export async function GET(req: NextRequest) {
     } else if (status) {
       where.status = status
     }
-    if (leadId) where.id = { endsWith: leadId.toLowerCase() }
+    if (leadId) {
+      // Support both TS-000042 format and raw suffix search
+      const numMatch = leadId.replace(/^TS-0*/i, '')
+      const asNum = parseInt(numMatch)
+      if (!isNaN(asNum) && numMatch.length > 0) {
+        where.leadNumber = asNum
+      } else {
+        where.id = { endsWith: leadId.toLowerCase() }
+      }
+    }
     if (dateFrom || dateTo) {
       where.applicationDate = {}
       if (dateFrom) (where.applicationDate as Record<string, unknown>).gte = new Date(dateFrom)
@@ -142,6 +152,62 @@ export async function POST(req: NextRequest) {
     })
 
     await db.auditLog.create({ data: { userId: session.user.id, action: 'CREATE', entity: 'Lead', entityId: lead.id } })
+
+    // Fire lead-punched email notifications asynchronously
+    void (async () => {
+      try {
+        const lmsUrl = process.env.NEXTAUTH_URL ?? 'https://lms.trustivasetu.com'
+        const leadId = `TS-${lead.leadNumber.toString().padStart(6, '0')}`
+        const timestamp = new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
+        const loanAmount = `₹${lead.amount.toFixed(2)}L`
+
+        const [clinic, creator, admins] = await Promise.all([
+          db.clinic.findUnique({
+            where: { id: lead.clinicId },
+            select: { name: true, assignedRMId: true, assignedRM: { select: { name: true, email: true } } },
+          }),
+          db.user.findUnique({ where: { id: session.user.id }, select: { name: true, email: true } }),
+          db.user.findMany({ where: { role: { in: ['SUPER_ADMIN', 'ADMIN'] }, isActive: true }, select: { name: true, email: true } }),
+        ])
+
+        const clinicName = clinic?.name ?? 'Unknown'
+        const lenderName = lead.lender?.name ?? ''
+
+        const recipients: { name: string; email: string }[] = []
+        if (clinic?.assignedRM?.email) recipients.push({ name: clinic.assignedRM.name, email: clinic.assignedRM.email })
+        if (creator && creator.email !== clinic?.assignedRM?.email) recipients.push({ name: creator.name, email: creator.email })
+        for (const admin of admins) {
+          if (!recipients.find(r => r.email === admin.email)) {
+            recipients.push({ name: admin.name, email: admin.email })
+          }
+        }
+
+        await Promise.allSettled(
+          recipients.map(r =>
+            sendEmail({
+              to: r.email,
+              subject: `New Lead Punched — ${leadId} — ${clinicName}`,
+              html: leadPunchedEmailHtml({
+                recipientName: r.name,
+                leadId,
+                applicantName: lead.applicantName,
+                phone: lead.phone ?? '',
+                clinicName,
+                lenderName,
+                treatmentCategory: lead.treatmentCategory ?? '',
+                treatmentName: lead.treatmentName ?? '',
+                loanAmount,
+                timestamp,
+                lmsUrl,
+              }),
+            })
+          )
+        )
+      } catch (e) {
+        console.error('[Lead Email Error]', e)
+      }
+    })()
+
     return NextResponse.json({ data: lead }, { status: 201 })
   } catch (e) {
     console.error('[POST /api/leads]', e)

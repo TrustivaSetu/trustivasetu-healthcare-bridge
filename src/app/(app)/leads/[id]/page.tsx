@@ -10,7 +10,7 @@ import { useTabSession } from '@/contexts/TabSessionContext'
 
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { ErrorAlert } from '@/components/ui/ErrorAlert'
-import { formatDate, formatLakhs, getStatusColor, getTaskStatusColor, cn } from '@/lib/utils'
+import { formatDate, formatLakhs, getStatusColor, getTaskStatusColor, cn, formatLeadId, formatApplicationId } from '@/lib/utils'
 
 interface AddressData {
   houseNo?: string
@@ -43,6 +43,9 @@ interface LeadMeta {
 
 interface LeadDetail {
   id: string
+  leadNumber: number
+  applicationNumber: number | null
+  applicationCreatedAt: string | null
   externalId: string | null
   applicantName: string
   phone: string | null
@@ -216,9 +219,14 @@ export default function LeadDetailPage() {
                 <span className={cn('px-3 py-1 rounded-full text-sm font-semibold', getStatusColor(lead.status))}>
                   {STATUS_LABELS[lead.status] ?? lead.status}
                 </span>
-                <span className="text-xs text-gray-400 font-mono bg-gray-100 px-2 py-0.5 rounded">
-                  {lead.id.slice(-8).toUpperCase()}
+                <span className="text-xs font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                  {formatLeadId(lead.leadNumber)}
                 </span>
+                {lead.applicationNumber && (
+                  <span className="text-xs font-mono font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                    {formatApplicationId(lead.applicationNumber)}
+                  </span>
+                )}
                 {lead.externalId && <span className="text-xs text-gray-400 font-mono">{lead.externalId}</span>}
               </div>
               {canAct && actions.length > 0 && (

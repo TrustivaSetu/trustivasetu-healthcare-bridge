@@ -84,7 +84,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     const d = parsed.data
     const before = await db.lead.findUnique({
       where: { id: params.id },
-      select: { status: true, applicantName: true, clinicId: true },
+      select: { status: true, applicantName: true, clinicId: true, applicationNumber: true },
     })
     if (!before) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
@@ -96,6 +96,16 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     // Auto-set doGeneratedAt when transitioning to APPROVED for the first time
     const autoDoGeneratedAt =
       d.status === 'APPROVED' && before.status !== 'APPROVED' ? new Date() : undefined
+
+    // Auto-generate applicationNumber when lead enters PROCESSING for the first time
+    let autoApplicationNumber: number | undefined
+    let autoApplicationCreatedAt: Date | undefined
+    const PROCESSING_STATUSES = ['PROCESSING', 'APPROVED', 'DISBURSED']
+    if (d.status && PROCESSING_STATUSES.includes(d.status) && !before.applicationNumber) {
+      const maxResult = await db.lead.aggregate({ _max: { applicationNumber: true } })
+      autoApplicationNumber = (maxResult._max.applicationNumber ?? 0) + 1
+      autoApplicationCreatedAt = new Date()
+    }
 
     const updateData = {
       applicantName: d.applicantName,
@@ -109,6 +119,8 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       approvalDate: d.approvalDate ? new Date(d.approvalDate) : undefined,
       disbursalDate: d.disbursalDate ? new Date(d.disbursalDate) : undefined,
       doGeneratedAt: autoDoGeneratedAt,
+      applicationNumber: autoApplicationNumber,
+      applicationCreatedAt: autoApplicationCreatedAt,
       remarks: d.remarks,
       clinicId: d.clinicId,
       treatmentName: d.treatmentName,

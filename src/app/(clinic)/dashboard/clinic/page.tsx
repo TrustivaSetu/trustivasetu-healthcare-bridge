@@ -18,6 +18,7 @@ interface Stats {
 
 interface Lead {
   id: string
+  leadNumber: number
   applicantName: string
   phone: string | null
   amount: number
@@ -135,7 +136,7 @@ export default function ClinicDashboard() {
                   <tbody className="divide-y divide-gray-50">
                     {leads.map(l => (
                       <tr key={l.id} className="hover:bg-gray-50">
-                        <td className="px-3 py-2.5 font-mono text-gray-500 whitespace-nowrap">{l.id.slice(-8).toUpperCase()}</td>
+                        <td className="px-3 py-2.5 whitespace-nowrap"><span className="text-xs font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">{l.leadNumber ? `TS-${l.leadNumber.toString().padStart(6,'0')}` : l.id.slice(-8).toUpperCase()}</span></td>
                         <td className="px-3 py-2.5 font-medium text-gray-800 whitespace-nowrap">
                           <Link href={`/dashboard/clinic/leads/${l.id}`} className="hover:text-blue-600">{l.applicantName}</Link>
                         </td>

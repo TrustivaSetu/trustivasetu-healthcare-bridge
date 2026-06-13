@@ -1,6 +1,6 @@
 'use client'
 
-import { formatDate, formatLakhs, cn, getStatusColor } from '@/lib/utils'
+import { formatDate, formatLakhs, cn, getStatusColor, formatLeadId } from '@/lib/utils'
 import * as XLSX from 'xlsx'
 
 interface AddressEntry {
@@ -35,6 +35,7 @@ interface LeadMeta {
 
 export interface ReportLead {
   id: string
+  leadNumber: number
   applicantName: string
   phone: string | null
   email: string | null
@@ -149,8 +150,10 @@ export function LeadReportTable({ leads, sortBy, sortOrder, onSort }: Props) {
               const isPendingDisbursal = lead.status === 'APPROVED'
               return (
                 <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-3 py-2 font-mono text-gray-600 whitespace-nowrap">
-                    {lead.id.slice(-8).toUpperCase()}
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <span className="text-xs font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                      {formatLeadId(lead.leadNumber)}
+                    </span>
                   </td>
                   <td className="px-3 py-2 font-medium text-gray-800 whitespace-nowrap">{lead.applicantName}</td>
                   <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{lead.phone ?? '—'}</td>
@@ -229,7 +232,7 @@ export function exportLeadReport(leads: ReportLead[]) {
 
     return {
       // Existing 29 columns — order and names unchanged
-      'Lead ID': lead.id.slice(-8).toUpperCase(),
+      'Lead ID': formatLeadId(lead.leadNumber),
       'Customer Name': lead.applicantName,
       'Contact No.': lead.phone ?? '',
       'Mail ID': lead.email ?? '',

@@ -196,6 +196,45 @@ export function enquiryNotificationHtml(opts: {
   `)
 }
 
+export function leadPunchedEmailHtml(opts: {
+  recipientName: string
+  leadId: string
+  applicantName: string
+  phone: string
+  clinicName: string
+  lenderName: string
+  treatmentCategory: string
+  treatmentName: string
+  loanAmount: string
+  timestamp: string
+  lmsUrl: string
+}) {
+  const { recipientName, leadId, applicantName, phone, clinicName, lenderName, treatmentCategory, treatmentName, loanAmount, timestamp, lmsUrl } = opts
+  return layout(`New Lead Punched — ${leadId}`, `
+    <h2 style="margin:0 0 8px;color:#111827;font-size:20px;">New Lead Punched</h2>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Hi <strong>${recipientName}</strong>, a new loan application lead has been created on Trustiva Setu LMS.</p>
+    <div style="background:#f3f4f6;border-radius:10px;padding:20px;margin-bottom:24px;">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr><td style="padding:6px 0;color:#6b7280;width:150px;">Lead ID</td><td style="padding:6px 0;font-weight:700;font-family:monospace;color:#0284c7;font-size:16px;">${leadId}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Applicant</td><td style="padding:6px 0;font-weight:600;color:#111827;">${applicantName}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Phone</td><td style="padding:6px 0;font-weight:600;color:#111827;">${phone || '—'}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Channel Partner</td><td style="padding:6px 0;font-weight:600;color:#111827;">${clinicName}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Treatment</td><td style="padding:6px 0;font-weight:600;color:#111827;">${treatmentCategory || treatmentName || '—'}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Loan Amount</td><td style="padding:6px 0;font-weight:700;color:#16a34a;font-size:16px;">${loanAmount}</td></tr>
+        ${lenderName ? `<tr><td style="padding:6px 0;color:#6b7280;">Lender</td><td style="padding:6px 0;font-weight:600;color:#111827;">${lenderName}</td></tr>` : ''}
+        <tr><td style="padding:6px 0;color:#6b7280;">Punched At</td><td style="padding:6px 0;font-weight:600;color:#111827;">${timestamp}</td></tr>
+      </table>
+    </div>
+    <div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:12px 16px;font-size:13px;color:#713f12;margin-bottom:20px;">
+      <strong>Next Steps:</strong> Review the application, ensure KYC documents are collected, and update the lead status on the LMS.
+    </div>
+    <div style="text-align:center;margin:20px 0;">
+      <a href="${lmsUrl}/leads" style="display:inline-block;background:#0F172A;color:#A3E635;font-weight:bold;font-size:14px;padding:12px 32px;border-radius:8px;text-decoration:none;">View Lead on LMS →</a>
+    </div>
+    <p style="font-size:13px;color:#9ca3af;margin:0;">Please action this within 24 hours of receiving this notification.</p>
+  `)
+}
+
 export function attendanceStatusHtml(status: 'APPROVED' | 'REJECTED', emp: string, date: string, reason?: string) {
   const isApproved = status === 'APPROVED'
   return layout(`Attendance ${isApproved ? 'Approved' : 'Rejected'}`, `

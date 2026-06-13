@@ -350,6 +350,9 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
         <button type="button" className={tabClass('banking')} onClick={() => setTab('banking')}>
           4. Banking
         </button>
+        <button type="button" className={tabClass('schemes')} onClick={() => setTab('schemes')}>
+          5. Schemes
+        </button>
       </div>
 
       {/* TAB 1: AGREEMENT */}
@@ -694,10 +697,6 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
     )}
   </div>
 )}
-
-<button type="button" className={tabClass('schemes')} onClick={() => setTab('schemes')}>
-  5. Schemes
-</button>
 
       {/* Submit Buttons — always visible */}
       <div className="flex gap-3 pt-2 border-t">

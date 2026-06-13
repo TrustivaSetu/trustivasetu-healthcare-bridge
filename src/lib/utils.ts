@@ -81,6 +81,16 @@ export function getRoleLabel(role: string): string {
   return map[role] ?? role
 }
 
+export function formatLeadId(leadNumber: number | null | undefined): string {
+  if (!leadNumber) return '—'
+  return `TS-${leadNumber.toString().padStart(6, '0')}`
+}
+
+export function formatApplicationId(applicationNumber: number | null | undefined): string {
+  if (!applicationNumber) return '—'
+  return `APP-${applicationNumber.toString().padStart(6, '0')}`
+}
+
 export function generateMonthOptions(count = 12): Array<{ value: string; label: string }> {
   return Array.from({ length: count }, (_, i) => {
     const date = subMonths(new Date(), i)

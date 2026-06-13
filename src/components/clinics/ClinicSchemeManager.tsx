@@ -141,7 +141,7 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
   }
 
   async function removeScheme(schemeId: string) {
-    if (!confirm('Is scheme ko remove karna chahte ho?')) return
+    if (!confirm('Are you sure you want to remove this scheme?')) return
     try {
       await fetch(`/api/clinics/${clinicId}/schemes`, {
         method: 'DELETE',
@@ -211,8 +211,8 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
       {/* Add New Template (Admin only) */}
       {isAdmin && showAddTemplate && (
         <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-3">
-          <p className="text-sm font-bold text-purple-800">New Scheme Type Create Karo</p>
-          <p className="text-xs text-purple-600">Format: Tenure/AdvanceEMI (e.g. 15/5)</p>
+          <p className="text-sm font-bold text-purple-800">Create New Scheme Type</p>
+          <p className="text-xs text-purple-600">Format: Tenure / Advance EMI (e.g. 15 months / 5 EMI)</p>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Tenure (months) *</label>
@@ -249,7 +249,7 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
       {/* Add / Edit Scheme */}
       {showAddScheme && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-4">
-          <p className="text-sm font-bold text-blue-800">{editingScheme ? `Edit Scheme: ${editingScheme.schemeTemplate.name}` : 'Add Scheme for Channel Partner'}</p>
+          <p className="text-sm font-bold text-blue-800">{editingScheme ? `Edit Scheme: ${editingScheme.schemeTemplate.name}` : 'Add Scheme for this Channel Partner'}</p>
 
           {/* Scheme Select */}
           <div>
