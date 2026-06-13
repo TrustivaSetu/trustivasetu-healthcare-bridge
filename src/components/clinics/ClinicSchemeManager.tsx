@@ -40,12 +40,16 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
   const [showAddScheme, setShowAddScheme] = useState(false)
   const [showAddTemplate, setShowAddTemplate] = useState(false)
 
-  // Form state
-  const [selectedTemplateId, setSelectedTemplateId] = useState('')
+  // Multi-select state for adding
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  // Shared rate state (applies to all checked schemes when adding in bulk)
   const [subventionPct, setSubventionPct] = useState('')
   const [subventionGstType, setSubventionGstType] = useState<'INCLUDED' | 'EXCLUDED'>('EXCLUDED')
   const [pfPct, setPfPct] = useState('0')
   const [pfGstType, setPfGstType] = useState<'INCLUDED' | 'EXCLUDED'>('EXCLUDED')
+
+  // Single-scheme edit mode
   const [editingScheme, setEditingScheme] = useState<ClinicScheme | null>(null)
 
   // New template form
@@ -71,30 +75,35 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
     finally { setLoading(false) }
   }
 
-  // Already added scheme IDs
   const addedTemplateIds = new Set(clinicSchemes.map(s => s.schemeTemplateId))
   const availableTemplates = templates.filter(t => !addedTemplateIds.has(t.id))
 
-  // Live calculation
   const subPct = parseFloat(subventionPct) || 0
-  const totalSubvention = subventionGstType === 'EXCLUDED'
-    ? subPct * (1 + GST_RATE / 100)
-    : subPct
+  const totalSubvention = subventionGstType === 'EXCLUDED' ? subPct * (1 + GST_RATE / 100) : subPct
   const subventionGstAmount = subventionGstType === 'EXCLUDED'
     ? subPct * GST_RATE / 100
     : subPct - (subPct / (1 + GST_RATE / 100))
-
   const pfPctNum = parseFloat(pfPct) || 0
-  const totalPF = pfGstType === 'EXCLUDED'
-    ? pfPctNum * (1 + GST_RATE / 100)
-    : pfPctNum
+  const totalPF = pfGstType === 'EXCLUDED' ? pfPctNum * (1 + GST_RATE / 100) : pfPctNum
   const pfGstAmount = pfGstType === 'EXCLUDED'
     ? pfPctNum * GST_RATE / 100
     : pfPctNum - (pfPctNum / (1 + GST_RATE / 100))
 
+  function toggleTemplate(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function selectAll() { setSelectedIds(new Set(availableTemplates.map(t => t.id))) }
+  function selectNone() { setSelectedIds(new Set()) }
+
   function openEditScheme(cs: ClinicScheme) {
     setEditingScheme(cs)
-    setSelectedTemplateId(cs.schemeTemplateId)
+    setSelectedIds(new Set([cs.schemeTemplateId]))
     setSubventionPct(String(cs.hospitalSubventionPct))
     setSubventionGstType(cs.subventionGstType)
     setPfPct(String(cs.processingFeePct))
@@ -105,34 +114,53 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
   function resetForm() {
     setShowAddScheme(false)
     setEditingScheme(null)
-    setSelectedTemplateId('')
+    setSelectedIds(new Set())
     setSubventionPct('')
     setPfPct('0')
     setSubventionGstType('EXCLUDED')
     setPfGstType('EXCLUDED')
   }
 
-  async function addScheme() {
-    if (!selectedTemplateId) { toast.error('Please select a scheme'); return }
+  async function saveSchemes() {
+    if (selectedIds.size === 0) { toast.error('Please select at least one scheme'); return }
     if (!subventionPct || parseFloat(subventionPct) <= 0) { toast.error('Please enter a subvention %'); return }
 
     setSaving(true)
+    const payload = {
+      hospitalSubventionPct: parseFloat(subventionPct),
+      subventionGstType,
+      gstOnSubvention: GST_RATE,
+      processingFeePct: parseFloat(pfPct) || 0,
+      processingFeeGstType: pfGstType,
+      gstOnPF: GST_RATE,
+    }
+
     try {
-      const res = await fetch(`/api/clinics/${clinicId}/schemes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          schemeTemplateId: selectedTemplateId,
-          hospitalSubventionPct: parseFloat(subventionPct),
-          subventionGstType,
-          gstOnSubvention: GST_RATE,
-          processingFeePct: parseFloat(pfPct) || 0,
-          processingFeeGstType: pfGstType,
-          gstOnPF: GST_RATE,
-        }),
-      })
-      if (!res.ok) { const e = await res.json(); throw new Error(e.error) }
-      toast.success(editingScheme ? 'Scheme updated!' : 'Scheme added!')
+      if (editingScheme) {
+        // Single edit: PATCH
+        const res = await fetch(`/api/clinics/${clinicId}/schemes`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ schemeId: editingScheme.id, ...payload }),
+        })
+        if (!res.ok) { const e = await res.json(); throw new Error(e.error) }
+        toast.success('Scheme updated!')
+      } else {
+        // Multi-add: POST each selected template
+        const results = await Promise.allSettled(
+          [...selectedIds].map(schemeTemplateId =>
+            fetch(`/api/clinics/${clinicId}/schemes`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ schemeTemplateId, ...payload }),
+            })
+          )
+        )
+        const failed = results.filter(r => r.status === 'rejected').length
+        const succeeded = results.length - failed
+        if (succeeded > 0) toast.success(`${succeeded} scheme(s) added!`)
+        if (failed > 0) toast.error(`${failed} scheme(s) failed to add`)
+      }
       resetForm()
       fetchAll()
     } catch (e: unknown) {
@@ -158,7 +186,6 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
     const t = parseInt(newTenure)
     const a = parseInt(newAdvanceEmi)
     if (a >= t) { toast.error('Advance EMI must be less than tenure'); return }
-
     try {
       const res = await fetch('/api/schemes', {
         method: 'POST',
@@ -167,7 +194,7 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      toast.success(`Scheme ${t}/${a} added!`)
+      toast.success(`Scheme ${t}/${a} created!`)
       setShowAddTemplate(false)
       setNewTenure('')
       setNewAdvanceEmi('0')
@@ -176,8 +203,6 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
       toast.error(e instanceof Error ? e.message : 'Failed')
     }
   }
-
-  const selectedTemplate = templates.find(t => t.id === selectedTemplateId)
 
   if (loading) return (
     <div className="flex justify-center py-8">
@@ -201,14 +226,14 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
               + New Scheme Type
             </button>
           )}
-          <button onClick={() => setShowAddScheme(!showAddScheme)}
+          <button onClick={() => { setShowAddScheme(!showAddScheme); setEditingScheme(null); setSelectedIds(new Set()) }}
             className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700">
-            + Add Scheme
+            + Add Schemes
           </button>
         </div>
       </div>
 
-      {/* Add New Template (Admin only) */}
+      {/* Create New Template (Admin only) */}
       {isAdmin && showAddTemplate && (
         <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-3">
           <p className="text-sm font-bold text-purple-800">Create New Scheme Type</p>
@@ -234,54 +259,65 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
             </div>
           )}
           <div className="flex gap-2">
-            <button onClick={addTemplate}
-              className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">
+            <button onClick={addTemplate} className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">
               Create Scheme
             </button>
-            <button onClick={() => setShowAddTemplate(false)}
-              className="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">
+            <button onClick={() => setShowAddTemplate(false)} className="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">
               Cancel
             </button>
           </div>
         </div>
       )}
 
-      {/* Add / Edit Scheme */}
+      {/* Add / Edit Panel */}
       {showAddScheme && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-4">
-          <p className="text-sm font-bold text-blue-800">{editingScheme ? `Edit Scheme: ${editingScheme.schemeTemplate.name}` : 'Add Scheme for this Channel Partner'}</p>
+          <p className="text-sm font-bold text-blue-800">
+            {editingScheme ? `Edit Scheme: ${editingScheme.schemeTemplate.name}` : 'Add Schemes for this Channel Partner'}
+          </p>
 
-          {/* Scheme Select */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Select Scheme *</label>
-            <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto">
-              {availableTemplates.map(t => (
-                <button key={t.id} type="button"
-                  onClick={() => setSelectedTemplateId(t.id)}
-                  className={`py-2 px-3 rounded-xl border-2 text-xs font-bold transition-all ${
-                    selectedTemplateId === t.id
-                      ? 'border-blue-600 bg-blue-600 text-white'
-                      : 'border-gray-200 text-gray-700 hover:border-blue-300 bg-white'
-                  }`}>
-                  {t.name}
-                  {t.isCustom && <span className="ml-1 text-yellow-500">★</span>}
-                </button>
-              ))}
-              {availableTemplates.length === 0 && (
-                <p className="col-span-4 text-xs text-gray-400 text-center py-2">All schemes have already been added</p>
-              )}
-            </div>
-          </div>
-
-          {/* Scheme Preview */}
-          {selectedTemplate && (
-            <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <p className="text-xs font-bold text-gray-700">Selected: {selectedTemplate.name}</p>
-              <div className="flex gap-4 mt-1 text-xs text-gray-500">
-                <span>Tenure: {selectedTemplate.tenure}m</span>
-                <span>Advance EMI: {selectedTemplate.advanceEmi}</span>
-                <span>Balance EMI: {selectedTemplate.balanceEmi}m</span>
+          {/* Scheme Multi-Select Checkboxes */}
+          {!editingScheme && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-medium text-gray-600">Select Schemes * <span className="text-blue-600 font-bold">({selectedIds.size} selected)</span></label>
+                <div className="flex gap-3 text-xs">
+                  <button type="button" onClick={selectAll} className="text-blue-600 hover:underline">Select All</button>
+                  <button type="button" onClick={selectNone} className="text-gray-500 hover:underline">Clear</button>
+                </div>
               </div>
+              {availableTemplates.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-3 bg-white rounded-lg">All available schemes have already been added</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto bg-white rounded-xl border border-gray-200 p-3">
+                  {availableTemplates.map(t => (
+                    <label key={t.id} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer border-2 transition-all select-none ${
+                      selectedIds.has(t.id)
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300 bg-white'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(t.id)}
+                        onChange={() => toggleTemplate(t.id)}
+                        className="w-4 h-4 rounded accent-blue-600 flex-shrink-0"
+                      />
+                      <span className="text-xs font-semibold text-gray-700">
+                        {t.name}
+                        {t.isCustom && <span className="ml-1 text-yellow-500">★</span>}
+                      </span>
+                      <span className="text-xs text-gray-400 hidden sm:inline">
+                        {t.tenure}m/{t.advanceEmi}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              {selectedIds.size > 0 && (
+                <p className="text-xs text-blue-600 mt-1">
+                  The rates below will apply to all {selectedIds.size} selected scheme(s).
+                </p>
+              )}
             </div>
           )}
 
@@ -289,12 +325,10 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
           <div className="bg-white border border-gray-200 rounded-xl p-3 space-y-3">
             <p className="text-xs font-bold text-gray-700">Channel Partner Subvention</p>
             <p className="text-xs text-gray-500">Channel partner pays this amount to the lender (not visible to customer)</p>
-
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Subvention % *</label>
-                <input type="number" value={subventionPct}
-                  onChange={e => setSubventionPct(e.target.value)}
+                <input type="number" value={subventionPct} onChange={e => setSubventionPct(e.target.value)}
                   placeholder="e.g. 9" step="0.1" min="0" max="100"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
               </div>
@@ -302,12 +336,9 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
                 <label className="block text-xs font-medium text-gray-600 mb-1">GST Type</label>
                 <div className="flex gap-1 mt-1">
                   {(['EXCLUDED', 'INCLUDED'] as const).map(type => (
-                    <button key={type} type="button"
-                      onClick={() => setSubventionGstType(type)}
+                    <button key={type} type="button" onClick={() => setSubventionGstType(type)}
                       className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all ${
-                        subventionGstType === type
-                          ? 'border-blue-600 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 text-gray-600'
+                        subventionGstType === type ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'
                       }`}>
                       GST {type === 'EXCLUDED' ? 'Extra' : 'Incl.'}
                     </button>
@@ -315,41 +346,26 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
                 </div>
               </div>
             </div>
-
-            {/* Subvention Live Calc */}
             {subPct > 0 && (
               <div className="bg-gray-50 rounded-lg p-2 text-xs space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Channel Partner Subvention</span>
-                  <span className="font-medium">{subPct.toFixed(2)}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">GST @18% ({subventionGstType === 'EXCLUDED' ? 'Extra' : 'Incl.'})</span>
-                  <span className="font-medium">{subventionGstAmount.toFixed(2)}%</span>
-                </div>
-                <div className="flex justify-between border-t pt-1">
-                  <span className="font-bold text-gray-700">Total Subvention to Lender</span>
-                  <span className="font-bold text-orange-600">{totalSubvention.toFixed(2)}%</span>
-                </div>
+                <div className="flex justify-between"><span className="text-gray-500">Subvention</span><span className="font-medium">{subPct.toFixed(2)}%</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">GST @18%</span><span className="font-medium">{subventionGstAmount.toFixed(2)}%</span></div>
+                <div className="flex justify-between border-t pt-1"><span className="font-bold text-gray-700">Total to Lender</span><span className="font-bold text-orange-600">{totalSubvention.toFixed(2)}%</span></div>
               </div>
             )}
           </div>
 
           {/* Processing Fee */}
           <div className="bg-white border border-gray-200 rounded-xl p-3 space-y-3">
-            <p className="text-xs font-bold text-gray-700">💳 Processing Fee (Customer pays)</p>
-
+            <p className="text-xs font-bold text-gray-700">Processing Fee (Customer pays)</p>
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className="block text-xs font-medium text-gray-600 mb-1">PF %</label>
                 <div className="flex gap-1 flex-wrap">
                   {[0, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5].map(p => (
-                    <button key={p} type="button"
-                      onClick={() => setPfPct(String(p))}
+                    <button key={p} type="button" onClick={() => setPfPct(String(p))}
                       className={`px-2 py-1 rounded-lg text-xs font-medium border transition-all ${
-                        pfPct === String(p)
-                          ? 'border-orange-500 bg-orange-50 text-orange-700'
-                          : 'border-gray-200 text-gray-600 hover:border-orange-300'
+                        pfPct === String(p) ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-600 hover:border-orange-300'
                       }`}>
                       {p}%
                     </button>
@@ -360,12 +376,9 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
                 <label className="block text-xs font-medium text-gray-600 mb-1">GST Type</label>
                 <div className="flex gap-1 mt-1">
                   {(['EXCLUDED', 'INCLUDED'] as const).map(type => (
-                    <button key={type} type="button"
-                      onClick={() => setPfGstType(type)}
+                    <button key={type} type="button" onClick={() => setPfGstType(type)}
                       className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all ${
-                        pfGstType === type
-                          ? 'border-orange-500 bg-orange-50 text-orange-700'
-                          : 'border-gray-200 text-gray-600'
+                        pfGstType === type ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-600'
                       }`}>
                       GST {type === 'EXCLUDED' ? 'Extra' : 'Incl.'}
                     </button>
@@ -373,43 +386,34 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
                 </div>
               </div>
             </div>
-
-            {/* PF Live Calc */}
             {pfPctNum > 0 && (
               <div className="bg-gray-50 rounded-lg p-2 text-xs space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Processing Fee</span>
-                  <span className="font-medium">{pfPctNum.toFixed(2)}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">GST @18% ({pfGstType === 'EXCLUDED' ? 'Extra' : 'Incl.'})</span>
-                  <span className="font-medium">{pfGstAmount.toFixed(2)}%</span>
-                </div>
-                <div className="flex justify-between border-t pt-1">
-                  <span className="font-bold text-gray-700">Total PF (Customer pays)</span>
-                  <span className="font-bold text-blue-600">{totalPF.toFixed(2)}%</span>
-                </div>
+                <div className="flex justify-between"><span className="text-gray-500">PF</span><span className="font-medium">{pfPctNum.toFixed(2)}%</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">GST @18%</span><span className="font-medium">{pfGstAmount.toFixed(2)}%</span></div>
+                <div className="flex justify-between border-t pt-1"><span className="font-bold text-gray-700">Total (Customer)</span><span className="font-bold text-blue-600">{totalPF.toFixed(2)}%</span></div>
               </div>
             )}
           </div>
 
-          {!selectedTemplateId && (
-            <p className="text-xs text-red-600 font-medium">
-              ⚠️ Please select a scheme above before saving
-            </p>
+          {/* Validation Hints */}
+          {!editingScheme && selectedIds.size === 0 && (
+            <p className="text-xs text-red-600 font-medium">Please select at least one scheme above</p>
           )}
-          {selectedTemplateId && (!subventionPct || parseFloat(subventionPct) <= 0) && (
-            <p className="text-xs text-red-600 font-medium">
-              ⚠️ Please enter a valid subvention % (must be greater than 0)
-            </p>
+          {(!subventionPct || parseFloat(subventionPct) <= 0) && (
+            <p className="text-xs text-red-600 font-medium">Please enter a valid subvention % (greater than 0)</p>
           )}
+
           <div className="flex gap-2">
-            <button onClick={addScheme} disabled={saving || !selectedTemplateId || !subventionPct || parseFloat(subventionPct) <= 0}
+            <button onClick={saveSchemes}
+              disabled={saving || (editingScheme ? false : selectedIds.size === 0) || !subventionPct || parseFloat(subventionPct) <= 0}
               className="flex-1 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60">
-              {saving ? 'Saving...' : editingScheme ? '✅ Update Scheme' : '✅ Add Scheme'}
+              {saving ? 'Saving...' : editingScheme
+                ? 'Update Scheme'
+                : selectedIds.size > 1
+                  ? `Add ${selectedIds.size} Schemes`
+                  : 'Add Scheme'}
             </button>
-            <button onClick={resetForm}
-              className="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">
+            <button onClick={resetForm} className="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">
               Cancel
             </button>
           </div>
@@ -420,7 +424,7 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
       {clinicSchemes.length === 0 && !showAddScheme && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
           <p className="text-sm text-yellow-700">No schemes configured</p>
-          <p className="text-xs text-yellow-500 mt-1">Click + Add Scheme to get started</p>
+          <p className="text-xs text-yellow-500 mt-1">Click + Add Schemes to get started</p>
         </div>
       )}
 
@@ -433,28 +437,23 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
                 <div>
                   <span className="text-lg font-bold text-blue-700">{cs.schemeTemplate.name}</span>
                   <span className="ml-2 text-xs text-gray-400">
-                    {cs.schemeTemplate.tenure}m tenure • {cs.schemeTemplate.advanceEmi} advance EMI • {cs.schemeTemplate.balanceEmi} balance EMI
+                    {cs.schemeTemplate.tenure}m tenure · {cs.schemeTemplate.advanceEmi} advance EMI · {cs.schemeTemplate.balanceEmi} balance EMI
                   </span>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => openEditScheme(cs)}
-                    className="text-xs text-blue-500 hover:text-blue-700 font-medium">Edit</button>
-                  <button onClick={() => removeScheme(cs.id)}
-                    className="text-xs text-red-500 hover:text-red-700">Remove</button>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button onClick={() => openEditScheme(cs)} className="text-xs text-blue-500 hover:text-blue-700 font-medium">Edit</button>
+                  <button onClick={() => removeScheme(cs.id)} className="text-xs text-red-500 hover:text-red-700">Remove</button>
                 </div>
               </div>
-
               <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                {/* Subvention */}
                 <div className="bg-orange-50 rounded-lg p-2">
                   <p className="font-medium text-orange-700 mb-1">Subvention (Internal)</p>
                   <p className="text-gray-600">Channel Partner: {cs.hospitalSubventionPct}%</p>
                   <p className="text-gray-600">GST: {cs.subventionGstType === 'EXCLUDED' ? 'Extra' : 'Incl.'} @18%</p>
                   <p className="font-bold text-orange-700">Total: {cs.totalSubventionPct.toFixed(2)}%</p>
                 </div>
-                {/* PF */}
                 <div className="bg-blue-50 rounded-lg p-2">
-                  <p className="font-medium text-blue-700 mb-1">💳 PF (Customer)</p>
+                  <p className="font-medium text-blue-700 mb-1">PF (Customer)</p>
                   <p className="text-gray-600">PF: {cs.processingFeePct}%</p>
                   <p className="text-gray-600">GST: {cs.processingFeeGstType === 'EXCLUDED' ? 'Extra' : 'Incl.'} @18%</p>
                   <p className="font-bold text-blue-700">
