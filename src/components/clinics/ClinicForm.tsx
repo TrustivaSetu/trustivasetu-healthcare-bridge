@@ -114,7 +114,9 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
   const [pinLoading, setPinLoading] = useState(false)
 
   const [clinicCode, setClinicCode] = useState<string | null>(initial?.externalId ?? null)
-  const [tab, setTab] = useState<'agreement' | 'basic' | 'gst' | 'banking' | 'schemes'>('agreement')
+  const [savedClinicId, setSavedClinicId] = useState<string | null>(null)
+  const effectiveClinicId = initial?.id ?? savedClinicId
+  const [tab, setTab] = useState<'agreement' | 'basic' | 'gst' | 'banking' | 'schemes'>(isEdit ? 'basic' : 'agreement')
   const [agreementFile, setAgreementFile] = useState<File | null>(null)
   
   useEffect(() => {
@@ -319,8 +321,14 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
       if (result.data?.externalId) {
         setClinicCode(result.data.externalId)
       }
-      toast.success(isEdit ? 'Channel Partner updated!' : 'Channel Partner onboarded successfully!')
-      onSuccess()
+      if (!isEdit && result.data?.id) {
+        setSavedClinicId(result.data.id)
+        setTab('schemes')
+        toast.success('Channel Partner saved! Add loan schemes below — close when done.')
+      } else {
+        toast.success('Channel Partner updated!')
+        onSuccess()
+      }
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Failed')
     } finally {
@@ -675,6 +683,11 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
               <p className="text-xs text-green-700 font-medium">✅ Bank Verified: {form.bankName}</p>
             </div>
           )}
+
+          <button type="button" onClick={() => setTab('schemes')}
+            className="w-full py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+            Next: Schemes →
+          </button>
         </div>
       )}
 
@@ -682,16 +695,16 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
   <div className="space-y-4">
     <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
       <p className="text-sm font-semibold text-blue-800">Step 5: Configure Loan Schemes</p>
-      <p className="text-xs text-blue-600 mt-1">Add the schemes agreed with this clinic</p>
+      <p className="text-xs text-blue-600 mt-1">Add the schemes agreed with this channel partner</p>
     </div>
-    {initial?.id ? (
-      <ClinicSchemeManager clinicId={initial.id} isAdmin={true} />
+    {effectiveClinicId ? (
+      <ClinicSchemeManager clinicId={effectiveClinicId} isAdmin={true} />
     ) : (
       <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
-        <p className="text-sm text-yellow-700">⚠️ Please save the clinic first — then you can add schemes</p>
+        <p className="text-sm text-yellow-700">⚠️ Please save the channel partner first — then you can add schemes</p>
         <button type="submit" disabled={loading}
           className="mt-3 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
-          Pehle Clinic Save Karo →
+          Save Channel Partner →
         </button>
       </div>
     )}
@@ -700,10 +713,17 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
 
       {/* Submit Buttons — always visible */}
       <div className="flex gap-3 pt-2 border-t">
-        <button type="submit" disabled={loading}
-          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition disabled:opacity-60">
-          {loading ? 'Saving...' : isEdit ? 'Update Channel Partner' : '✅ Onboard Channel Partner'}
-        </button>
+        {savedClinicId ? (
+          <button type="button" onClick={onSuccess}
+            className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
+            ✅ Done — Close
+          </button>
+        ) : (
+          <button type="submit" disabled={loading}
+            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition disabled:opacity-60">
+            {loading ? 'Saving...' : isEdit ? 'Update Channel Partner' : '✅ Onboard Channel Partner'}
+          </button>
+        )}
         <button type="button" onClick={onCancel}
           className="px-5 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition">
           Cancel

@@ -221,12 +221,12 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
         </div>
         <div className="flex gap-2">
           {isAdmin && (
-            <button onClick={() => setShowAddTemplate(!showAddTemplate)}
+            <button type="button" onClick={() => setShowAddTemplate(!showAddTemplate)}
               className="px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded-lg hover:bg-purple-700">
               + New Scheme Type
             </button>
           )}
-          <button onClick={() => { setShowAddScheme(!showAddScheme); setEditingScheme(null); setSelectedIds(new Set()) }}
+          <button type="button" onClick={() => { setShowAddScheme(!showAddScheme); setEditingScheme(null); setSelectedIds(new Set()) }}
             className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700">
             + Add Schemes
           </button>
@@ -259,10 +259,10 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
             </div>
           )}
           <div className="flex gap-2">
-            <button onClick={addTemplate} className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">
+            <button type="button" onClick={addTemplate} className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">
               Create Scheme
             </button>
-            <button onClick={() => setShowAddTemplate(false)} className="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">
+            <button type="button" onClick={() => setShowAddTemplate(false)} className="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">
               Cancel
             </button>
           </div>
@@ -404,7 +404,7 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
           )}
 
           <div className="flex gap-2">
-            <button onClick={saveSchemes}
+            <button type="button" onClick={saveSchemes}
               disabled={saving || (editingScheme ? false : selectedIds.size === 0) || !subventionPct || parseFloat(subventionPct) <= 0}
               className="flex-1 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60">
               {saving ? 'Saving...' : editingScheme
@@ -413,7 +413,7 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
                   ? `Add ${selectedIds.size} Schemes`
                   : 'Add Scheme'}
             </button>
-            <button onClick={resetForm} className="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">
+            <button type="button" onClick={resetForm} className="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">
               Cancel
             </button>
           </div>
@@ -441,8 +441,8 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
                   </span>
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
-                  <button onClick={() => openEditScheme(cs)} className="text-xs text-blue-500 hover:text-blue-700 font-medium">Edit</button>
-                  <button onClick={() => removeScheme(cs.id)} className="text-xs text-red-500 hover:text-red-700">Remove</button>
+                  <button type="button" onClick={() => openEditScheme(cs)} className="text-xs text-blue-500 hover:text-blue-700 font-medium">Edit</button>
+                  <button type="button" onClick={() => removeScheme(cs.id)} className="text-xs text-red-500 hover:text-red-700">Remove</button>
                 </div>
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
