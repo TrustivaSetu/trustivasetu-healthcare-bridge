@@ -67,7 +67,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "region", label: "Region Wise" },
   { key: "lender", label: "Lender Wise" },
   { key: "rm", label: "RM Wise" },
-  { key: "clinic", label: "Clinic Onboarding" },
+  { key: "clinic", label: "Channel Partner Onboarding" },
 ];
 
 type ClinicModal = { title: string; list: ClinicListItem[] } | null;
@@ -179,9 +179,9 @@ export default function SuperAdminDashboard() {
 
       {/* KPI Row 3 — Clinic counts + onboarding widgets */}
       <div className="grid grid-cols-2 gap-3">
-        <KPICard label="Total Clinics" value={kpi.totalClinics} color="blue" />
+        <KPICard label="Total Channel Partners" value={kpi.totalClinics} color="blue" />
         <KPICard
-          label="New Clinics (MTD)"
+          label="New Channel Partners (MTD)"
           value={kpi.onboardedClinics}
           color="green"
         />
@@ -190,20 +190,20 @@ export default function SuperAdminDashboard() {
       {/* Onboarding widgets — This Week & This Month */}
       <div className="grid grid-cols-2 gap-3">
         <button
-          onClick={() => setClinicModal({ title: "Hospitals Onboarded This Week", list: data!.thisWeekClinicsList })}
+          onClick={() => setClinicModal({ title: "Channel Partners Onboarded This Week", list: data!.thisWeekClinicsList })}
           className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-left hover:bg-indigo-100 transition-colors"
         >
           <p className="text-xs font-medium text-indigo-600 opacity-80">This Week</p>
           <p className="text-3xl font-bold text-indigo-700 mt-1">{kpi.thisWeekClinics}</p>
-          <p className="text-xs text-indigo-500 mt-1">hospitals onboarded ↗</p>
+          <p className="text-xs text-indigo-500 mt-1">channel partners onboarded ↗</p>
         </button>
         <button
-          onClick={() => setClinicModal({ title: "Hospitals Onboarded This Month", list: data!.thisMonthClinicsList })}
+          onClick={() => setClinicModal({ title: "Channel Partners Onboarded This Month", list: data!.thisMonthClinicsList })}
           className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-left hover:bg-emerald-100 transition-colors"
         >
           <p className="text-xs font-medium text-emerald-600 opacity-80">This Month</p>
           <p className="text-3xl font-bold text-emerald-700 mt-1">{kpi.thisMonthClinics}</p>
-          <p className="text-xs text-emerald-500 mt-1">hospitals onboarded ↗</p>
+          <p className="text-xs text-emerald-500 mt-1">channel partners onboarded ↗</p>
         </button>
       </div>
 
@@ -446,14 +446,14 @@ export default function SuperAdminDashboard() {
       {activeTab === "clinic" && (
         <div className="bg-white rounded-xl shadow p-4">
           <h2 className="text-base font-semibold mb-3">
-            Recent Clinic Onboarding
+            Recent Channel Partner Onboarding
           </h2>
           {data!.clinicOnboarding.length === 0 ? (
             <Empty />
           ) : (
             <Table
               headers={[
-                "Clinic Name",
+                "Channel Partner Name",
                 "Region",
                 "RM",
                 "Onboarded On",

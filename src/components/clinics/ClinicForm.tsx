@@ -24,6 +24,7 @@ interface ClinicFormData {
   bankName: string
   signingAuthority: string
   pincode: string
+  city: string
   udyamNumber: string
   hospitalType: string
   contactPersonDesignation: string
@@ -91,6 +92,7 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
     bankName: meta.bankName ?? '',
     signingAuthority: meta.signingAuthority ?? '',
     pincode: meta.pincode ?? '',
+    city: (meta.city as string) ?? '',
     udyamNumber: meta.udyamNumber ?? '',
     hospitalType: initial?.hospitalType ?? '',
     contactPersonDesignation: meta.contactPersonDesignation ?? '',
@@ -109,6 +111,7 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
   const [gstLoading, setGstLoading] = useState(false)
   const [ifscLoading, setIfscLoading] = useState(false)
   const [uploadLoading, setUploadLoading] = useState(false)
+  const [pinLoading, setPinLoading] = useState(false)
 
   const [clinicCode, setClinicCode] = useState<string | null>(initial?.externalId ?? null)
   const [tab, setTab] = useState<'agreement' | 'basic' | 'gst' | 'banking' | 'schemes'>('agreement')
@@ -207,12 +210,32 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
   }
 
 
+  // PIN Code → City auto-fetch (India Post API)
+  async function fetchCityFromPin(pin: string) {
+    if (pin.length !== 6 || !/^\d{6}$/.test(pin)) return
+    setPinLoading(true)
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`)
+      const data = await res.json()
+      if (Array.isArray(data) && data[0]?.Status === 'Success') {
+        const po = data[0].PostOffice?.[0]
+        if (po?.District) {
+          update('city', po.District)
+        }
+      }
+    } catch {
+      // fail silently — user can enter manually
+    } finally {
+      setPinLoading(false)
+    }
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault()
 
     // Client-side validation — required fields may be on hidden tabs
     if (!form.name || form.name.trim().length < 2) {
-      toast.error('Hospital name is required (min 2 chars)')
+      toast.error('Channel Partner name is required (min 2 chars)')
       setTab('basic')
       return
     }
@@ -258,6 +281,7 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
           bankName: form.bankName,
           signingAuthority: form.signingAuthority,
           pincode: form.pincode,
+          city: form.city,
           udyamNumber: form.udyamNumber,
           contactPersonDesignation: form.contactPersonDesignation,
           alternatePhone: form.alternatePhone,
@@ -295,7 +319,7 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
       if (result.data?.externalId) {
         setClinicCode(result.data.externalId)
       }
-      toast.success(isEdit ? 'Clinic updated!' : 'Clinic onboarded successfully!')
+      toast.success(isEdit ? 'Channel Partner updated!' : 'Channel Partner onboarded successfully!')
       onSuccess()
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Failed')
@@ -403,14 +427,14 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Field label="Clinic / Hospital Name *" value={form.name} onChange={v => update('name', v)} required />
+              <Field label="Channel Partner Name *" value={form.name} onChange={v => update('name', v)} required />
             </div>
             <div>
               <Field label="Brand Name" value={form.brandName} onChange={v => update('brandName', v)} />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Hospital Type</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Channel Partner Type</label>
               <select value={form.hospitalType} onChange={e => update('hospitalType', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
                 <option value="">Select Type</option>
@@ -422,7 +446,30 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
               <Field label="Address *" value={form.address} onChange={v => update('address', v)} required />
             </div>
 
-            <Field label="Pincode" value={form.pincode} onChange={v => update('pincode', v)} />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Pincode</label>
+              <input
+                type="text" maxLength={6} value={form.pincode}
+                onChange={e => {
+                  const v = e.target.value.replace(/\D/g, '')
+                  update('pincode', v)
+                  if (v.length === 6) fetchCityFromPin(v)
+                }}
+                placeholder="6-digit PIN"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                City {pinLoading && <span className="text-xs text-blue-500 ml-1">auto-fetching...</span>}
+              </label>
+              <input
+                type="text" value={form.city}
+                onChange={e => update('city', e.target.value)}
+                placeholder="Auto-filled or enter manually"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
 
             <Field label="Contact Person *" value={form.contactPerson}
               onChange={v => update('contactPerson', v)} required />
@@ -435,7 +482,7 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
               onChange={v => update('alternatePhone', v)} />
             <Field label="Concerned Person Email" value={form.contactPersonEmail}
               onChange={v => update('contactPersonEmail', v)} type="email" />
-            <Field label="Email (Clinic Mail)" value={form.email}
+            <Field label="Email (Channel Partner Mail)" value={form.email}
               onChange={v => update('email', v)} type="email" />
 
             <div>
@@ -540,7 +587,7 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
           {/* GST Auto-fetch */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <p className="text-sm font-medium text-blue-800 mb-2">
-              Enter GST number — clinic name and address will be auto-filled
+              Enter GST number — channel partner name and address will be auto-filled
             </p>
             <div className="flex gap-2">
               <input type="text" placeholder="GSTIN (15 characters)"
@@ -656,7 +703,7 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
       <div className="flex gap-3 pt-2 border-t">
         <button type="submit" disabled={loading}
           className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition disabled:opacity-60">
-          {loading ? 'Saving...' : isEdit ? 'Update Clinic' : '✅ Onboard Clinic'}
+          {loading ? 'Saving...' : isEdit ? 'Update Channel Partner' : '✅ Onboard Channel Partner'}
         </button>
         <button type="button" onClick={onCancel}
           className="px-5 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition">

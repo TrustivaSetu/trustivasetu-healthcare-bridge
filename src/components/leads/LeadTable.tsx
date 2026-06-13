@@ -44,7 +44,7 @@ export function LeadTable({ leads, onEdit, onStatusUpdate, onDelete, canEdit, ca
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              {['Lead ID', 'Applicant', 'Clinic', 'Region', 'Lender', 'Applied Amt', 'Status', 'Approved Amt', 'Disbursed Amt', 'Applied On', 'Disbursal Date', 'Actions'].map(h => (
+              {['Lead ID', 'Applicant', 'Channel Partner', 'Region', 'Lender', 'Applied Amt', 'Status', 'Approved Amt', 'Disbursed Amt', 'Applied On', 'Disbursal Date', 'Actions'].map(h => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
               ))}
             </tr>

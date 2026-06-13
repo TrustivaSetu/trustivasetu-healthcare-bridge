@@ -379,14 +379,14 @@ export default function LeadDetailPage() {
                   </dl>
                 </div>
 
-                {/* Clinic */}
+                {/* Channel Partner */}
                 <div className="bg-white rounded-xl border border-gray-200 p-5">
-                  <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Clinic</h2>
+                  <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Channel Partner</h2>
                   <p className="font-semibold text-gray-900">{lead.clinic.name}</p>
                   <p className="text-sm text-gray-500 mt-1">{lead.clinic.region.name}</p>
                   <p className="text-sm text-gray-600 mt-1">{lead.clinic.address}</p>
                   <Link href={`/clinics/${lead.clinic.id}`} className="inline-block mt-3 text-xs text-brand-600 font-medium hover:underline">
-                    View clinic →
+                    View Channel Partner →
                   </Link>
                 </div>
               </div>

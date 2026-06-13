@@ -15,7 +15,7 @@ type TabKey = "overview" | "rm" | "clinic" | "lender";
 const TABS: { key: TabKey; label: string }[] = [
   { key: "overview", label: "Overview" },
   { key: "rm", label: "RM Wise" },
-  { key: "clinic", label: "Clinic Wise" },
+  { key: "clinic", label: "Channel Partner Wise" },
   { key: "lender", label: "Lender Wise" },
 ];
 
@@ -79,7 +79,7 @@ export default function ManagerDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <KPICard label="Approval Rate" value={kpi.approvalRate} suffix="%" color="teal" />
         <KPICard label="Approved ≠ Disbursed" value={kpi.approvedNotDisbursed} color="orange" />
-        <KPICard label="Total Clinics" value={kpi.totalClinics} color="indigo" />
+        <KPICard label="Total Channel Partners" value={kpi.totalClinics} color="indigo" />
         <KPICard label="MTD Leads" value={kpi.currentMonthLeads} color="blue" badge={mom !== 0 ? `${mom > 0 ? "▲" : "▼"} ${Math.abs(mom)}% vs LM` : undefined} badgeColor={mom >= 0 ? "green" : "red"} />
       </div>
 
@@ -134,9 +134,9 @@ export default function ManagerDashboard() {
 
       {activeTab === "clinic" && (
         <div className="bg-white rounded-xl shadow p-4">
-          <h2 className="text-base font-semibold mb-3">Clinic Wise Performance</h2>
+          <h2 className="text-base font-semibold mb-3">Channel Partner Wise Performance</h2>
           {data!.clinicWise.length === 0 ? <Empty /> : (
-            <Table headers={["Clinic","Code","RM","Total","Approved","Disbursed","MTD","LMTD","Growth"]}
+            <Table headers={["Channel Partner","Code","RM","Total","Approved","Disbursed","MTD","LMTD","Growth"]}
               rows={data!.clinicWise.map((c) => [c.name, c.code, c.rm, c.total, c.approved, c.disbursed, c.mtd, c.lmtd,
                 <span key={c.code} className={c.growth >= 0 ? "text-green-600 font-semibold" : "text-red-500 font-semibold"}>
                   {c.growth >= 0 ? "▲" : "▼"} {Math.abs(c.growth)}%

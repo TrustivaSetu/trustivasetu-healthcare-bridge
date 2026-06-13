@@ -37,6 +37,7 @@ export async function GET(req: NextRequest) {
   const lenderId = searchParams.get('lenderId')
   const rmId = searchParams.get('rmId')
   const status = searchParams.get('status')
+  const statuses = searchParams.get('statuses') // comma-separated multi-select
   const search = searchParams.get('search')
   const leadId = searchParams.get('leadId')
   const dateFrom = searchParams.get('dateFrom')
@@ -61,7 +62,13 @@ export async function GET(req: NextRequest) {
       where.clinicId = { in: validClinics.map(c => c.id) }
     }
     if (lenderId) where.lenderId = lenderId
-    if (status) where.status = status
+    if (statuses) {
+      const statusList = statuses.split(',').filter(Boolean)
+      if (statusList.length === 1) where.status = statusList[0]
+      else if (statusList.length > 1) where.status = { in: statusList }
+    } else if (status) {
+      where.status = status
+    }
     if (leadId) where.id = { endsWith: leadId.toLowerCase() }
     if (dateFrom || dateTo) {
       where.applicationDate = {}

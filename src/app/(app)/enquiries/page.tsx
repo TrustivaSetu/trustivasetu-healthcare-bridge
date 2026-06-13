@@ -227,7 +227,7 @@ function PatientTab({ userRole: _userRole }: { userRole: string }) {
         'Name': e.applicantName ?? '',
         'Mobile': e.mobile ?? '',
         'Email': e.email ?? '',
-        'Hospital': e.hospitalName ?? '',
+        'Channel Partner': e.hospitalName ?? '',
         'Treatment': e.treatmentName ?? '',
         'Loan Amount': e.loanAmount ?? '',
         'PAN': e.panNumber ?? '',
@@ -329,7 +329,7 @@ function PatientTab({ userRole: _userRole }: { userRole: string }) {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
             <tr>
-              {['#', 'Name', 'Mobile', 'Email', 'Hospital', 'Treatment', 'Amount', 'Source', 'Assigned RM', 'Region', 'Status', 'Created', 'Actions'].map(h => (
+              {['#', 'Name', 'Mobile', 'Email', 'Channel Partner', 'Treatment', 'Amount', 'Source', 'Assigned RM', 'Region', 'Status', 'Created', 'Actions'].map(h => (
                 <th key={h} className="px-3 py-2.5 text-left font-medium whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -619,7 +619,7 @@ function PatientEditDrawer({ enquiry, onClose, onDone }: { enquiry: PatientEnqui
       <Field label="Email">
         <input type="email" value={form.email} onChange={set('email')} className={inputCls} />
       </Field>
-      <Field label="Hospital Name">
+      <Field label="Channel Partner Name">
         <input type="text" value={form.hospitalName} onChange={set('hospitalName')} className={inputCls} />
       </Field>
       <Field label="Treatment">
@@ -671,7 +671,7 @@ function PatientConvertDialog({ enquiry, onClose, onDone }: { enquiry: PatientEn
   if (!enquiry.applicantName) missing.push('Applicant Name')
   if (!enquiry.mobile) missing.push('Mobile')
   if (!enquiry.loanAmount) missing.push('Loan Amount')
-  if (!enquiry.clinicId && !enquiry.hospitalName) missing.push('Clinic / Hospital')
+  if (!enquiry.clinicId && !enquiry.hospitalName) missing.push('Channel Partner')
 
   const handleConvert = async () => {
     setLoading(true)
@@ -708,7 +708,7 @@ function PatientConvertDialog({ enquiry, onClose, onDone }: { enquiry: PatientEn
           <p className="text-sm text-gray-600 mb-4">Converting this patient enquiry to a lead:</p>
           <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1.5">
             <div><span className="text-gray-500">Patient:</span> <span className="font-medium">{enquiry.applicantName}</span></div>
-            <div><span className="text-gray-500">Hospital:</span> <span className="font-medium">{enquiry.hospitalName ?? '—'}</span></div>
+            <div><span className="text-gray-500">Channel Partner:</span> <span className="font-medium">{enquiry.hospitalName ?? '—'}</span></div>
             <div><span className="text-gray-500">Region:</span> <span className="font-medium">{enquiry.assignedRegion ?? '—'}</span></div>
             <div><span className="text-gray-500">Assigned RM:</span> <span className="font-medium">{enquiry.assignedRmName ?? '—'}</span></div>
             <div><span className="text-gray-500">Amount:</span> <span className="font-medium">{enquiry.loanAmount ? `₹${enquiry.loanAmount.toLocaleString('en-IN')}` : '—'}</span></div>

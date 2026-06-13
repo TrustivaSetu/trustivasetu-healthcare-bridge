@@ -178,22 +178,22 @@ export default function ClinicDetailPage() {
   if (loading) {
     return (
       <div className="flex flex-col min-h-full">
-        <Header title="Clinic Details" />
+        <Header title="Channel Partner Details" />
         <div className="flex justify-center py-20">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
         </div>
       </div>
     )
   }
-  if (!clinic) return <div className="p-6 text-red-600">Clinic not found</div>
+  if (!clinic) return <div className="p-6 text-red-600">Channel Partner not found</div>
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title={clinic.name as string} subtitle="Clinic / Centre Details" />
+      <Header title={clinic.name as string} subtitle="Channel Partner Details" />
 
       <div className="flex-1 p-6 space-y-5">
         <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Link href="/clinics" className="hover:text-blue-600">Clinics</Link>
+          <Link href="/clinics" className="hover:text-blue-600">Channel Partners</Link>
           <span>/</span>
           <span className="text-gray-800">{clinic.name as string}</span>
         </div>
@@ -201,7 +201,7 @@ export default function ClinicDetailPage() {
         {/* Main info + target row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="bg-white rounded-xl border border-gray-200 p-5 col-span-2">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Clinic Information</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Channel Partner Information</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <InfoItem label="Address" value={clinic.address as string} />
               <InfoItem label="Contact Person" value={clinic.contactPerson as string} />

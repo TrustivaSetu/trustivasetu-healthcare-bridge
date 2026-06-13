@@ -5,6 +5,18 @@ import { buildClinicFilter } from '@/lib/permissions'
 import * as XLSX from 'xlsx'
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns'
 
+// Server runs in UTC; offset by +5:30 for IST display
+function toIST(d: Date | string | null | undefined): Date | null {
+  if (!d) return null
+  return new Date(new Date(d).getTime() + 330 * 60 * 1000)
+}
+function fmtDate(d: Date | string | null | undefined): string {
+  const ist = toIST(d); return ist ? format(ist, 'dd/MM/yyyy') : ''
+}
+function fmtTime(d: Date | string | null | undefined): string {
+  const ist = toIST(d); return ist ? format(ist, 'hh:mm a') : ''
+}
+
 export async function GET(req: NextRequest) {
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -23,12 +35,18 @@ export async function GET(req: NextRequest) {
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
     const status = searchParams.get('status')
+    const statuses = searchParams.get('statuses')
     const lenderId = searchParams.get('lenderId')
     const clinicIdFilter = searchParams.get('clinicId')
     const search = searchParams.get('search')
 
     const where: Record<string, unknown> = { clinicId: clinicIdFilter ? clinicIdFilter : { in: clinicIdList } }
-    if (status) where.status = status
+    if (statuses) {
+      const sl = statuses.split(',').filter(Boolean)
+      where.status = sl.length === 1 ? sl[0] : { in: sl }
+    } else if (status) {
+      where.status = status
+    }
     if (lenderId) where.lenderId = lenderId
     if (search) where.applicantName = { contains: search, mode: 'insensitive' }
     if (dateFrom || dateTo) {
@@ -52,7 +70,7 @@ export async function GET(req: NextRequest) {
       'Applicant Name': l.applicantName,
       'Phone': l.phone ?? '',
       'Email': l.email ?? '',
-      'Clinic': l.clinic.name,
+      'Channel Partner': l.clinic.name,
       'Region': l.clinic.region.name,
       'RM': l.clinic.assignedRM?.name ?? '',
       'Lender': l.lender?.name ?? '',
@@ -62,9 +80,14 @@ export async function GET(req: NextRequest) {
       'NACH Done': l.nachStatus === 'DONE' ? 'Yes' : 'No',
       'Approved Amount (₹L)': l.approvedAmount ?? '',
       'Disbursed Amount (₹L)': l.disbursedAmount ?? '',
-      'Application Date': format(new Date(l.applicationDate), 'dd/MM/yyyy'),
-      'Approval Date': l.approvalDate ? format(new Date(l.approvalDate), 'dd/MM/yyyy') : '',
-      'Disbursal Date': l.disbursalDate ? format(new Date(l.disbursalDate), 'dd/MM/yyyy') : '',
+      'Application Date': fmtDate(l.applicationDate),
+      'Application Time': fmtTime(l.applicationDate),
+      'Approval Date': fmtDate(l.approvalDate),
+      'Approval Time': fmtTime(l.approvalDate),
+      'Disbursal Date': fmtDate(l.disbursalDate),
+      'Disbursal Time': fmtTime(l.disbursalDate),
+      'DO Generated Date': fmtDate((l as Record<string, unknown>).doGeneratedAt as string ?? null),
+      'DO Generated Time': fmtTime((l as Record<string, unknown>).doGeneratedAt as string ?? null),
       'Remarks': l.remarks ?? '',
       'Created By': l.createdBy?.name ?? '',
     }))
@@ -109,7 +132,7 @@ export async function GET(req: NextRequest) {
       const mtd = mtdMap[c.id]?._count.id ?? 0
       const lmtd = lmtdMap[c.id]?._count.id ?? 0
       return {
-        'Clinic Name': c.name,
+        'Channel Partner Name': c.name,
         'Region': c.region.name,
         'Address': c.address,
         'Contact Person': c.contactPerson,

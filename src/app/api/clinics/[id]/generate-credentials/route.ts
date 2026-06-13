@@ -81,7 +81,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         action: 'UPDATE',
         entity: 'Clinic',
         entityId: id,
-        details: { action: 'generate_credentials', emailSent, portalEmail: portalUser.email },
+        details: JSON.stringify({ action: 'generate_credentials', emailSent, portalEmail: portalUser.email }),
       },
     })
 

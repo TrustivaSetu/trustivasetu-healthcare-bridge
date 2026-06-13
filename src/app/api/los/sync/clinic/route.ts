@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json() as Record<string, unknown>
   const name = String(body.fullName ?? body.identifierName ?? body.name ?? '').trim()
-  if (!name) return NextResponse.json({ error: 'Hospital name required' }, { status: 400 })
+  if (!name) return NextResponse.json({ error: 'Channel partner name required' }, { status: 400 })
 
   const externalId = body.externalId
     ? String(body.externalId)

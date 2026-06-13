@@ -103,7 +103,7 @@ export function portalAccessEmailHtml(opts: { clinicName: string; email: string;
   const { clinicName, email, password, loginUrl } = opts
   return layout(`Your Trustiva Setu Portal Access — ${clinicName}`, `
     <h2 style="margin:0 0 8px;color:#111827;font-size:20px;">Welcome to Trustiva Setu Portal</h2>
-    <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Your clinic portal access has been created for <strong>${clinicName}</strong>. Use the credentials below to log in and view your leads and disbursal reports.</p>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Your channel partner portal access has been created for <strong>${clinicName}</strong>. Use the credentials below to log in and view your leads and disbursal reports.</p>
     <div style="background:#f3f4f6;border-radius:10px;padding:20px;margin-bottom:24px;">
       <table style="width:100%;border-collapse:collapse;font-size:14px;">
         <tr><td style="padding:6px 0;color:#6b7280;width:120px;">Login URL</td><td style="padding:6px 0;font-weight:600;color:#111827;"><a href="${loginUrl}" style="color:#0284c7;">${loginUrl}</a></td></tr>
@@ -122,7 +122,7 @@ export function monthlyReportEmailHtml(opts: { clinicName: string; month: string
   const { clinicName, month, year, totalLeads } = opts
   return layout(`Monthly Lead Report — ${clinicName} — ${month} ${year}`, `
     <h2 style="margin:0 0 8px;color:#111827;font-size:20px;">Monthly Lead Report</h2>
-    <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Please find attached the consolidated lead report for <strong>${clinicName}</strong> for the month of <strong>${month} ${year}</strong>.</p>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Please find attached the consolidated lead report for <strong>${clinicName}</strong> (channel partner) for the month of <strong>${month} ${year}</strong>.</p>
     <div style="background:#f3f4f6;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
       <p style="margin:0;font-size:14px;color:#374151;">Total Leads in Report: <strong>${totalLeads}</strong></p>
     </div>
@@ -134,9 +134,9 @@ export function clinicCreatorEmailHtml(opts: {
   clinicName: string; creatorName: string; portalEmail: string; password: string; loginUrl: string
 }) {
   const { clinicName, creatorName, portalEmail, password, loginUrl } = opts
-  return layout(`Clinic Onboarded — ${clinicName}`, `
-    <h2 style="margin:0 0 8px;color:#111827;font-size:20px;">Clinic Successfully Onboarded</h2>
-    <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Hi <strong>${creatorName}</strong>, you have successfully onboarded <strong>${clinicName}</strong> on Trustiva Setu LMS. Portal credentials have been generated and sent to the clinic.</p>
+  return layout(`Channel Partner Onboarded — ${clinicName}`, `
+    <h2 style="margin:0 0 8px;color:#111827;font-size:20px;">Channel Partner Successfully Onboarded</h2>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Hi <strong>${creatorName}</strong>, you have successfully onboarded <strong>${clinicName}</strong> on Trustiva Setu LMS. Portal credentials have been generated and sent to the channel partner.</p>
     <div style="background:#f3f4f6;border-radius:10px;padding:20px;margin-bottom:24px;">
       <table style="width:100%;border-collapse:collapse;font-size:14px;">
         <tr><td style="padding:6px 0;color:#6b7280;width:120px;">Login URL</td><td style="padding:6px 0;font-weight:600;color:#111827;"><a href="${loginUrl}" style="color:#0284c7;">${loginUrl}</a></td></tr>
@@ -152,12 +152,12 @@ export function clinicManagerEmailHtml(opts: {
   clinicName: string; managerName: string; creatorName: string; loginUrl: string
 }) {
   const { clinicName, managerName, creatorName, loginUrl } = opts
-  return layout(`New Clinic Onboarded — ${clinicName}`, `
-    <h2 style="margin:0 0 8px;color:#111827;font-size:20px;">New Clinic Onboarded</h2>
-    <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Hi <strong>${managerName}</strong>, your team member <strong>${creatorName}</strong> has onboarded a new clinic partner on Trustiva Setu LMS.</p>
+  return layout(`New Channel Partner Onboarded — ${clinicName}`, `
+    <h2 style="margin:0 0 8px;color:#111827;font-size:20px;">New Channel Partner Onboarded</h2>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Hi <strong>${managerName}</strong>, your team member <strong>${creatorName}</strong> has onboarded a new channel partner on Trustiva Setu LMS.</p>
     <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
       <p style="margin:0;font-size:15px;font-weight:700;color:#166534;">${clinicName}</p>
-      <p style="margin:4px 0 0;font-size:13px;color:#16a34a;">Portal access has been set up and credentials sent to the clinic.</p>
+      <p style="margin:4px 0 0;font-size:13px;color:#16a34a;">Portal access has been set up and credentials sent to the channel partner.</p>
     </div>
     <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">You can track this clinic&apos;s leads and performance at <a href="${loginUrl}" style="color:#0284c7;">${loginUrl}</a>.</p>
     <p style="font-size:13px;color:#9ca3af;margin:0;">This is a notification email. No action is required from you.</p>
@@ -176,7 +176,7 @@ export function enquiryNotificationHtml(opts: {
 }) {
   const { type, recipientName, enquiryId, applicantOrClinic, mobile, region, source, lmsUrl } = opts
   const label = type === 'patient' ? 'Patient Enquiry' : 'Provider Enquiry'
-  const nameLabel = type === 'patient' ? 'Applicant' : 'Clinic'
+  const nameLabel = type === 'patient' ? 'Applicant' : 'Channel Partner'
   return layout(`New ${label} Assigned — ${BRAND.name}`, `
     <h2 style="margin:0 0 8px;color:#111827;font-size:20px;">New ${label} Assigned to You</h2>
     <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Hi <strong>${recipientName}</strong>, a new enquiry has been assigned to you on Trustiva Setu LMS.</p>

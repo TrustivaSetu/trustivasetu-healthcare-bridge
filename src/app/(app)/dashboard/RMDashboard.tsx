@@ -107,9 +107,9 @@ export default function RMDashboard() {
 
       {activeTab === "clinic" && (
         <div className="bg-white rounded-xl shadow p-4">
-          <h2 className="text-base font-semibold mb-3">My Clinic Performance</h2>
+          <h2 className="text-base font-semibold mb-3">My Channel Partner Performance</h2>
           {data!.clinicWise.length === 0 ? <Empty /> : (
-            <Table headers={["Clinic","Code","Region","Total","Approved","Disbursed","MTD","LMTD","Growth"]}
+            <Table headers={["Channel Partner","Code","Region","Total","Approved","Disbursed","MTD","LMTD","Growth"]}
               rows={data!.clinicWise.map((c) => [c.name, c.code, c.region, c.total, c.approved, c.disbursed, c.mtd, c.lmtd,
                 <span key={c.id} className={c.growth >= 0 ? "text-green-600 font-semibold" : "text-red-500 font-semibold"}>
                   {c.growth >= 0 ? "▲" : "▼"} {Math.abs(c.growth)}%

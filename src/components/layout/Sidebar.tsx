@@ -25,7 +25,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard',  label: 'Dashboard',        icon: IconDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'DASHBOARD' },
   { href: '/enquiries',  label: 'Enquiries',         icon: IconEnquiry,   roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'LEADS' },
   { href: '/leads',      label: 'Leads',             icon: IconLeads,     roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'LEADS' },
-  { href: '/clinics',    label: 'Clinics / Centres', icon: IconClinic,    roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'CLINICS' },
+  { href: '/clinics',    label: 'Channel Partners',  icon: IconClinic,    roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'CLINICS' },
   { href: '/reports',    label: 'Reports',           icon: IconReports,   roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], module: 'REPORTS' },
   { href: '/dashboard/approvals', label: 'Approvals', icon: IconApprovals, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER'], hasBadge: true },
   // HR — module key used for permissions filtering

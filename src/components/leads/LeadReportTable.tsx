@@ -74,7 +74,7 @@ function calcTAT(from: string | null, to: string | null): string {
 
 function formatTime(dt: string | null): string {
   if (!dt) return '—'
-  return new Date(dt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+  return new Date(dt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
 }
 
 function yesNo(val: unknown): string {
@@ -255,7 +255,7 @@ export function exportLeadReport(leads: ReportLead[]) {
       'Rejection Reason': lead.rejectionReason ?? (lead.status === 'REJECTED' ? (lead.remarks ?? '') : ''),
       'Approved Amount': lead.approvedAmount ?? '',
       'Disbursed Amount': lead.disbursedAmount ?? '',
-      'Clinic': lead.clinic.name,
+      'Channel Partner': lead.clinic.name,
       'Region': lead.clinic.region.name,
       'Lender': lead.lender?.name ?? '',
       // New columns 30–44

@@ -658,10 +658,10 @@ export function ClinicBulkUpload({ onSuccess, onCancel }: Props) {
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
             <p className="text-xs text-yellow-700 font-medium">Important notes:</p>
             <ul className="text-xs text-yellow-600 mt-1 space-y-1 list-disc list-inside">
-              <li>Clinic Name, Contact Person, Phone are mandatory</li>
+              <li>Channel Partner Name, Contact Person, Phone are mandatory</li>
               <li>If any branch has different bank details, fill those columns in Excel</li>
-              <li>Duplicate clinic names will be skipped</li>
-              <li>Each clinic will get a unique TSC-XXXXXX code auto-generated</li>
+              <li>Duplicate channel partner names will be skipped</li>
+              <li>Each channel partner will get a unique TSC-XXXXXX code auto-generated</li>
             </ul>
           </div>
 

@@ -7,6 +7,7 @@ import { useTabSession } from '@/contexts/TabSessionContext'
 import { LeadTable } from '@/components/leads/LeadTable'
 import { LeadForm } from '@/components/leads/LeadForm'
 import { LeadReportTable, exportLeadReport, type ReportLead } from '@/components/leads/LeadReportTable'
+import { MultiSelect } from '@/components/ui/MultiSelect'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
@@ -41,7 +42,8 @@ export function LeadsPageContent() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
-  const [status, setStatus] = useState(searchParams.get('status') ?? '')
+  const initStatus = searchParams.get('status')
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(initStatus ? [initStatus] : [])
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -73,7 +75,7 @@ export function LeadsPageContent() {
       const p = new URLSearchParams({ page: String(page), pageSize: '20' })
       if (search) p.set('search', search)
       if (leadIdSearch) p.set('leadId', leadIdSearch)
-      if (status) p.set('status', status)
+      if (selectedStatuses.length > 0) p.set('statuses', selectedStatuses.join(','))
       if (dateFrom) p.set('dateFrom', dateFrom)
       if (dateTo) p.set('dateTo', dateTo)
       if (lenderId) p.set('lenderId', lenderId)
@@ -90,7 +92,7 @@ export function LeadsPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [page, search, leadIdSearch, status, dateFrom, dateTo, lenderId, regionId, clinicId, rmId])
+  }, [page, search, leadIdSearch, selectedStatuses, dateFrom, dateTo, lenderId, regionId, clinicId, rmId])
 
   useEffect(() => { fetchLeads() }, [fetchLeads])
 
@@ -154,7 +156,8 @@ export function LeadsPageContent() {
 
   async function handleExport() {
     const p = new URLSearchParams({ type: 'leads' })
-    if (status) p.set('status', status)
+    if (selectedStatuses.length === 1) p.set('status', selectedStatuses[0])
+    else if (selectedStatuses.length > 1) p.set('statuses', selectedStatuses.join(','))
     if (dateFrom) p.set('dateFrom', dateFrom)
     if (dateTo) p.set('dateTo', dateTo)
     if (lenderId) p.set('lenderId', lenderId)
@@ -236,13 +239,14 @@ export function LeadsPageContent() {
                 onChange={e => { setSearch(e.target.value); setPage(1) }}
                 className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 w-40" />
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-600">Status</label>
-              <select value={status} onChange={e => { setStatus(e.target.value); setPage(1) }}
-                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 bg-white">
-                {STATUSES.map(s => <option key={s} value={s}>{s ? (STATUS_LABELS[s] ?? s) : 'All Statuses'}</option>)}
-              </select>
-            </div>
+            <MultiSelect
+              label="Status"
+              placeholder="All Statuses"
+              options={STATUSES.filter(s => s !== '').map(s => ({ value: s, label: STATUS_LABELS[s] ?? s }))}
+              value={selectedStatuses}
+              onChange={v => { setSelectedStatuses(v); setPage(1) }}
+              className="w-44"
+            />
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-gray-600">From</label>
               <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
@@ -255,10 +259,10 @@ export function LeadsPageContent() {
             </div>
             {clinics.length > 0 && (
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-gray-600">Clinic</label>
+                <label className="text-xs font-medium text-gray-600">Channel Partner</label>
                 <select value={clinicId} onChange={e => { setClinicId(e.target.value); setPage(1) }}
-                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 bg-white w-40">
-                  <option value="">All Clinics</option>
+                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 bg-white w-44">
+                  <option value="">All Channel Partners</option>
                   {clinics.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>

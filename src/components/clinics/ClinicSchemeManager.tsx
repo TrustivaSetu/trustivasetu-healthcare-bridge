@@ -46,6 +46,7 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
   const [subventionGstType, setSubventionGstType] = useState<'INCLUDED' | 'EXCLUDED'>('EXCLUDED')
   const [pfPct, setPfPct] = useState('0')
   const [pfGstType, setPfGstType] = useState<'INCLUDED' | 'EXCLUDED'>('EXCLUDED')
+  const [editingScheme, setEditingScheme] = useState<ClinicScheme | null>(null)
 
   // New template form
   const [newTenure, setNewTenure] = useState('')
@@ -91,6 +92,26 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
     ? pfPctNum * GST_RATE / 100
     : pfPctNum - (pfPctNum / (1 + GST_RATE / 100))
 
+  function openEditScheme(cs: ClinicScheme) {
+    setEditingScheme(cs)
+    setSelectedTemplateId(cs.schemeTemplateId)
+    setSubventionPct(String(cs.hospitalSubventionPct))
+    setSubventionGstType(cs.subventionGstType)
+    setPfPct(String(cs.processingFeePct))
+    setPfGstType(cs.processingFeeGstType)
+    setShowAddScheme(true)
+  }
+
+  function resetForm() {
+    setShowAddScheme(false)
+    setEditingScheme(null)
+    setSelectedTemplateId('')
+    setSubventionPct('')
+    setPfPct('0')
+    setSubventionGstType('EXCLUDED')
+    setPfGstType('EXCLUDED')
+  }
+
   async function addScheme() {
     if (!selectedTemplateId) { toast.error('Please select a scheme'); return }
     if (!subventionPct || parseFloat(subventionPct) <= 0) { toast.error('Please enter a subvention %'); return }
@@ -111,11 +132,8 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
         }),
       })
       if (!res.ok) { const e = await res.json(); throw new Error(e.error) }
-      toast.success('Scheme added!')
-      setShowAddScheme(false)
-      setSelectedTemplateId('')
-      setSubventionPct('')
-      setPfPct('0')
+      toast.success(editingScheme ? 'Scheme updated!' : 'Scheme added!')
+      resetForm()
       fetchAll()
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Failed')
@@ -228,10 +246,10 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
         </div>
       )}
 
-      {/* Add Scheme to Clinic */}
+      {/* Add / Edit Scheme */}
       {showAddScheme && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-4">
-          <p className="text-sm font-bold text-blue-800">Add Scheme for Clinic</p>
+          <p className="text-sm font-bold text-blue-800">{editingScheme ? `Edit Scheme: ${editingScheme.schemeTemplate.name}` : 'Add Scheme for Channel Partner'}</p>
 
           {/* Scheme Select */}
           <div>
@@ -269,8 +287,8 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
 
           {/* Subvention */}
           <div className="bg-white border border-gray-200 rounded-xl p-3 space-y-3">
-            <p className="text-xs font-bold text-gray-700">🏥 Hospital Subvention</p>
-            <p className="text-xs text-gray-500">Clinic pays this amount to the lender (not visible to customer)</p>
+            <p className="text-xs font-bold text-gray-700">Channel Partner Subvention</p>
+            <p className="text-xs text-gray-500">Channel partner pays this amount to the lender (not visible to customer)</p>
 
             <div className="flex gap-3">
               <div className="flex-1">
@@ -302,7 +320,7 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
             {subPct > 0 && (
               <div className="bg-gray-50 rounded-lg p-2 text-xs space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Hospital Subvention</span>
+                  <span className="text-gray-500">Channel Partner Subvention</span>
                   <span className="font-medium">{subPct.toFixed(2)}%</span>
                 </div>
                 <div className="flex justify-between">
@@ -388,9 +406,9 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
           <div className="flex gap-2">
             <button onClick={addScheme} disabled={saving || !selectedTemplateId || !subventionPct || parseFloat(subventionPct) <= 0}
               className="flex-1 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60">
-              {saving ? 'Saving...' : '✅ Add Scheme'}
+              {saving ? 'Saving...' : editingScheme ? '✅ Update Scheme' : '✅ Add Scheme'}
             </button>
-            <button onClick={() => setShowAddScheme(false)}
+            <button onClick={resetForm}
               className="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">
               Cancel
             </button>
@@ -418,15 +436,19 @@ export function ClinicSchemeManager({ clinicId, isAdmin = false }: Props) {
                     {cs.schemeTemplate.tenure}m tenure • {cs.schemeTemplate.advanceEmi} advance EMI • {cs.schemeTemplate.balanceEmi} balance EMI
                   </span>
                 </div>
-                <button onClick={() => removeScheme(cs.id)}
-                  className="text-xs text-red-500 hover:text-red-700">Remove</button>
+                <div className="flex gap-2">
+                  <button onClick={() => openEditScheme(cs)}
+                    className="text-xs text-blue-500 hover:text-blue-700 font-medium">Edit</button>
+                  <button onClick={() => removeScheme(cs.id)}
+                    className="text-xs text-red-500 hover:text-red-700">Remove</button>
+                </div>
               </div>
 
               <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
                 {/* Subvention */}
                 <div className="bg-orange-50 rounded-lg p-2">
-                  <p className="font-medium text-orange-700 mb-1">🏥 Subvention (Internal)</p>
-                  <p className="text-gray-600">Hospital: {cs.hospitalSubventionPct}%</p>
+                  <p className="font-medium text-orange-700 mb-1">Subvention (Internal)</p>
+                  <p className="text-gray-600">Channel Partner: {cs.hospitalSubventionPct}%</p>
                   <p className="text-gray-600">GST: {cs.subventionGstType === 'EXCLUDED' ? 'Extra' : 'Incl.'} @18%</p>
                   <p className="font-bold text-orange-700">Total: {cs.totalSubventionPct.toFixed(2)}%</p>
                 </div>

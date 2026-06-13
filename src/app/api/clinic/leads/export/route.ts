@@ -4,14 +4,16 @@ import { db } from '@/lib/db'
 import * as XLSX from 'xlsx'
 import { format, addDays } from 'date-fns'
 
-function fmtDate(d: Date | string | null): string {
-  if (!d) return ''
-  return format(new Date(d), 'dd/MM/yyyy')
+// Server runs in UTC; offset +5:30 for IST display
+function toIST(d: Date | string | null): Date | null {
+  if (!d) return null
+  return new Date(new Date(d).getTime() + 330 * 60 * 1000)
 }
-
+function fmtDate(d: Date | string | null): string {
+  const ist = toIST(d); return ist ? format(ist, 'dd/MM/yyyy') : ''
+}
 function fmtTime(d: Date | string | null): string {
-  if (!d) return ''
-  return format(new Date(d), 'hh:mm a')
+  const ist = toIST(d); return ist ? format(ist, 'hh:mm a') : ''
 }
 
 function calcFirstEmi(disbursalDate: Date | null, status: string): string {
@@ -93,7 +95,7 @@ export async function GET(req: NextRequest) {
       'Disbursed Amount (₹L)': l.disbursedAmount ?? '',
       'UTR Number': l.utrNumber ?? '',
       'Agreement Signed': l.agreementSigned ? 'Yes' : 'No',
-      'NACH Status': l.nachStatus ?? '',
+      'NACH Done': l.nachStatus === 'DONE' ? 'Yes' : 'No',
       'Application Date': fmtDate(l.applicationDate),
       'Application Time': fmtTime(l.applicationDate),
       'Approval Date': fmtDate(l.approvalDate),

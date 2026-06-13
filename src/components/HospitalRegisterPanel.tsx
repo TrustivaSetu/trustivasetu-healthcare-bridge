@@ -111,7 +111,7 @@ export function HospitalRegisterPanel({ onSync, onRegistered, syncing }: Props) 
           {field('City', 'city', 'text', true)}
           {field('State', 'state', 'text', true)}
           <div>
-            <label className="text-sm text-gray-400">Hospital Type *</label>
+            <label className="text-sm text-gray-400">Channel Partner Type *</label>
             <select
               value={form.hospitalType}
               onChange={(e) => set('hospitalType', e.target.value)}

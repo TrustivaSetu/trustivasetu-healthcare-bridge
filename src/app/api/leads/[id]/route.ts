@@ -11,7 +11,7 @@ const updateSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
   amount: z.number().positive().optional(),
-  status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'DISBURSED', 'CANCELLED', 'DOCS_PENDING']).optional(),
+  status: z.enum(['PENDING', 'DOCS_PENDING', 'KYC_PENDING', 'KYC_APPROVED', 'MARKUP_PENDING', 'PROCESSING', 'APPROVED', 'REJECTED', 'DISBURSED', 'CANCELLED']).optional(),
   approvedAmount: z.number().optional(),
   disbursedAmount: z.number().optional(),
   lenderId: z.string().optional(),
@@ -93,6 +93,10 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
+    // Auto-set doGeneratedAt when transitioning to APPROVED for the first time
+    const autoDoGeneratedAt =
+      d.status === 'APPROVED' && before.status !== 'APPROVED' ? new Date() : undefined
+
     const updateData = {
       applicantName: d.applicantName,
       phone: d.phone,
@@ -104,6 +108,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       lenderId: d.lenderId || undefined,
       approvalDate: d.approvalDate ? new Date(d.approvalDate) : undefined,
       disbursalDate: d.disbursalDate ? new Date(d.disbursalDate) : undefined,
+      doGeneratedAt: autoDoGeneratedAt,
       remarks: d.remarks,
       clinicId: d.clinicId,
       treatmentName: d.treatmentName,

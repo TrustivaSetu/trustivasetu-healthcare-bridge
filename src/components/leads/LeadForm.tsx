@@ -340,9 +340,9 @@ export function LeadForm({ initial, onSuccess, onCancel }: Props) {
       {step === 1 && (
         <div className="space-y-4">
           <div>
-            <label className={lbl}>Hospital / Clinic</label>
+            <label className={lbl}>Channel Partner</label>
             <select value={clinicId} onChange={e => setClinicId(e.target.value)} className={inp}>
-              <option value="">Select Clinic</option>
+              <option value="">Select Channel Partner</option>
               {clinics.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>

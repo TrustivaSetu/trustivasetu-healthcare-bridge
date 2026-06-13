@@ -149,6 +149,7 @@ model Lead {
   applicationDate DateTime   @default(now())
   approvalDate    DateTime?
   disbursalDate   DateTime?
+  doGeneratedAt   DateTime?
   remarks         String?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt

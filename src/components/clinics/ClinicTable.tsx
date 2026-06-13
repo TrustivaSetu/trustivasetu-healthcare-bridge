@@ -39,7 +39,7 @@ export function ClinicTable({ clinics, onEdit, onDelete, canDelete, onGenerateCr
   if (clinics.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
-        <p className="text-gray-500">No clinics found</p>
+        <p className="text-gray-500">No channel partners found</p>
       </div>
     )
   }
@@ -50,7 +50,7 @@ export function ClinicTable({ clinics, onEdit, onDelete, canDelete, onGenerateCr
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              {['Clinic / Centre', 'Region', 'Assigned RM', 'Total Leads', 'MTD Leads', 'LMTD Leads', 'Lead Growth', 'MTD Disbursal', 'LMTD Disbursal', 'Disb Growth', 'Portal', 'Onboarded', 'Actions'].map(h => (
+              {['Channel Partner', 'Region', 'Assigned RM', 'Total Leads', 'MTD Leads', 'LMTD Leads', 'Lead Growth', 'MTD Disbursal', 'LMTD Disbursal', 'Disb Growth', 'Portal', 'Onboarded', 'Actions'].map(h => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
               ))}
             </tr>

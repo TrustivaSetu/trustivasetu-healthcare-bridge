@@ -57,8 +57,8 @@ export function DashboardFilters({ filters, onChange, showExport, onExport }: Pr
         </div>
         <FilterSelect label="Region" value={filters.regionId} onChange={v => update('regionId', v)}
           options={regions} placeholder="All Regions" />
-        <FilterSelect label="Clinic" value={filters.clinicId} onChange={v => update('clinicId', v)}
-          options={clinics} placeholder="All Clinics" />
+        <FilterSelect label="Channel Partner" value={filters.clinicId} onChange={v => update('clinicId', v)}
+          options={clinics} placeholder="All Channel Partners" />
         <FilterSelect label="Lender" value={filters.lenderId} onChange={v => update('lenderId', v)}
           options={lenders} placeholder="All Lenders" />
         <FilterSelect label="RM" value={filters.rmId} onChange={v => update('rmId', v)}
