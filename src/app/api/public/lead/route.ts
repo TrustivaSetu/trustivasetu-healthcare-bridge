@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
       link: leadLink,
     })
     if (clinic.assignedRM.email) {
-      await sendEmail({
+      void sendEmail({
         to: clinic.assignedRM.email,
         subject: `New Lead: ${d.applicantName} — ${clinic.name}`,
         html: `<div style="font-family:Arial,sans-serif;padding:20px;">
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
           <p><strong>Reference ID:</strong> ${refId}</p>
           <p style="margin-top:16px;"><a href="${process.env.NEXTAUTH_URL ?? 'https://lms.trustivasetu.com'}/leads/${lead.id}" style="background:#bef264;color:#07111f;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;">View Lead</a></p>
         </div>`,
-      })
+      }).catch((e) => console.error('[RM Email]', e))
     }
   }
 
