@@ -17,7 +17,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:setup": "node scripts/setup-db.mjs",
     "db:start": "node scripts/pg-server.mjs",
-    "vercel-build": "prisma generate && prisma db push && next build",
+    "vercel-build": "prisma generate && prisma migrate deploy && next build",
     "deploy": "vercel deploy --prod",
     "lint": "eslint src --ext .ts,.tsx"
   },
