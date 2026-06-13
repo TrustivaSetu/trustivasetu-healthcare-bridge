@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestSession } from '@/lib/api-auth'
+import { getRequestSession, getRequestMeta } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { hasPermission } from '@/lib/permissions'
 import bcrypt from 'bcryptjs'
@@ -143,7 +143,8 @@ export async function POST(req: NextRequest) {
       await db.employeeProfile.create({ data: { userId: user.id, designation: d.designation } })
     }
 
-    await db.auditLog.create({ data: { userId: session.user.id, action: 'CREATE', entity: 'User', entityId: user.id } })
+    const { ipAddress, userAgent } = getRequestMeta(req)
+    await db.auditLog.create({ data: { userId: session.user.id, action: 'CREATE', entity: 'User', entityId: user.id, ipAddress, userAgent } })
 
     void (async () => {
       try {

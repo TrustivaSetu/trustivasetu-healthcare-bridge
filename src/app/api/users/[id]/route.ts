@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestSession } from '@/lib/api-auth'
+import { getRequestSession, getRequestMeta } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { hasPermission } from '@/lib/permissions'
 import bcrypt from 'bcryptjs'
@@ -114,7 +114,8 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     },
   })
 
-  await db.auditLog.create({ data: { userId: session.user.id, action: 'UPDATE', entity: 'User', entityId: params.id } })
+  const { ipAddress, userAgent } = getRequestMeta(req)
+  await db.auditLog.create({ data: { userId: session.user.id, action: 'UPDATE', entity: 'User', entityId: params.id, ipAddress, userAgent } })
   return NextResponse.json({ data: { ...user, designation: user?.employeeProfile?.designation ?? null } })
 }
 
@@ -146,6 +147,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
     },
   })
   await db.user.delete({ where: { id: params.id } })
-  await db.auditLog.create({ data: { userId: session.user.id, action: 'DELETE', entity: 'User', entityId: params.id } })
+  const { ipAddress: delIp, userAgent: delUa } = getRequestMeta(req)
+  await db.auditLog.create({ data: { userId: session.user.id, action: 'DELETE', entity: 'User', entityId: params.id, ipAddress: delIp, userAgent: delUa } })
   return NextResponse.json({ success: true })
 }

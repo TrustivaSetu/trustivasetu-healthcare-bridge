@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { getRequestMeta } from '@/lib/api-auth'
 
 export async function POST(req: NextRequest) {
   const { email, newPassword } = await req.json()
@@ -30,8 +31,9 @@ export async function POST(req: NextRequest) {
   // Cleanup token
   await db.otpToken.deleteMany({ where: { email: normalizedEmail, purpose: 'PASSWORD_RESET' } })
 
+  const { ipAddress, userAgent } = getRequestMeta(req)
   await db.auditLog.create({
-    data: { userId: user.id, action: 'PASSWORD_RESET', entity: 'User', entityId: user.id },
+    data: { userId: user.id, action: 'PASSWORD_RESET', entity: 'User', entityId: user.id, ipAddress, userAgent },
   })
 
   return NextResponse.json({ success: true, message: 'Password changed successfully.' })

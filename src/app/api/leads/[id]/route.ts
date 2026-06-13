@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestSession } from '@/lib/api-auth'
+import { getRequestSession, getRequestMeta } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { buildClinicFilter, hasPermission } from '@/lib/permissions'
 import { checkRolePermission } from '@/lib/role-permissions'
@@ -138,8 +138,9 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       include: { clinic: { select: { id: true, name: true } }, lender: { select: { id: true, name: true } } },
     })
 
+    const { ipAddress, userAgent } = getRequestMeta(req)
     await db.auditLog.create({
-      data: { userId: session.user.id, action: 'UPDATE', entity: 'Lead', entityId: lead.id, details: JSON.stringify({ status: d.status }) },
+      data: { userId: session.user.id, action: 'UPDATE', entity: 'Lead', entityId: lead.id, details: JSON.stringify({ status: d.status }), ipAddress, userAgent },
     })
 
     if (d.status && d.status !== before.status) {
@@ -229,7 +230,8 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
       })
     }
     await db.lead.delete({ where: { id: params.id } })
-    await db.auditLog.create({ data: { userId: session.user.id, action: 'DELETE', entity: 'Lead', entityId: params.id } })
+    const { ipAddress: delIp, userAgent: delUa } = getRequestMeta(req)
+    await db.auditLog.create({ data: { userId: session.user.id, action: 'DELETE', entity: 'Lead', entityId: params.id, ipAddress: delIp, userAgent: delUa } })
     return NextResponse.json({ success: true })
   } catch (e) {
     console.error('[DELETE /api/leads/:id]', e)

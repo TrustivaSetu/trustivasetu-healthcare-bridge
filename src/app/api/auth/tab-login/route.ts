@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { db } from '@/lib/db'
 import { signTabToken, createTabSessionRecord } from '@/lib/tab-session'
 import { checkLoginRateLimit, recordFailedLogin } from '@/lib/rate-limit'
+import { getRequestMeta } from '@/lib/api-auth'
 
 export async function POST(req: NextRequest) {
   try {
@@ -57,13 +58,9 @@ export async function POST(req: NextRequest) {
     const token = await signTabToken(userPayload)
     await createTabSessionRecord(user.id, token)
 
+    const { ipAddress, userAgent } = getRequestMeta(req)
     await db.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'LOGIN',
-        entity: 'User',
-        entityId: user.id,
-      },
+      data: { userId: user.id, action: 'LOGIN', entity: 'User', entityId: user.id, ipAddress, userAgent },
     })
 
     return NextResponse.json({ token, user: userPayload })
