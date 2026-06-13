@@ -55,7 +55,7 @@ export function LeadTable({ leads, onEdit, onStatusUpdate, onDelete, canEdit, ca
               <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-3">
                   <span className="text-xs font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                    {formatLeadId(lead.leadNumber)}
+                    {formatLeadId(lead.leadNumber, lead.id)}
                   </span>
                 </td>
                 <td className="px-4 py-3">

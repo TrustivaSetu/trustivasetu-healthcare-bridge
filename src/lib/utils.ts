@@ -81,9 +81,10 @@ export function getRoleLabel(role: string): string {
   return map[role] ?? role
 }
 
-export function formatLeadId(leadNumber: number | null | undefined): string {
-  if (!leadNumber) return '—'
-  return `TS-${leadNumber.toString().padStart(6, '0')}`
+export function formatLeadId(leadNumber: number | null | undefined, fallbackId?: string): string {
+  if (leadNumber) return `TS-${leadNumber.toString().padStart(6, '0')}`
+  if (fallbackId) return fallbackId.slice(-8).toUpperCase()
+  return '—'
 }
 
 export function formatApplicationId(applicationNumber: number | null | undefined): string {

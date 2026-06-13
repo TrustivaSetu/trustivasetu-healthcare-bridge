@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
     void (async () => {
       try {
         const lmsUrl = process.env.NEXTAUTH_URL ?? 'https://lms.trustivasetu.com'
-        const leadId = `TS-${lead.leadNumber.toString().padStart(6, '0')}`
+        const leadId = lead.leadNumber ? `TS-${lead.leadNumber.toString().padStart(6, '0')}` : lead.id.slice(-8).toUpperCase()
         const timestamp = new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
         const loanAmount = `₹${lead.amount.toFixed(2)}L`
 

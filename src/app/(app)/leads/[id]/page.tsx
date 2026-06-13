@@ -220,7 +220,7 @@ export default function LeadDetailPage() {
                   {STATUS_LABELS[lead.status] ?? lead.status}
                 </span>
                 <span className="text-xs font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                  {formatLeadId(lead.leadNumber)}
+                  {formatLeadId(lead.leadNumber, lead.id)}
                 </span>
                 {lead.applicationNumber && (
                   <span className="text-xs font-mono font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">

@@ -55,9 +55,10 @@ function fmtDt(val: unknown): string {
   return String(val)
 }
 
-function fmtLeadId(leadNumber: number | null | undefined): string {
-  if (!leadNumber) return ''
-  return `TS-${leadNumber.toString().padStart(6, '0')}`
+function fmtLeadId(leadNumber: number | null | undefined, fallbackId?: string): string {
+  if (leadNumber) return `TS-${leadNumber.toString().padStart(6, '0')}`
+  if (fallbackId) return fallbackId.slice(-8).toUpperCase()
+  return ''
 }
 
 function fmtAppId(applicationNumber: number | null | undefined): string {
@@ -201,7 +202,7 @@ export async function GET(req: NextRequest) {
       const rows = leads.map(l => {
         const meta = (l.metadata ?? {}) as Record<string, unknown>
         return {
-          'Lead ID': fmtLeadId(l.leadNumber),
+          'Lead ID': fmtLeadId(l.leadNumber, l.id),
           'Application ID': fmtAppId(l.applicationNumber),
           'Patient Name': fmt(l.applicantName),
           'Phone': fmt(l.phone),
@@ -267,7 +268,7 @@ export async function GET(req: NextRequest) {
       const rows = leads.map(l => {
         const meta = (l.metadata ?? {}) as Record<string, unknown>
         return {
-          'Lead ID': fmtLeadId(l.leadNumber),
+          'Lead ID': fmtLeadId(l.leadNumber, l.id),
           'Application ID': fmtAppId(l.applicationNumber),
           'Patient Name': fmt(l.applicantName),
           'Phone': fmt(l.phone),

@@ -165,7 +165,7 @@ model Lead {
   nachStatus        String?
   agreementSigned   Boolean    @default(false)
   rejectionReason   String?
-  leadNumber           Int       @default(autoincrement())
+  leadNumber           Int?      @default(autoincrement())
   applicationNumber    Int?
   applicationCreatedAt DateTime?
   clinic          Clinic     @relation(fields: [clinicId], references: [id])
