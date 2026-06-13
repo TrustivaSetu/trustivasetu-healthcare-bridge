@@ -92,7 +92,7 @@ export default function UsersPage() {
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               )}
             >
-              Hospital Users
+              Channel Partner Users
             </button>
           )}
         </div>

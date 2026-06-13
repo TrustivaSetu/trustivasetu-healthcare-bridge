@@ -144,7 +144,7 @@ export function clinicCreatorEmailHtml(opts: {
         <tr><td style="padding:6px 0;color:#6b7280;">Password</td><td style="padding:6px 0;font-weight:600;font-family:monospace;color:#111827;">${password}</td></tr>
       </table>
     </div>
-    <p style="font-size:13px;color:#9ca3af;margin:0;">Keep this email for your records. The clinic will be prompted to change their password on first login.</p>
+    <p style="font-size:13px;color:#9ca3af;margin:0;">Keep this email for your records. The channel partner will be prompted to change their password on first login.</p>
   `)
 }
 
@@ -159,7 +159,7 @@ export function clinicManagerEmailHtml(opts: {
       <p style="margin:0;font-size:15px;font-weight:700;color:#166534;">${clinicName}</p>
       <p style="margin:4px 0 0;font-size:13px;color:#16a34a;">Portal access has been set up and credentials sent to the channel partner.</p>
     </div>
-    <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">You can track this clinic&apos;s leads and performance at <a href="${loginUrl}" style="color:#0284c7;">${loginUrl}</a>.</p>
+    <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">You can track this channel partner&apos;s leads and performance at <a href="${loginUrl}" style="color:#0284c7;">${loginUrl}</a>.</p>
     <p style="font-size:13px;color:#9ca3af;margin:0;">This is a notification email. No action is required from you.</p>
   `)
 }

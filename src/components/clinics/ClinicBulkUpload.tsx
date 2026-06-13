@@ -24,7 +24,7 @@ interface Props {
 }
 
 const TEMPLATE_HEADERS = [
-  'Clinic Name',
+  'Channel Partner Name',
   'Contact Person',
   'Phone',
   'Email',
@@ -41,7 +41,7 @@ const IFSC_RE = /^[A-Z]{4}0[A-Z0-9]{6}$/
 
 function validateRow(row: ParsedRow): string[] {
   const errors: string[] = []
-  if (!row['Clinic Name']?.trim()) errors.push('Clinic Name required')
+  if (!row['Channel Partner Name']?.trim()) errors.push('Channel Partner Name required')
   if (!row['Contact Person']?.trim()) errors.push('Contact Person required')
   const phone = (row['Phone'] ?? '').replace(/\D/g, '')
   if (!/^\d{10}$/.test(phone)) errors.push('Phone: 10 digits required')
@@ -216,7 +216,7 @@ export function ClinicBulkUpload({ onSuccess, onCancel }: Props) {
       if (rows.length === 0) { setParseError('No data found in file'); return }
 
       const keys = Object.keys(rows[0])
-      const hasNewFormat = keys.includes('Clinic Name')
+      const hasNewFormat = keys.includes('Channel Partner Name')
       const hasOldFormat = keys.includes('clinic_name*') || keys.includes('clinic_name')
       if (!hasNewFormat && !hasOldFormat) {
         setParseError('Column mismatch. Download correct template.')
@@ -241,7 +241,7 @@ export function ClinicBulkUpload({ onSuccess, onCancel }: Props) {
     try {
       // Map human-readable headers to API-expected column names
       const mappedRows = validRows.map(r => ({
-        'clinic_name*': (r['Clinic Name'] || r['clinic_name*'] || r['clinic_name'] || '').trim(),
+        'clinic_name*': (r['Channel Partner Name'] || r['clinic_name*'] || r['clinic_name'] || '').trim(),
         'address*': (r['Address'] || r['address*'] || r['address'] || '').trim(),
         'contact_person*': (r['Contact Person'] || r['contact_person*'] || r['contact_person'] || '').trim(),
         'contact_number*': (r['Phone'] || r['contact_number*'] || r['contact_number'] || '').trim(),
@@ -611,7 +611,7 @@ export function ClinicBulkUpload({ onSuccess, onCancel }: Props) {
                   <thead className="bg-gray-50 sticky top-0">
                     <tr>
                       <th className="px-3 py-2 text-left text-gray-500 font-medium">#</th>
-                      <th className="px-3 py-2 text-left text-gray-500 font-medium">Clinic Name</th>
+                      <th className="px-3 py-2 text-left text-gray-500 font-medium">Channel Partner Name</th>
                       <th className="px-3 py-2 text-left text-gray-500 font-medium">Phone</th>
                       <th className="px-3 py-2 text-left text-gray-500 font-medium">Email</th>
                       <th className="px-3 py-2 text-left text-gray-500 font-medium">Status</th>
@@ -625,7 +625,7 @@ export function ClinicBulkUpload({ onSuccess, onCancel }: Props) {
                         <tr key={i} className={isValid ? 'bg-white' : 'bg-red-50'}>
                           <td className="px-3 py-1.5 text-gray-400">{i + 1}</td>
                           <td className="px-3 py-1.5 font-medium text-gray-800">
-                            {row['Clinic Name'] || row['clinic_name*'] || row['clinic_name'] || '—'}
+                            {row['Channel Partner Name'] || row['clinic_name*'] || row['clinic_name'] || '—'}
                           </td>
                           <td className="px-3 py-1.5 text-gray-600 font-mono">
                             {row['Phone'] || row['contact_number*'] || row['contact_number'] || '—'}

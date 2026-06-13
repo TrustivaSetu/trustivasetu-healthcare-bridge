@@ -360,7 +360,7 @@ export function ClinicForm({ initial, onSuccess, onCancel }: Props) {
         <div className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <p className="text-sm font-medium text-blue-800 mb-1">Step 1: Upload Agreement</p>
-            <p className="text-xs text-blue-600">Upload the signed agreement PDF or DOC for this clinic</p>
+            <p className="text-xs text-blue-600">Upload the signed agreement PDF or DOC for this channel partner</p>
           </div>
 
           <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">

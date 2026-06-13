@@ -239,15 +239,15 @@ export default function ClinicDetailPage() {
 
         {/* Clinic Access Tools */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Clinic ID Card */}
+          {/* Channel Partner ID Card */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Clinic ID</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Channel Partner ID</h3>
             <p className="text-xs text-gray-500 mb-3">
-              Share this ID with the clinic. Patients enter it in the chatbot to start their loan application.
+              Share this ID with the channel partner. Patients enter it in the chatbot to start their loan application.
             </p>
             <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-4 flex items-center justify-between mb-3">
               <div>
-                <p className="text-xs text-gray-500 mb-1">Clinic ID</p>
+                <p className="text-xs text-gray-500 mb-1">Partner ID</p>
                 <p className="font-mono font-bold text-xl text-gray-800 tracking-wider">
                   {externalId ?? id.slice(-8).toUpperCase()}
                 </p>
@@ -342,7 +342,7 @@ export default function ClinicDetailPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Create Portal Access */}
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Clinic Portal Access</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Channel Partner Portal Access</h3>
               {portalStatus?.portalUser ? (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">

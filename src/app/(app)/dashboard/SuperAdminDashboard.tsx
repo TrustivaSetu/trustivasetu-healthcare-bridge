@@ -507,7 +507,7 @@ function ClinicListModal({ title, list, onClose }: { title: string; list: Clinic
               <thead>
                 <tr className="bg-gray-50 border-b">
                   <th className="px-3 py-2 font-semibold text-gray-600">#</th>
-                  <th className="px-3 py-2 font-semibold text-gray-600">Hospital Name</th>
+                  <th className="px-3 py-2 font-semibold text-gray-600">Channel Partner Name</th>
                   <th className="px-3 py-2 font-semibold text-gray-600">Region</th>
                   <th className="px-3 py-2 font-semibold text-gray-600">Date Added</th>
                   <th className="px-3 py-2 font-semibold text-gray-600">Status</th>

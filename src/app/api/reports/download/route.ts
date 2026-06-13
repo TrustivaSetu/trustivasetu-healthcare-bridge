@@ -106,9 +106,9 @@ export async function GET(req: NextRequest) {
       const rows = clinics.map(c => {
         const meta = (c.metadata ?? {}) as Record<string, unknown>
         return {
-          'Clinic Code': fmt(c.externalId),
-          'Clinic Name': fmt(c.name),
-          'Hospital Type': fmt(c.hospitalType),
+          'Partner Code': fmt(c.externalId),
+          'Channel Partner Name': fmt(c.name),
+          'Business Type': fmt(c.hospitalType),
           'Region': fmt(c.region?.name),
           'Assigned RM': fmt(c.assignedRM?.name),
           'RM Phone': fmt(c.assignedRM?.phone),
@@ -135,8 +135,8 @@ export async function GET(req: NextRequest) {
 
       const ws = toSheet(rows)
       ws['!cols'] = Object.keys(rows[0] ?? {}).map(() => ({ wch: 22 }))
-      XLSX.utils.book_append_sheet(wb, ws, 'Clinics')
-      filename = 'trustiva-clinic-master'
+      XLSX.utils.book_append_sheet(wb, ws, 'Channel Partners')
+      filename = 'trustiva-channel-partner-master'
     }
 
     else if (type === 'schemes') {
@@ -156,14 +156,14 @@ export async function GET(req: NextRequest) {
       type SchemeEntry = ClinicWithSchemes['schemes'][number]
       const rows = clinicsWithSchemes.flatMap((c: ClinicWithSchemes) =>
         c.schemes.map((s: SchemeEntry) => ({
-          'Clinic Code': fmt(c.externalId),
-          'Clinic Name': fmt(c.name),
+          'Partner Code': fmt(c.externalId),
+          'Channel Partner Name': fmt(c.name),
           'Region': fmt(c.region?.name),
           'Scheme': fmt(s.schemeTemplate.name),
           'Tenure (months)': s.schemeTemplate.tenure,
           'Advance EMI': s.schemeTemplate.advanceEmi,
           'Balance EMI': s.schemeTemplate.balanceEmi,
-          'Hospital Subvention %': s.hospitalSubventionPct,
+          'Subvention %': s.hospitalSubventionPct,
           'Subvention GST Type': s.subventionGstType,
           'GST on Subvention %': s.gstOnSubvention,
           'Total Subvention % (to Lender)': parseFloat(s.totalSubventionPct.toFixed(4)),
@@ -181,7 +181,7 @@ export async function GET(req: NextRequest) {
 
       const ws = toSheet(rows.length ? rows : [{ 'Message': 'No schemes found' }])
       ws['!cols'] = Object.keys(rows[0] ?? {}).map(() => ({ wch: 22 }))
-      XLSX.utils.book_append_sheet(wb, ws, 'Clinic Schemes')
+      XLSX.utils.book_append_sheet(wb, ws, 'Schemes')
       filename = 'trustiva-clinic-schemes'
     }
 
