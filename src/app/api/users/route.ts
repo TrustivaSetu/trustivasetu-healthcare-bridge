@@ -60,25 +60,28 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const users = await db.user.findMany({
-      where,
-      select: {
-        id: true, email: true, name: true, role: true, isActive: true,
-        phone: true, createdAt: true, reportingManagerId: true,
-        employeeProfile: { select: { designation: true } },
-        reportingManager: {
-          select: {
-            id: true, name: true,
-            employeeProfile: { select: { designation: true } },
+    const [users, total] = await Promise.all([
+      db.user.findMany({
+        where,
+        select: {
+          id: true, email: true, name: true, role: true, isActive: true,
+          phone: true, createdAt: true, reportingManagerId: true,
+          employeeProfile: { select: { designation: true } },
+          reportingManager: {
+            select: {
+              id: true, name: true,
+              employeeProfile: { select: { designation: true } },
+            },
           },
+          regionAssignments: { include: { region: { select: { id: true, name: true } } } },
+          clinicAssignments: { include: { clinic: { select: { id: true, name: true } } } },
         },
-        regionAssignments: { include: { region: { select: { id: true, name: true } } } },
-        clinicAssignments: { include: { clinic: { select: { id: true, name: true } } } },
-      },
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    })
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      db.user.count({ where }),
+    ])
 
     const data = users.map(u => ({
       ...u,
@@ -91,8 +94,6 @@ export async function GET(req: NextRequest) {
           }
         : null,
     }))
-
-    const total = await db.user.count({ where })
     return NextResponse.json({ data, total, page, pageSize })
   } catch (e) {
     console.error('[GET /api/users]', e)

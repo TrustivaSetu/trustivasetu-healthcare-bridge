@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import { db } from '@/lib/db'
 
 const BRAND = {
   name: 'Trustiva Setu LMS',
@@ -41,18 +42,26 @@ function layout(title: string, body: string) {
 </body></html>`
 }
 
-export async function sendEmail({ to, subject, html }: { to: string | string[]; subject: string; html: string }) {
+export async function sendEmail({ to, subject, html, template }: { to: string | string[]; subject: string; html: string; template?: string }) {
   const transporter = createTransport()
   const toList = Array.isArray(to) ? to.join(', ') : to
   if (!transporter) {
     if (process.env.NODE_ENV === 'production') {
+      void db.emailLog.create({ data: { to: toList, subject, template, status: 'FAILED', error: 'SMTP_NOT_CONFIGURED' } }).catch(() => {})
       throw new Error(`[EMAIL] SMTP not configured — set SMTP_HOST, SMTP_USER, SMTP_PASS. Failed to send to: ${toList}`)
     }
     console.warn(`[EMAIL - no SMTP configured] To: ${toList} | Subject: ${subject}`)
     return { success: true, dev: true }
   }
-  await transporter.sendMail({ from: FROM, to: toList, subject, html })
-  return { success: true }
+  try {
+    await transporter.sendMail({ from: FROM, to: toList, subject, html })
+    void db.emailLog.create({ data: { to: toList, subject, template, status: 'SENT' } }).catch(() => {})
+    return { success: true }
+  } catch (e) {
+    const error = e instanceof Error ? e.message : String(e)
+    void db.emailLog.create({ data: { to: toList, subject, template, status: 'FAILED', error } }).catch(() => {})
+    throw e
+  }
 }
 
 export function otpEmailHtml(otp: string, purpose = 'Password Reset') {
