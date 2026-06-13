@@ -85,7 +85,23 @@ export async function GET(req: NextRequest) {
       if (dateFrom) (where.applicationDate as Record<string, unknown>).gte = new Date(dateFrom)
       if (dateTo) (where.applicationDate as Record<string, unknown>).lte = new Date(dateTo + 'T23:59:59')
     }
-    if (search) where.applicantName = { contains: search, mode: 'insensitive' }
+    if (search) {
+      const tsMatch = search.match(/^TS-?0*(\d+)$/i)
+      const appMatch = search.match(/^APP-?0*(\d+)$/i)
+      const phoneMatch = /^\d{7,}$/.test(search.trim())
+      if (tsMatch) {
+        where.leadNumber = parseInt(tsMatch[1])
+      } else if (appMatch) {
+        where.applicationNumber = parseInt(appMatch[1])
+      } else if (phoneMatch) {
+        where.phone = { contains: search.trim() }
+      } else {
+        where.OR = [
+          { applicantName: { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search } },
+        ]
+      }
+    }
 
     const [total, leads] = await Promise.all([
       db.lead.count({ where }),
