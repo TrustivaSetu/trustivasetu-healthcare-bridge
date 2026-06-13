@@ -146,8 +146,10 @@ export async function POST(req: NextRequest) {
       disbursedAmount: d.disbursedAmount ?? null,
       metadata: d.metadata ? JSON.parse(JSON.stringify(d.metadata)) : undefined,
     }
+    const maxResult = await db.lead.aggregate({ _max: { leadNumber: true } })
+    const nextLeadNumber = (maxResult._max.leadNumber ?? 0) + 1
     const lead = await db.lead.create({
-      data: createData,
+      data: { ...createData, leadNumber: nextLeadNumber },
       include: { clinic: { select: { id: true, name: true } }, lender: { select: { id: true, name: true } } },
     })
 
