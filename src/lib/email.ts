@@ -46,12 +46,9 @@ export async function sendEmail({ to, subject, html, template }: { to: string | 
   const transporter = createTransport()
   const toList = Array.isArray(to) ? to.join(', ') : to
   if (!transporter) {
-    if (process.env.NODE_ENV === 'production') {
-      void db.emailLog.create({ data: { to: toList, subject, template, status: 'FAILED', error: 'SMTP_NOT_CONFIGURED' } }).catch(() => {})
-      throw new Error(`[EMAIL] SMTP not configured — set SMTP_HOST, SMTP_USER, SMTP_PASS. Failed to send to: ${toList}`)
-    }
-    console.warn(`[EMAIL - no SMTP configured] To: ${toList} | Subject: ${subject}`)
-    return { success: true, dev: true }
+    void db.emailLog.create({ data: { to: toList, subject, template, status: 'FAILED', error: 'SMTP_NOT_CONFIGURED' } }).catch(() => {})
+    console.warn(`[EMAIL] SMTP not configured — set SMTP_HOST, SMTP_USER, SMTP_PASS. Skipped: ${toList}`)
+    return { success: false, error: 'SMTP_NOT_CONFIGURED' as const }
   }
   try {
     await transporter.sendMail({ from: FROM, to: toList, subject, html })
@@ -60,7 +57,8 @@ export async function sendEmail({ to, subject, html, template }: { to: string | 
   } catch (e) {
     const error = e instanceof Error ? e.message : String(e)
     void db.emailLog.create({ data: { to: toList, subject, template, status: 'FAILED', error } }).catch(() => {})
-    throw e
+    console.error(`[EMAIL] Failed to send "${subject}" to ${toList}:`, e)
+    return { success: false, error }
   }
 }
 
