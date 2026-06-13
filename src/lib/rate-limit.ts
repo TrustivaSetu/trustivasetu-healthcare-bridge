@@ -61,6 +61,19 @@ export async function recordFailedLogin(email: string): Promise<void> {
  * Per-phone OTP send throttle: max `maxSends` sends in `windowSeconds`.
  * Uses the OtpToken table — a recent unexpired token means one was just sent.
  */
+export async function checkPublicLeadRateLimit(
+  ip: string,
+  maxLeads = 5,
+  windowSeconds = 60 * 60,
+): Promise<RateLimitResult> {
+  const windowStart = new Date(Date.now() - windowSeconds * 1000)
+  const count = await db.auditLog.count({
+    where: { entity: 'PublicLead', entityId: ip, action: 'CREATE', createdAt: { gte: windowStart } },
+  })
+  if (count >= maxLeads) return { allowed: false, retryAfterSeconds: windowSeconds }
+  return { allowed: true }
+}
+
 export async function checkOtpSendRateLimit(
   phone: string,
   maxSends = 3,

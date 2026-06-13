@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 import { sendOtpSms } from '@/lib/sms'
 import { checkOtpSendRateLimit } from '@/lib/rate-limit'
 
-const isBypass = () => true // TESTING MODE - always bypass
+const isBypass = process.env.OTP_BYPASS === 'true'
 
 export async function POST(req: NextRequest) {
   const { phone } = await req.json()
@@ -12,8 +12,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Valid 10-digit phone number required' }, { status: 400 })
   }
 
-  // TESTING MODE — return immediately, skip all DB calls and SMS
-  if (isBypass()) {
+  if (isBypass) {
+    const otp = '123456'
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000)
+    await db.otpToken.deleteMany({ where: { email: `pub_${phone}`, purpose: 'PUBLIC_PHONE_OTP' } })
+    await db.otpToken.create({ data: { email: `pub_${phone}`, emailOtp: otp, purpose: 'PUBLIC_PHONE_OTP', expiresAt } })
     return NextResponse.json({ success: true, _devOtp: '123456' })
   }
 

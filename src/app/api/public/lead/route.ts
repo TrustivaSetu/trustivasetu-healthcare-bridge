@@ -3,6 +3,8 @@ import { db } from '@/lib/db'
 import { z } from 'zod'
 import { createNotification, notifyAdmins } from '@/lib/notify'
 import { sendEmail } from '@/lib/email'
+import { getRequestMeta } from '@/lib/api-auth'
+import { checkPublicLeadRateLimit } from '@/lib/rate-limit'
 
 const schema = z.object({
   clinicId: z.string().min(1),
@@ -20,7 +22,20 @@ const schema = z.object({
   source: z.enum(['QR', 'CHATBOT']).default('QR'),
 })
 
+function fmtLeadId(leadNumber: number | null, fallbackId: string): string {
+  if (leadNumber) return `TS-${leadNumber.toString().padStart(6, '0')}`
+  return `TS-${fallbackId.slice(-8).toUpperCase()}`
+}
+
 export async function POST(req: NextRequest) {
+  const { ipAddress } = getRequestMeta(req)
+  const ip = ipAddress ?? 'unknown'
+
+  const rateLimit = await checkPublicLeadRateLimit(ip)
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: 'Too many submissions. Please try again later.' }, { status: 429 })
+  }
+
   let body: unknown
   try { body = await req.json() } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
@@ -65,9 +80,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       leadId: recentDuplicate.id,
-      referenceId: `TS-${recentDuplicate.id.slice(-8).toUpperCase()}`,
+      referenceId: fmtLeadId(recentDuplicate.leadNumber, recentDuplicate.id),
     }, { status: 200 })
   }
+
+  const maxResult = await db.lead.aggregate({ _max: { leadNumber: true } })
+  const nextLeadNumber = (maxResult._max.leadNumber ?? 0) + 1
 
   const lead = await db.lead.create({
     data: {
@@ -79,11 +97,12 @@ export async function POST(req: NextRequest) {
       treatmentName: d.treatmentName || null,
       treatmentCategory: d.treatmentName || null,
       status: 'PENDING',
+      leadNumber: nextLeadNumber,
       metadata,
     },
   })
 
-  const refId = `TS-${lead.id.slice(-8).toUpperCase()}`
+  const refId = fmtLeadId(lead.leadNumber, lead.id)
   const source = d.source === 'CHATBOT' ? 'Chatbot' : 'QR Code'
 
   const notifMsg = `${d.applicantName} applied from ${clinic.name} via ${source}. ₹${d.amount.toLocaleString('en-IN')} | Ref: ${refId}`
@@ -124,8 +143,11 @@ export async function POST(req: NextRequest) {
   })
 
   await db.auditLog.create({
-    data: { action: 'CREATE', entity: 'Lead', entityId: lead.id, details: `Public submission via ${source}` },
+    data: { action: 'CREATE', entity: 'Lead', entityId: lead.id, details: `Public submission via ${source}`, ipAddress: ip },
   })
+  void db.auditLog.create({
+    data: { action: 'CREATE', entity: 'PublicLead', entityId: ip, details: `${refId} from ${ip}` },
+  }).catch(() => {})
 
   return NextResponse.json({ success: true, leadId: lead.id, referenceId: refId }, { status: 201 })
 }
