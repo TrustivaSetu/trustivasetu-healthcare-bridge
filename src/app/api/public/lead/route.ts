@@ -3,8 +3,13 @@ import { db } from '@/lib/db'
 import { z } from 'zod'
 import { createNotification, notifyAdmins } from '@/lib/notify'
 import { sendEmail } from '@/lib/email'
-import { getRequestMeta } from '@/lib/api-auth'
 import { checkPublicLeadRateLimit } from '@/lib/rate-limit'
+
+function getClientIp(req: NextRequest): string {
+  const forwarded = req.headers.get('x-forwarded-for')
+  if (forwarded) return forwarded.split(',')[0].trim()
+  return req.headers.get('x-real-ip') ?? 'unknown'
+}
 
 const schema = z.object({
   clinicId: z.string().min(1),
@@ -28,8 +33,7 @@ function fmtLeadId(leadNumber: number | null, fallbackId: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const { ipAddress } = getRequestMeta(req)
-  const ip = ipAddress ?? 'unknown'
+  const ip = getClientIp(req)
 
   const rateLimit = await checkPublicLeadRateLimit(ip)
   if (!rateLimit.allowed) {
