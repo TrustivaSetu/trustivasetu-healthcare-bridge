@@ -183,6 +183,8 @@ model Lead {
   @@index([nachStatus])
   @@index([agreementSigned])
   @@index([leadNumber])
+  @@index([applicationNumber])
+  @@index([phone])
 }
 
 model Target {
@@ -235,6 +237,7 @@ model Notification {
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
+  @@index([userId, isRead, createdAt])
 }
 
 model WebhookEvent {
@@ -469,6 +472,7 @@ model Attendance {
   @@unique([userId, date])
   @@index([userId])
   @@index([date])
+  @@index([approvalStatus])
 }
 
 model OtpToken {

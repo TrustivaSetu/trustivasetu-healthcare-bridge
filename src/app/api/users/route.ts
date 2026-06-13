@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { hasPermission } from '@/lib/permissions'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
+import { sendEmail, welcomeEmailHtml } from '@/lib/email'
 
 const createSchema = z.object({
   email: z.string().email().endsWith('@trustivasetu.com', { message: 'Must use @trustivasetu.com email' }),
@@ -142,6 +143,18 @@ export async function POST(req: NextRequest) {
     }
 
     await db.auditLog.create({ data: { userId: session.user.id, action: 'CREATE', entity: 'User', entityId: user.id } })
+
+    void (async () => {
+      try {
+        const lmsUrl = process.env.NEXTAUTH_URL ?? 'https://lms.trustivasetu.com'
+        await sendEmail({
+          to: user.email,
+          subject: `Welcome to Trustiva Setu LMS — Your Account is Ready`,
+          html: welcomeEmailHtml({ name: user.name, email: user.email, role: user.role, loginUrl: `${lmsUrl}/lms/login` }),
+        })
+      } catch (e) { console.error('[Welcome Email]', e) }
+    })()
+
     return NextResponse.json({ data: user }, { status: 201 })
   } catch (e) {
     console.error('[POST /api/users]', e)

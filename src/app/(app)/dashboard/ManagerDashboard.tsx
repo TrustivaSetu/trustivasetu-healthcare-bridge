@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { CelebrationFeed } from "@/components/hr/CelebrationFeed";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 
 interface ManagerData {
@@ -156,6 +157,8 @@ export default function ManagerDashboard() {
       )}
       </>
       )}
+
+      <CelebrationFeed />
     </div>
   );
 }

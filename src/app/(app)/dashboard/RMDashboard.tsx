@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { CelebrationFeed } from "@/components/hr/CelebrationFeed";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 interface RMData {
@@ -129,6 +130,8 @@ export default function RMDashboard() {
       )}
       </>
       )}
+
+      <CelebrationFeed />
     </div>
   );
 }

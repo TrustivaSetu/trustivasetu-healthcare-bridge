@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { CelebrationFeed } from "@/components/hr/CelebrationFeed";
 import {
   BarChart,
   Bar,
@@ -480,6 +481,8 @@ export default function SuperAdminDashboard() {
           onClose={() => setClinicModal(null)}
         />
       )}
+
+      <CelebrationFeed />
     </div>
   );
 }

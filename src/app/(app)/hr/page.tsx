@@ -35,7 +35,9 @@ export default function HRPage() {
   }, [session, isAdmin, router])
 
   const today = new Date()
-  const thisMonth = today.getMonth()
+  // Use IST month for comparison (IST = UTC+5:30)
+  const istNow = new Date(today.getTime() + (5 * 60 + 30) * 60 * 1000)
+  const thisMonth = istNow.getUTCMonth()
   const upcomingHolidays = holidays.filter(h => new Date(h.date) >= today).slice(0, 5)
   const birthdaysThisMonth = employees.filter(e => {
     const dob = e.employeeProfile?.dateOfBirth

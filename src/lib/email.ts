@@ -235,6 +235,80 @@ export function leadPunchedEmailHtml(opts: {
   `)
 }
 
+export function welcomeEmailHtml(opts: { name: string; email: string; role: string; loginUrl: string }) {
+  const { name, email, role, loginUrl } = opts
+  return layout(`Welcome to ${BRAND.name}`, `
+    <h2 style="margin:0 0 8px;color:#111827;font-size:20px;">Welcome to ${BRAND.name}! 🎉</h2>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Hi <strong>${name}</strong>, your account has been created. You can now log in and start using the platform.</p>
+    <div style="background:#f3f4f6;border-radius:10px;padding:20px;margin-bottom:24px;">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr><td style="padding:6px 0;color:#6b7280;width:110px;">Login URL</td><td style="padding:6px 0;font-weight:600;color:#111827;"><a href="${loginUrl}" style="color:#0284c7;">${loginUrl}</a></td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Email</td><td style="padding:6px 0;font-weight:600;color:#111827;font-family:monospace;">${email}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Role</td><td style="padding:6px 0;font-weight:600;color:#111827;">${role}</td></tr>
+      </table>
+    </div>
+    <div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:12px 16px;font-size:13px;color:#713f12;margin-bottom:20px;">
+      <strong>Security:</strong> Please change your password on first login. Do not share credentials with anyone.
+    </div>
+    <div style="text-align:center;margin:20px 0;">
+      <a href="${loginUrl}" style="display:inline-block;background:#0F172A;color:#A3E635;font-weight:bold;font-size:14px;padding:12px 32px;border-radius:8px;text-decoration:none;">Log In to LMS →</a>
+    </div>
+  `)
+}
+
+export function leadStatusEmailHtml(opts: {
+  recipientName: string; leadId: string; applicantName: string; clinicName: string
+  oldStatus: string; newStatus: string; updatedBy: string; lmsUrl: string; rejectionReason?: string
+}) {
+  const { recipientName, leadId, applicantName, clinicName, oldStatus, newStatus, updatedBy, lmsUrl, rejectionReason } = opts
+  const statusColor: Record<string, string> = {
+    APPROVED: '#16a34a', DISBURSED: '#0284c7', REJECTED: '#dc2626',
+    PROCESSING: '#d97706', PENDING: '#6b7280', CANCELLED: '#9ca3af',
+    DOCS_PENDING: '#d97706', KYC_PENDING: '#7c3aed', KYC_APPROVED: '#16a34a',
+  }
+  const color = statusColor[newStatus] ?? '#374151'
+  return layout(`Lead Status Updated — ${leadId}`, `
+    <h2 style="margin:0 0 8px;color:#111827;font-size:20px;">Lead Status Updated</h2>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Hi <strong>${recipientName}</strong>, a lead status has been updated on ${BRAND.name}.</p>
+    <div style="background:#f3f4f6;border-radius:10px;padding:20px;margin-bottom:24px;">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr><td style="padding:6px 0;color:#6b7280;width:140px;">Lead ID</td><td style="padding:6px 0;font-weight:700;font-family:monospace;color:#0284c7;">${leadId}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Applicant</td><td style="padding:6px 0;font-weight:600;color:#111827;">${applicantName}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Channel Partner</td><td style="padding:6px 0;font-weight:600;color:#111827;">${clinicName}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Previous Status</td><td style="padding:6px 0;color:#9ca3af;">${oldStatus}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">New Status</td><td style="padding:6px 0;font-weight:700;font-size:15px;color:${color};">${newStatus}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Updated By</td><td style="padding:6px 0;font-weight:600;color:#111827;">${updatedBy}</td></tr>
+      </table>
+    </div>
+    ${rejectionReason ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;font-size:13px;color:#dc2626;margin-bottom:16px;"><strong>Rejection Reason:</strong> ${rejectionReason}</div>` : ''}
+    <div style="text-align:center;margin:20px 0;">
+      <a href="${lmsUrl}/leads" style="display:inline-block;background:#0F172A;color:#A3E635;font-weight:bold;font-size:14px;padding:12px 32px;border-radius:8px;text-decoration:none;">View Lead on LMS →</a>
+    </div>
+  `)
+}
+
+export function celebrationEmailHtml(opts: {
+  name: string
+  type: 'birthday' | 'work_anniversary' | 'marriage_anniversary'
+  yearsCount?: number
+}) {
+  const { name, type, yearsCount } = opts
+  const ordSuffix = (n: number) => { const s = ['th','st','nd','rd']; const v = n%100; return n+(s[(v-20)%10]||s[v]||s[0]) }
+  const cfg = {
+    birthday: { emoji: '🎂', headline: `Happy Birthday, ${name}!`, msg: 'Wishing you a day full of joy, laughter, and everything you love. You make our team brighter!' },
+    work_anniversary: { emoji: '🏆', headline: yearsCount ? `${ordSuffix(yearsCount)} Work Anniversary, ${name}!` : `Happy Work Anniversary, ${name}!`, msg: yearsCount ? `Thank you for ${yearsCount} wonderful year${yearsCount > 1 ? 's' : ''} of dedication, hard work, and contributions. We appreciate you!` : 'Thank you for your dedication and contributions to Trustiva Setu!' },
+    marriage_anniversary: { emoji: '💍', headline: `Happy Marriage Anniversary, ${name}!`, msg: 'Wishing you endless love, happiness, and togetherness on this special day. 💕' },
+  }[type]
+  return layout(cfg.headline, `
+    <div style="text-align:center;padding:24px 0 16px;">
+      <div style="font-size:72px;margin-bottom:16px;">${cfg.emoji}</div>
+      <h2 style="margin:0 0 12px;color:#111827;font-size:22px;font-weight:bold;">${cfg.headline}</h2>
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">${cfg.msg}</p>
+      <p style="color:#374151;font-size:14px;font-weight:600;margin:0;">— The Trustiva Setu Family 🙏</p>
+    </div>
+  `)
+}
+
 export function attendanceStatusHtml(status: 'APPROVED' | 'REJECTED', emp: string, date: string, reason?: string) {
   const isApproved = status === 'APPROVED'
   return layout(`Attendance ${isApproved ? 'Approved' : 'Rejected'}`, `

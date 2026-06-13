@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
   // Find all leads without a leadNumber, ordered by creation time
   const unNumbered = await db.lead.findMany({
-    where: { leadNumber: null },
+    where: { leadNumber: null as unknown as undefined },
     orderBy: { createdAt: 'asc' },
     select: { id: true, createdAt: true },
   })

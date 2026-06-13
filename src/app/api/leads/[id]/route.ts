@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { buildClinicFilter, hasPermission } from '@/lib/permissions'
 import { checkRolePermission } from '@/lib/role-permissions'
 import { notifyClinicRM, createNotification } from '@/lib/notify'
+import { sendEmail, leadStatusEmailHtml } from '@/lib/email'
 import { z } from 'zod'
 
 const updateSchema = z.object({
@@ -156,6 +157,38 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
         type: 'INFO',
         link: '/leads',
       })
+
+      // Fire status change email asynchronously to RM + admins
+      void (async () => {
+        try {
+          const lmsUrl = process.env.NEXTAUTH_URL ?? 'https://lms.trustivasetu.com'
+          const leadNum = lead.leadNumber ? `TS-${lead.leadNumber.toString().padStart(6, '0')}` : lead.id.slice(-8).toUpperCase()
+          const [clinic, updater, admins] = await Promise.all([
+            db.clinic.findUnique({ where: { id: before.clinicId }, select: { name: true, assignedRM: { select: { name: true, email: true } } } }),
+            db.user.findUnique({ where: { id: session.user.id }, select: { name: true, email: true } }),
+            db.user.findMany({ where: { role: { in: ['SUPER_ADMIN', 'ADMIN'] }, isActive: true }, select: { name: true, email: true } }),
+          ])
+          const recipients = new Map<string, string>()
+          if (clinic?.assignedRM?.email) recipients.set(clinic.assignedRM.email, clinic.assignedRM.name)
+          admins.forEach(a => { if (!recipients.has(a.email)) recipients.set(a.email, a.name) })
+          const html = leadStatusEmailHtml({
+            recipientName: '{{name}}',
+            leadId: leadNum,
+            applicantName: lead.applicantName,
+            clinicName: clinic?.name ?? '',
+            oldStatus: before.status,
+            newStatus: d.status!,
+            updatedBy: updater?.name ?? 'System',
+            lmsUrl,
+            rejectionReason: d.rejectionReason,
+          })
+          await Promise.allSettled(
+            [...recipients.entries()].map(([email, name]) =>
+              sendEmail({ to: email, subject: `Lead Status: ${d.status} — ${leadNum}`, html: html.replace('{{name}}', name) })
+            )
+          )
+        } catch (e) { console.error('[Status Email]', e) }
+      })()
     }
 
     return NextResponse.json({ data: lead })
