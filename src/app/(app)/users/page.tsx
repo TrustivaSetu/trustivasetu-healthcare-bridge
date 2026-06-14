@@ -120,6 +120,10 @@ function StaffTab({ session, isSuperAdmin, isAdmin }: { session: { id: string; r
   const [roleChangeUser, setRoleChangeUser] = useState<User | null>(null)
   const [newRole, setNewRole] = useState('')
   const [roleChanging, setRoleChanging] = useState(false)
+  const [showImport, setShowImport] = useState(false)
+  const [importText, setImportText] = useState('')
+  const [importLoading, setImportLoading] = useState(false)
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null)
 
   const canChangePasswords = isAdmin
 
@@ -168,6 +172,37 @@ function StaffTab({ session, isSuperAdmin, isAdmin }: { session: { id: string; r
     setRoleChanging(false)
   }
 
+  async function handleImport() {
+    setImportLoading(true)
+    setImportResult(null)
+    try {
+      let rows
+      const trimmed = importText.trim()
+      if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+        rows = JSON.parse(trimmed)
+        if (!Array.isArray(rows)) rows = [rows]
+      } else {
+        const lines = trimmed.split('\n').filter(Boolean)
+        const header = lines[0].split(',').map(h => h.trim().toLowerCase())
+        rows = lines.slice(1).map(line => {
+          const vals = line.split(',').map(v => v.trim())
+          const obj: Record<string, string> = {}
+          header.forEach((h, i) => { obj[h] = vals[i] ?? '' })
+          return { email: obj.email, dateOfBirth: obj.dateofbirth || obj.dob || null, dateOfJoining: obj.dateofjoining || obj.doj || null, marriageAnniversary: obj.marriageanniversary || obj.anniversary || null }
+        })
+      }
+      const res = await fetch('/api/hr/celebrations/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rows) })
+      const d = await res.json()
+      if (!res.ok) { toast.error(d.error ?? 'Import failed'); return }
+      setImportResult(d)
+      toast.success(`Imported ${d.imported} records`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Invalid data format')
+    } finally {
+      setImportLoading(false)
+    }
+  }
+
   return (
     <>
       {/* Search + Add */}
@@ -179,6 +214,14 @@ function StaffTab({ session, isSuperAdmin, isAdmin }: { session: { id: string; r
           onChange={e => setSearch(e.target.value)}
           className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 w-64"
         />
+        {isAdmin && (
+          <button
+            onClick={() => { setShowImport(true); setImportText(''); setImportResult(null) }}
+            className="px-3 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 text-sm font-medium rounded-lg transition flex items-center gap-1.5"
+          >
+            🎂 Import Dates
+          </button>
+        )}
         <button
           onClick={() => { setEditUser(null); setShowForm(true) }}
           className="ml-auto px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition flex items-center gap-2"
@@ -189,6 +232,58 @@ function StaffTab({ session, isSuperAdmin, isAdmin }: { session: { id: string; r
           Add User
         </button>
       </div>
+
+      {/* Import Celebration Dates Modal */}
+      {showImport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
+              <div>
+                <h2 className="text-base font-bold text-gray-800">Import Celebration Dates</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Bulk set DOB, Date of Joining, and Anniversary for staff</p>
+              </div>
+              <button onClick={() => setShowImport(false)} className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100">✕</button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <a href="/api/hr/celebrations/import" download="celebration-dates-template.csv"
+                  className="text-xs text-blue-600 hover:text-blue-800 underline font-medium">
+                  Download CSV Template
+                </a>
+                <span className="text-xs text-gray-400">or paste JSON / CSV below</span>
+              </div>
+              <textarea
+                value={importText}
+                onChange={e => setImportText(e.target.value)}
+                placeholder={`Paste CSV (with header row) or JSON array:\n\nemail,dateOfBirth,dateOfJoining,marriageAnniversary\njohn.doe@trustivasetu.com,1990-05-15,2022-01-10,2018-11-20`}
+                rows={8}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-400 resize-none"
+              />
+              {importResult && (
+                <div className={`rounded-lg p-3 text-sm ${importResult.errors.length ? 'bg-yellow-50 border border-yellow-200' : 'bg-green-50 border border-green-200'}`}>
+                  <p className="font-semibold text-gray-800">Import complete: {importResult.imported} imported, {importResult.skipped} skipped</p>
+                  {importResult.errors.length > 0 && (
+                    <ul className="mt-2 text-xs text-red-700 space-y-0.5">
+                      {importResult.errors.slice(0, 10).map((e, i) => <li key={i}>• {e}</li>)}
+                      {importResult.errors.length > 10 && <li>…and {importResult.errors.length - 10} more</li>}
+                    </ul>
+                  )}
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button onClick={handleImport} disabled={importLoading || !importText.trim()}
+                  className="flex-1 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-lg hover:bg-brand-700 disabled:opacity-60">
+                  {importLoading ? 'Importing...' : 'Import'}
+                </button>
+                <button onClick={() => setShowImport(false)}
+                  className="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add / Edit modal */}
       {showForm && (
@@ -613,6 +708,8 @@ function UserForm({
     reportingManagerId: initial?.reportingManagerId ?? '',
   })
 
+  const [celebDates, setCelebDates] = useState({ dateOfBirth: '', dateOfJoining: '', marriageAnniversary: '' })
+
   const [allUsers, setAllUsers] = useState<MinimalUser[]>([])
   const [regions, setRegions] = useState<{ id: string; name: string }[]>([])
   const [clinics, setClinics] = useState<{ id: string; name: string }[]>([])
@@ -623,7 +720,7 @@ function UserForm({
     initial?.clinicAssignments.map(c => c.clinic.id) ?? []
   )
   const [loading, setLoading] = useState(false)
-  const [tab, setTab] = useState<'info' | 'access'>('info')
+  const [tab, setTab] = useState<'info' | 'access' | 'celebration'>('info')
 
   useEffect(() => {
     Promise.all([
@@ -636,6 +733,19 @@ function UserForm({
       setClinics(c.data ?? [])
     }).catch(() => {})
   }, [excludeId])
+
+  useEffect(() => {
+    if (!isEdit || !initial?.id) return
+    fetch(`/api/hr/profile/${initial.id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const p = d?.data?.employeeProfile
+        if (!p) return
+        const toDate = (v: string | null) => v ? new Date(v).toISOString().split('T')[0] : ''
+        setCelebDates({ dateOfBirth: toDate(p.dateOfBirth), dateOfJoining: toDate(p.dateOfJoining), marriageAnniversary: toDate(p.marriageAnniversary) })
+      })
+      .catch(() => {})
+  }, [isEdit, initial?.id])
 
   const reportingOptions = useMemo(() => {
     if (!form.designation) return allUsers
@@ -675,6 +785,19 @@ function UserForm({
       const method = isEdit ? 'PATCH' : 'POST'
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       if (!res.ok) { const e = await res.json(); throw new Error(e.error ?? 'Failed') }
+
+      if (isEdit && (celebDates.dateOfBirth || celebDates.dateOfJoining || celebDates.marriageAnniversary)) {
+        await fetch(`/api/hr/profile/${initial!.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dateOfBirth: celebDates.dateOfBirth || null,
+            dateOfJoining: celebDates.dateOfJoining || null,
+            marriageAnniversary: celebDates.marriageAnniversary || null,
+          }),
+        })
+      }
+
       toast.success(isEdit ? 'User updated successfully' : 'User created successfully')
       onSuccess()
     } catch (e: unknown) {
@@ -691,9 +814,10 @@ function UserForm({
 
   return (
     <form onSubmit={submit} className="space-y-5">
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <button type="button" className={tabCls('info')} onClick={() => setTab('info')}>User Info</button>
         <button type="button" className={tabCls('access')} onClick={() => setTab('access')}>Access & Regions</button>
+        {isEdit && <button type="button" className={tabCls('celebration')} onClick={() => setTab('celebration')}>🎂 Celebration Dates</button>}
       </div>
 
       {tab === 'info' && (
@@ -812,6 +936,33 @@ function UserForm({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {tab === 'celebration' && isEdit && (
+        <div className="space-y-4">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+            <p className="text-sm font-semibold text-yellow-800">Celebration Dates</p>
+            <p className="text-xs text-yellow-700 mt-1">Used by the daily celebration engine to send birthday, work anniversary, and marriage anniversary wishes.</p>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Date of Birth</label>
+            <input type="date" value={celebDates.dateOfBirth}
+              onChange={e => setCelebDates(d => ({ ...d, dateOfBirth: e.target.value }))}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Date of Joining</label>
+            <input type="date" value={celebDates.dateOfJoining}
+              onChange={e => setCelebDates(d => ({ ...d, dateOfJoining: e.target.value }))}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Marriage Anniversary</label>
+            <input type="date" value={celebDates.marriageAnniversary}
+              onChange={e => setCelebDates(d => ({ ...d, marriageAnniversary: e.target.value }))}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+          </div>
         </div>
       )}
 
