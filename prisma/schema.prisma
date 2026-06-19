@@ -126,14 +126,31 @@ model Clinic {
 }
 
 model Lender {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  code      String   @unique
-  isActive  Boolean  @default(true)
-  metadata  Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  leads     Lead[]
+  id          String       @id @default(cuid())
+  name        String       @unique
+  code        String       @unique
+  isActive    Boolean      @default(true)
+  metadata    Json?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  leads       Lead[]
+  lenderRates LenderRate[]
+}
+
+model LenderRate {
+  id            String    @id @default(cuid())
+  lenderId      String
+  lender        Lender    @relation(fields: [lenderId], references: [id], onDelete: Cascade)
+  agreedRatePct Float
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime?
+  notes         String?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([lenderId])
+  @@index([effectiveFrom])
 }
 
 model Lead {
