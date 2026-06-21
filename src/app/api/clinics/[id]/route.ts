@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
-import { hasPermission } from '@/lib/permissions'
+import { hasPermission, canAccessClinic } from '@/lib/permissions'
 import { z } from 'zod'
 
 const updateSchema = z.object({
@@ -34,6 +34,12 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
   })
   if (!clinic) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
+  // Regional scoping: RM/TEAM_MEMBER may only read clinics in their assignment.
+  // Return 404 (not 403) so out-of-scope clinic IDs can't be enumerated.
+  if (!canAccessClinic(session.user.role, session.user.regionIds, session.user.clinicIds, clinic.regionId, clinic.id)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   return NextResponse.json({ data: clinic })
 }
 
@@ -42,6 +48,14 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!hasPermission(session.user.role, 'CLINIC_UPDATE')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  // Verify the target clinic is within the caller's region/clinic scope before
+  // allowing any mutation — CLINIC_UPDATE alone does not grant cross-region access.
+  const target = await db.clinic.findUnique({ where: { id: params.id }, select: { id: true, regionId: true } })
+  if (!target) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!canAccessClinic(session.user.role, session.user.regionIds, session.user.clinicIds, target.regionId, target.id)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   const body = await req.json()
   const parsed = updateSchema.safeParse(body)
@@ -82,6 +96,11 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
     select: { id: true, name: true, address: true, contactPerson: true, contactNumber: true, email: true, regionId: true, isActive: true },
   })
   if (!clinic) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  // Regional scoping: only delete clinics within the caller's scope.
+  if (!canAccessClinic(session.user.role, session.user.regionIds, session.user.clinicIds, clinic.regionId, clinic.id)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   await db.recycleBin.create({
     data: {
