@@ -183,7 +183,7 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-xl font-semibold text-gray-900 mb-3">14. Governing Law</h2>
             <p>
               This Privacy Policy is governed by the laws of India. Any disputes shall be subject to the
-              exclusive jurisdiction of courts in New Delhi, India.
+              exclusive jurisdiction of courts in Moradabad, Uttar Pradesh, India.
             </p>
           </section>
 
