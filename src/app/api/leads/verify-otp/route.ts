@@ -8,9 +8,10 @@ export async function POST(req: NextRequest) {
 
   const { phone, otp } = await req.json()
 
-  // TESTING MODE — always accept 123456
-  if (otp === '123456') {
-    return NextResponse.json({ verified: true, message: 'Phone verified' })
+  // Dev-only bypass — gated behind OTP_BYPASS so it can never accept a fixed
+  // code in production (mirrors the public OTP routes).
+  if (process.env.OTP_BYPASS === 'true' && otp === '123456') {
+    return NextResponse.json({ verified: true, message: 'Phone verified (bypass)' })
   }
 
   const stored = await db.otpToken.findFirst({

@@ -3,18 +3,14 @@ import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { autoAssignEnquiry } from '@/lib/enquiry-auto-assign'
 import { sendEmail, enquiryNotificationHtml } from '@/lib/email'
+import { corsHeaders } from '@/lib/cors'
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-}
-
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: CORS_HEADERS })
+export async function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, { status: 204, headers: corsHeaders(req) })
 }
 
 export async function POST(req: NextRequest) {
+  const CORS_HEADERS = corsHeaders(req)
   try {
     const body = await req.json()
     const {

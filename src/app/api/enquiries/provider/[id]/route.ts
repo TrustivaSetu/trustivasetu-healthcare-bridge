@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
+import { canAccessEnquiry } from '@/lib/enquiry-access'
 
 export async function PATCH(
   req: NextRequest,
@@ -14,6 +15,11 @@ export async function PATCH(
   try {
     const existing = await db.providerEnquiry.findUnique({ where: { id } })
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+    // Regional/assignment scoping — out-of-scope enquiries are 404 (not 403).
+    if (!await canAccessEnquiry(existing, session.user.role, session.user.id)) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
 
     const body = await req.json()
     const {

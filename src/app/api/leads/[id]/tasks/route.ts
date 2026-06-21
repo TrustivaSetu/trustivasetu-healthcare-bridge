@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
+import { canAccessLeadById } from '@/lib/lead-access'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const params = await context.params
+  const { role, regionIds, clinicIds } = session.user
+  if (!await canAccessLeadById(params.id, role, regionIds, clinicIds)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   const tasks = await db.leadTask.findMany({
     where: { leadId: params.id },
@@ -15,9 +22,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ data: tasks })
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const params = await context.params
+  const { role, regionIds, clinicIds } = session.user
+  if (!await canAccessLeadById(params.id, role, regionIds, clinicIds)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   const { title, description, dueDate } = await req.json()
   if (!title?.trim()) return NextResponse.json({ error: 'Title is required' }, { status: 400 })
@@ -46,9 +59,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   return NextResponse.json({ data: task }, { status: 201 })
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const params = await context.params
+  const { role, regionIds, clinicIds } = session.user
+  if (!await canAccessLeadById(params.id, role, regionIds, clinicIds)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   const { taskId, status, title, description, dueDate } = await req.json()
   if (!taskId) return NextResponse.json({ error: 'taskId required' }, { status: 400 })
@@ -80,9 +99,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json({ data: task })
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const params = await context.params
+  const { role, regionIds, clinicIds } = session.user
+  if (!await canAccessLeadById(params.id, role, regionIds, clinicIds)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   const { searchParams } = new URL(req.url)
   const taskId = searchParams.get('taskId')

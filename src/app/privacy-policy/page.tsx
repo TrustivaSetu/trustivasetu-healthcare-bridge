@@ -170,13 +170,13 @@ export default function PrivacyPolicyPage() {
             <p>
               In accordance with the DPDP Act, 2023 and IT Act, 2000, the details of our Grievance Officer are:
             </p>
-            <p className="mt-2 text-orange-600 font-medium">
-              [ACTION REQUIRED: Add Grievance Officer name, designation, and contact details]
-            </p>
             <p className="mt-2">
-              Email: <a href="mailto:legal@trustivasetu.com" className="text-blue-600 underline">legal@trustivasetu.com</a>
+              <strong>Name:</strong> Abhishek Kashyap<br />
+              <strong>Designation:</strong> Founder &amp; CEO, Aarthsetu Technologies Pvt Ltd<br />
+              <strong>Email:</strong> <a href="mailto:legal@trustivasetu.com" className="text-blue-600 underline">legal@trustivasetu.com</a><br />
+              <strong>Phone:</strong> <a href="tel:+918218473534" className="text-blue-600 underline">+91 82184 73534</a>
             </p>
-            <p>Response time: Within 30 days of receipt of complaint</p>
+            <p className="mt-2">Response time: Within 30 days of receipt of complaint</p>
           </section>
 
           <section>

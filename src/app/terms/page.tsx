@@ -190,11 +190,14 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">14. Grievance Redressal</h2>
             <p>
-              For any complaints or grievances relating to the Platform or these Terms, contact us at:{' '}
-              <a href="mailto:legal@trustivasetu.com" className="text-blue-600 underline">legal@trustivasetu.com</a>
+              For any complaints or grievances relating to the Platform or these Terms, you may contact our
+              Grievance Officer (appointed under the IT Act, 2000 and DPDP Act, 2023):
             </p>
-            <p className="mt-2 text-orange-600 font-medium">
-              [ACTION REQUIRED: Add Grievance Officer name and designation per IT Act requirements]
+            <p className="mt-2">
+              <strong>Name:</strong> Abhishek Kashyap<br />
+              <strong>Designation:</strong> Founder &amp; CEO, Aarthsetu Technologies Pvt Ltd<br />
+              <strong>Email:</strong> <a href="mailto:legal@trustivasetu.com" className="text-blue-600 underline">legal@trustivasetu.com</a><br />
+              <strong>Phone:</strong> <a href="tel:+918218473534" className="text-blue-600 underline">+91 82184 73534</a>
             </p>
             <p className="mt-2">We aim to respond to all grievances within 30 days of receipt.</p>
           </section>

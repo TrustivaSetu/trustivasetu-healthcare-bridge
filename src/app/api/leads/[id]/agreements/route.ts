@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
+import { canAccessLeadById } from '@/lib/lead-access'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const params = await context.params
+  const { role, regionIds, clinicIds } = session.user
+  if (!await canAccessLeadById(params.id, role, regionIds, clinicIds)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   const agreements = await db.leadAgreement.findMany({
     where: { leadId: params.id },
@@ -15,9 +22,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ data: agreements })
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const params = await context.params
+  const { role, regionIds, clinicIds } = session.user
+  if (!await canAccessLeadById(params.id, role, regionIds, clinicIds)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   const { agreementUrl, fileName, notes } = await req.json()
   if (!agreementUrl) return NextResponse.json({ error: 'agreementUrl is required' }, { status: 400 })
@@ -68,9 +81,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   return NextResponse.json({ data: agreement }, { status: 201 })
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const session = await getRequestSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const params = await context.params
+  const { role, regionIds, clinicIds } = session.user
+  if (!await canAccessLeadById(params.id, role, regionIds, clinicIds)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   const { searchParams } = new URL(req.url)
   const agreementId = searchParams.get('agreementId')
