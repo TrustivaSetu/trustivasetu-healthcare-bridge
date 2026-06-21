@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
+import { canAccessEnquiry } from '@/lib/enquiry-access'
 
 export async function POST(
   req: NextRequest,
@@ -14,6 +15,11 @@ export async function POST(
   try {
     const enquiry = await db.patientEnquiry.findUnique({ where: { id } })
     if (!enquiry) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+    // Only convert enquiries within the caller's region/assignment scope.
+    if (!await canAccessEnquiry(enquiry, session.user.role, session.user.id)) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
     if (enquiry.status === 'CONVERTED') {
       return NextResponse.json({ error: 'Already converted' }, { status: 400 })
     }

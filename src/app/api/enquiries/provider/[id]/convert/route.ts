@@ -3,6 +3,7 @@ import { getRequestSession } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { sendEmail, portalAccessEmailHtml, clinicCreatorEmailHtml, clinicManagerEmailHtml } from '@/lib/email'
+import { canAccessEnquiry } from '@/lib/enquiry-access'
 
 function generateClinicCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -38,6 +39,11 @@ export async function POST(
   try {
     const enquiry = await db.providerEnquiry.findUnique({ where: { id } })
     if (!enquiry) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+    // Only convert enquiries within the caller's region/assignment scope.
+    if (!await canAccessEnquiry(enquiry, session.user.role, session.user.id)) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
     if (enquiry.status === 'CONVERTED') {
       return NextResponse.json({ error: 'Already converted' }, { status: 400 })
     }

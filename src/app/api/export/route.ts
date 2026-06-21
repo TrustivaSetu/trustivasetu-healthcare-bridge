@@ -40,6 +40,12 @@ export async function GET(req: NextRequest) {
     const clinicIdFilter = searchParams.get('clinicId')
     const search = searchParams.get('search')
 
+    // A requested clinicId must be within the caller's scoped clinic list,
+    // otherwise it would override scoping and export another tenant's leads.
+    if (clinicIdFilter && !clinicIdList.includes(clinicIdFilter)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const where: Record<string, unknown> = { clinicId: clinicIdFilter ? clinicIdFilter : { in: clinicIdList } }
     if (statuses) {
       const sl = statuses.split(',').filter(Boolean)
