@@ -25,6 +25,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.105.0",
     "@heroicons/react": "^2.1.5",
     "@hookform/resolvers": "^5.4.0",
     "@prisma/client": "^5.22.0",
