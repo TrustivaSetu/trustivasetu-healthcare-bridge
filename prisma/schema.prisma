@@ -9,43 +9,53 @@ datasource db {
 }
 
 model User {
-  id                   String                @id @default(cuid())
-  email                String                @unique
-  password             String
-  name                 String
-  role                 UserRole              @default(TEAM_MEMBER)
-  isActive             Boolean               @default(true)
-  mustChangePassword   Boolean               @default(false)
-  metadata             Json?
-  phone                String?
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  createdById          String?
-  reportingManagerId   String?
-  auditLogs            AuditLog[]
-  managedClinics       Clinic[]              @relation("ClinicRM")
-  createdLeads         Lead[]                @relation("LeadCreatedBy")
-  notifications        Notification[]
-  targets              Target[]
-  createdBy            User?                 @relation("UserCreatedBy", fields: [createdById], references: [id])
-  createdUsers         User[]                @relation("UserCreatedBy")
-  reportingManager     User?                 @relation("UserReporting", fields: [reportingManagerId], references: [id])
-  reportingTeam        User[]                @relation("UserReporting")
-  clinicAssignments    UserClinic[]
-  regionAssignments    UserRegion[]
-  employeeProfile      EmployeeProfile?
-  salaryStructure      SalaryStructure?
-  attendances          Attendance[]
-  approvedAttendances  Attendance[]          @relation("AttendanceApprovals")
-  createdHolidays      Holiday[]
-  expenses             Expense[]             @relation("UserExpenses")
-  approvedExpenses     Expense[]             @relation("ExpenseApprovals")
-  appointmentLetters   AppointmentLetter[]
-  tabSessions          TabSession[]
-  leaveRequests        LeaveRequest[]
-  approvedLeaveRequests LeaveRequest[]       @relation("LeaveApprovals")
-  createdTasks         LeadTask[]            @relation("TaskCreatedBy")
-  uploadedAgreements   LeadAgreement[]       @relation("AgreementUploadedBy")
+  id                    String                @id @default(cuid())
+  email                 String                @unique
+  password              String
+  name                  String
+  role                  UserRole              @default(TEAM_MEMBER)
+  isActive              Boolean               @default(true)
+  mustChangePassword    Boolean               @default(false)
+  metadata              Json?
+  phone                 String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  createdById           String?
+  reportingManagerId    String?
+  auditLogs             AuditLog[]
+  managedClinics        Clinic[]              @relation("ClinicRM")
+  createdLeads          Lead[]                @relation("LeadCreatedBy")
+  notifications         Notification[]
+  targets               Target[]
+  createdBy             User?                 @relation("UserCreatedBy", fields: [createdById], references: [id])
+  createdUsers          User[]                @relation("UserCreatedBy")
+  reportingManager      User?                 @relation("UserReporting", fields: [reportingManagerId], references: [id])
+  reportingTeam         User[]                @relation("UserReporting")
+  clinicAssignments     UserClinic[]
+  regionAssignments     UserRegion[]
+  employeeProfile       EmployeeProfile?
+  salaryStructure       SalaryStructure?
+  attendances           Attendance[]
+  approvedAttendances   Attendance[]          @relation("AttendanceApprovals")
+  createdHolidays       Holiday[]
+  expenses              Expense[]             @relation("UserExpenses")
+  approvedExpenses      Expense[]             @relation("ExpenseApprovals")
+  appointmentLetters    AppointmentLetter[]
+  tabSessions           TabSession[]
+  leaveRequests         LeaveRequest[]
+  approvedLeaveRequests LeaveRequest[]        @relation("LeaveApprovals")
+  createdTasks          LeadTask[]            @relation("TaskCreatedBy")
+  uploadedAgreements    LeadAgreement[]       @relation("AgreementUploadedBy")
+  // HRM relations
+  hrmRole               HrmRole?
+  managedEmployees      ManagerAssignment[]   @relation("ManagerAssignment")
+  assignedManagers      ManagerAssignment[]   @relation("EmployeeAssignment")
+  attendanceLocks       AttendanceLock[]      @relation("AttendanceUnlocker")
+  expensePeriodLocks    ExpensePeriodLock[]   @relation("ExpensePeriodLocks")
+  expenseUnlocks        ExpensePeriodLock[]   @relation("ExpenseUnlocker")
+  salarySlips           SalarySlip[]          @relation("UserSalarySlips")
+  form16s               Form16[]              @relation("UserForm16")
+  hrmAuditLogs          HrmAuditLog[]         @relation("HrmAuditActor")
 }
 
 model TabSession {
@@ -91,8 +101,8 @@ model UserClinic {
 }
 
 model Clinic {
-  id                  String       @id @default(cuid())
-  externalId          String?      @unique
+  id                  String         @id @default(cuid())
+  externalId          String?        @unique
   name                String
   address             String
   accountNumber       String?
@@ -100,26 +110,26 @@ model Clinic {
   contactNumber       String
   email               String?
   businessPotential   Float?
-  isActive            Boolean      @default(true)
-  portalAccessSent    Boolean      @default(false)
-  portalAccessSentAt    DateTime?
-  portalEmailStatus     String?   // 'SENT' | 'FAILED' | 'NOT_SENT'
-  lastPasswordGenAt     DateTime?
-  lastPasswordGenById   String?
-  reportEmails          String[]
-  onboardedAt         DateTime     @default(now())
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  isActive            Boolean        @default(true)
+  portalAccessSent    Boolean        @default(false)
+  portalAccessSentAt  DateTime?
+  portalEmailStatus   String?
+  lastPasswordGenAt   DateTime?
+  lastPasswordGenById String?
+  reportEmails        String[]
+  onboardedAt         DateTime       @default(now())
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
   regionId            String
   assignedRMId        String?
   hospitalType        String?
   metadata            Json?
-  assignedRM        User?        @relation("ClinicRM", fields: [assignedRMId], references: [id])
-  region            Region       @relation(fields: [regionId], references: [id])
-  leads             Lead[]
-  targets           Target[]
-  userAssignments   UserClinic[]
-  schemes           ClinicScheme[]
+  assignedRM          User?          @relation("ClinicRM", fields: [assignedRMId], references: [id])
+  region              Region         @relation(fields: [regionId], references: [id])
+  leads               Lead[]
+  targets             Target[]
+  userAssignments     UserClinic[]
+  schemes             ClinicScheme[]
 
   @@index([regionId])
   @@index([assignedRMId])
@@ -154,42 +164,42 @@ model LenderRate {
 }
 
 model Lead {
-  id              String     @id @default(cuid())
-  externalId      String?    @unique
-  applicantName   String
-  phone           String?
-  email           String?
-  amount          Float
-  status          LeadStatus @default(PENDING)
-  approvedAmount  Float?
-  disbursedAmount Float?
-  applicationDate DateTime   @default(now())
-  approvalDate    DateTime?
-  disbursalDate   DateTime?
-  doGeneratedAt   DateTime?
-  remarks         String?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  clinicId        String
-  lenderId        String?
-  createdById     String?
-  metadata        Json?
-  losEnquiryId      String?    @unique
-  enquiryType       String?
-  treatmentName     String?
-  treatmentCategory String?
-  utrNumber         String?
-  nachStatus        String?
-  agreementSigned   Boolean    @default(false)
-  rejectionReason   String?
+  id                   String          @id @default(cuid())
+  externalId           String?         @unique
+  applicantName        String
+  phone                String?
+  email                String?
+  amount               Float
+  status               LeadStatus      @default(PENDING)
+  approvedAmount       Float?
+  disbursedAmount      Float?
+  applicationDate      DateTime        @default(now())
+  approvalDate         DateTime?
+  disbursalDate        DateTime?
+  doGeneratedAt        DateTime?
+  remarks              String?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  clinicId             String
+  lenderId             String?
+  createdById          String?
+  metadata             Json?
+  losEnquiryId         String?         @unique
+  enquiryType          String?
+  treatmentName        String?
+  treatmentCategory    String?
+  utrNumber            String?
+  nachStatus           String?
+  agreementSigned      Boolean         @default(false)
+  rejectionReason      String?
   leadNumber           Int?
   applicationNumber    Int?
   applicationCreatedAt DateTime?
-  clinic          Clinic     @relation(fields: [clinicId], references: [id])
-  createdBy       User?      @relation("LeadCreatedBy", fields: [createdById], references: [id])
-  lender          Lender?    @relation(fields: [lenderId], references: [id])
-  tasks           LeadTask[]
-  agreements      LeadAgreement[]
+  clinic               Clinic          @relation(fields: [clinicId], references: [id])
+  createdBy            User?           @relation("LeadCreatedBy", fields: [createdById], references: [id])
+  lender               Lender?         @relation(fields: [lenderId], references: [id])
+  tasks                LeadTask[]
+  agreements           LeadAgreement[]
 
   @@index([clinicId])
   @@index([lenderId])
@@ -341,9 +351,27 @@ enum LeaveType {
   UNPLANNED
 }
 
+enum WorkingType {
+  FULL_DAY
+  HALF_DAY
+}
+
+enum ExpenseStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  PARTIALLY_APPROVED
+  REJECTED
+}
+
+enum AppointmentLetterStatus {
+  PENDING_ACKNOWLEDGEMENT
+  ACKNOWLEDGED
+}
+
 model PatientEnquiry {
   id                     String    @id @default(cuid())
-  source                 String    // 'WEBSITE_FORM' | 'INCOMPLETE_LEAD'
+  source                 String
   applicantName          String?
   mobile                 String?
   email                  String?
@@ -386,7 +414,7 @@ model PatientEnquiry {
 
 model ProviderEnquiry {
   id                String    @id @default(cuid())
-  source            String    // 'WEBSITE_FORM' | 'MANUAL'
+  source            String
   clinicName        String?
   contactPerson     String?
   mobile            String?
@@ -430,26 +458,21 @@ model RegionMapping {
   updatedAt         DateTime @updatedAt
 }
 
-enum WorkingType {
-  FULL_DAY
-  HALF_DAY
-}
-
 model EmployeeProfile {
-  id                    String    @id @default(cuid())
-  userId                String    @unique
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  dateOfBirth           DateTime? @db.Date
-  dateOfJoining         DateTime? @db.Date
-  marriageAnniversary   DateTime? @db.Date
-  designation           String?
-  department            String?
-  probationEndDate      DateTime? @db.Date
-  exitDate              DateTime? @db.Date
-  photoUrl              String?
-  policyAcknowledgedAt  DateTime?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateOfBirth          DateTime? @db.Date
+  dateOfJoining        DateTime? @db.Date
+  marriageAnniversary  DateTime? @db.Date
+  designation          String?
+  department           String?
+  probationEndDate     DateTime? @db.Date
+  exitDate             DateTime? @db.Date
+  photoUrl             String?
+  policyAcknowledgedAt DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 model SalaryStructure {
@@ -485,6 +508,7 @@ model Attendance {
   approvedBy      User?          @relation("AttendanceApprovals", fields: [approvedById], references: [id])
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+  lockRecord      AttendanceLock?
 
   @@unique([userId, date])
   @@index([userId])
@@ -517,14 +541,6 @@ model Holiday {
   createdBy   User     @relation(fields: [createdById], references: [id])
 
   @@index([date])
-}
-
-enum ExpenseStatus {
-  DRAFT
-  SUBMITTED
-  APPROVED
-  PARTIALLY_APPROVED
-  REJECTED
 }
 
 model Expense {
@@ -572,11 +588,6 @@ model ExpenseItem {
   @@index([expenseId])
 }
 
-enum AppointmentLetterStatus {
-  PENDING_ACKNOWLEDGEMENT
-  ACKNOWLEDGED
-}
-
 model AppointmentLetter {
   id                          String                  @id @default(cuid())
   userId                      String
@@ -604,6 +615,7 @@ model AppointmentLetter {
   @@index([userId])
   @@index([status])
 }
+
 model LeaveRequest {
   id              String         @id @default(cuid())
   userId          String
@@ -652,22 +664,22 @@ model RolePermission {
 }
 
 model ClinicScheme {
-  id                   String         @id @default(cuid())
-  clinicId             String
-  schemeTemplateId     String
+  id                    String         @id @default(cuid())
+  clinicId              String
+  schemeTemplateId      String
   hospitalSubventionPct Float
-  gstOnSubvention      Float          @default(18)
-  subventionGstType    String         @default("EXCLUDED")
-  totalSubventionPct   Float
-  processingFeePct     Float          @default(0)
-  processingFeeGstType String         @default("EXCLUDED")
-  gstOnPF              Float          @default(18)
-  isActive             Boolean        @default(true)
-  agreedAt             DateTime       @default(now())
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
-  clinic               Clinic         @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  schemeTemplate       SchemeTemplate @relation(fields: [schemeTemplateId], references: [id])
+  gstOnSubvention       Float          @default(18)
+  subventionGstType     String         @default("EXCLUDED")
+  totalSubventionPct    Float
+  processingFeePct      Float          @default(0)
+  processingFeeGstType  String         @default("EXCLUDED")
+  gstOnPF               Float          @default(18)
+  isActive              Boolean        @default(true)
+  agreedAt              DateTime       @default(now())
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  clinic                Clinic         @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  schemeTemplate        SchemeTemplate @relation(fields: [schemeTemplateId], references: [id])
 
   @@unique([clinicId, schemeTemplateId])
   @@index([clinicId])
@@ -732,4 +744,188 @@ model EmailLog {
   @@index([createdAt])
   @@index([status])
   @@index([to])
+}
+
+// ═══════════════════════════════════════════════════
+// HRMS EXTENSION
+// ═══════════════════════════════════════════════════
+
+enum HrmRoleType {
+  SUPER_ADMIN
+  HR
+  L2_MANAGER
+  L1_MANAGER
+  EMPLOYEE
+}
+
+enum HrmAuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  LOCK
+  UNLOCK
+  GENERATE
+  VIEW_SENSITIVE
+}
+
+model HrmRole {
+  id        String      @id @default(cuid())
+  userId    String      @unique
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      HrmRoleType @default(EMPLOYEE)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model ManagerAssignment {
+  id         String   @id @default(cuid())
+  employeeId String
+  managerId  String
+  level      Int
+  isActive   Boolean  @default(true)
+  assignedAt DateTime @default(now())
+  employee   User     @relation("EmployeeAssignment", fields: [employeeId], references: [id], onDelete: Cascade)
+  manager    User     @relation("ManagerAssignment", fields: [managerId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, level])
+  @@index([managerId])
+  @@index([employeeId])
+}
+
+model AttendanceLock {
+  id           String     @id @default(cuid())
+  attendanceId String     @unique
+  attendance   Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  lockedAt     DateTime   @default(now())
+  unlockedById String?
+  unlockedAt   DateTime?
+  unlockReason String?
+  unlockedBy   User?      @relation("AttendanceUnlocker", fields: [unlockedById], references: [id])
+
+  @@index([attendanceId])
+}
+
+model ExpensePeriodLock {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation("ExpensePeriodLocks", fields: [userId], references: [id], onDelete: Cascade)
+  year         Int
+  month        Int
+  isLocked     Boolean   @default(false)
+  lockedAt     DateTime?
+  unlockedById String?
+  unlockedAt   DateTime?
+  unlockReason String?
+  unlockedBy   User?     @relation("ExpenseUnlocker", fields: [unlockedById], references: [id])
+  createdAt    DateTime  @default(now())
+
+  @@unique([userId, year, month])
+  @@index([userId])
+}
+
+model SalarySlip {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation("UserSalarySlips", fields: [userId], references: [id], onDelete: Cascade)
+  year             Int
+  month            Int
+  basicSalary      Float     @default(0)
+  hra              Float     @default(0)
+  conveyance       Float     @default(0)
+  medicalAllowance Float     @default(0)
+  specialAllowance Float     @default(0)
+  otherAllowances  Float     @default(0)
+  grossEarnings    Float     @default(0)
+  pfEmployee       Float     @default(0)
+  pfEmployer       Float     @default(0)
+  esiEmployee      Float     @default(0)
+  esiEmployer      Float     @default(0)
+  professionalTax  Float     @default(0)
+  tds              Float     @default(0)
+  otherDeductions  Float     @default(0)
+  totalDeductions  Float     @default(0)
+  netSalary        Float     @default(0)
+  workingDays      Int       @default(0)
+  presentDays      Int       @default(0)
+  paidDays         Int       @default(0)
+  lopDays          Int       @default(0)
+  isFinalized      Boolean   @default(false)
+  finalizedAt      DateTime?
+  finalizedById    String?
+  paymentDate      DateTime?
+  paymentRef       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([userId, year, month])
+  @@index([userId])
+  @@index([year, month])
+}
+
+model Form16 {
+  id                     String    @id @default(cuid())
+  userId                 String
+  user                   User      @relation("UserForm16", fields: [userId], references: [id], onDelete: Cascade)
+  financialYear          String
+  assessmentYear         String
+  employerTan            String?
+  employerPan            String?
+  employeePan            String?
+  totalTaxDeducted       Float     @default(0)
+  totalTaxDeposited      Float     @default(0)
+  grossSalary            Float     @default(0)
+  hraExemption           Float     @default(0)
+  otherExemptions        Float     @default(0)
+  standardDeduction      Float     @default(75000)
+  professionalTaxPaid    Float     @default(0)
+  entertainmentAllowance Float     @default(0)
+  netSalaryIncome        Float     @default(0)
+  sec80C                 Float     @default(0)
+  sec80CCD1B             Float     @default(0)
+  sec80D                 Float     @default(0)
+  sec80G                 Float     @default(0)
+  sec80E                 Float     @default(0)
+  sec80TTA               Float     @default(0)
+  totalDeductionsVI      Float     @default(0)
+  taxableIncome          Float     @default(0)
+  taxRegime              String    @default("NEW")
+  taxOnIncome            Float     @default(0)
+  surcharge              Float     @default(0)
+  healthEducationCess    Float     @default(0)
+  totalTaxPayable        Float     @default(0)
+  reliefU89              Float     @default(0)
+  netTaxPayable          Float     @default(0)
+  isGenerated            Boolean   @default(false)
+  generatedAt            DateTime?
+  generatedById          String?
+  acknowledgementNo      String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@unique([userId, financialYear])
+  @@index([userId])
+  @@index([financialYear])
+}
+
+model HrmAuditLog {
+  id        String         @id @default(cuid())
+  actorId   String
+  actor     User           @relation("HrmAuditActor", fields: [actorId], references: [id])
+  targetId  String?
+  action    HrmAuditAction
+  entity    String
+  entityId  String
+  oldValue  Json?
+  newValue  Json?
+  ipAddress String?
+  userAgent String?
+  reason    String?
+  createdAt DateTime       @default(now())
+
+  @@index([actorId])
+  @@index([targetId])
+  @@index([createdAt])
+  @@index([entity, entityId])
 }
