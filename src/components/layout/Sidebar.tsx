@@ -40,6 +40,11 @@ const navItems: NavItem[] = [
   { href: '/hr',                       label: 'HR Dashboard',       icon: IconHR,         roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'hr', module: 'HR_MODULE' },
   { href: '/hr/salary',                label: 'Salary Management',  icon: IconSalary,     roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'hr', module: 'SALARY' },
   { href: '/hr/holidays',              label: 'Holiday Calendar',   icon: IconHoliday,    roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr', module: 'HR_POLICIES' },
+  // HRM
+  { href: '/hrm/attendance', label: 'Attendance', icon: IconCalendar, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr' },
+  { href: '/hrm/salary',     label: 'Salary Slip', icon: IconSalary,  roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr' },
+  { href: '/hrm/form16',     label: 'Form 16',     icon: IconPayslip, roles: ['SUPER_ADMIN', 'ADMIN', 'REGIONAL_MANAGER', 'TEAM_MEMBER'], panel: 'hr' },
+  { href: '/hrm/dashboard',  label: 'HRM Dashboard', icon: IconHR,   roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'hr' },
   // Administration
   { href: '/admin/appointment-letters', label: 'Appointment Letters', icon: IconLetter,  roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin', module: 'APPOINTMENT_LETTERS' },
   { href: '/users',              label: 'User Management', icon: IconUsers,  roles: ['SUPER_ADMIN', 'ADMIN'], panel: 'admin', module: 'USERS' },
